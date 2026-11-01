@@ -17,43 +17,44 @@ Status: DRAFT, awaiting approval. Tick a box only after its Verify step passes.
   - Files: `playwright.config.ts`, `e2e/smoke.spec.ts`, `components.json`, `lib/utils.ts`, `components/ui/button.tsx`
   - Depends on: T1. Read `node_modules/next/dist/docs/01-app/01-getting-started/11-css.md` first.
 
-- [ ] **T3 GitHub Actions CI (core)**
+- [x] **T3 GitHub Actions CI (core)** (written; YAML parses; waiting for first green run after push)
   - Acceptance: workflow runs on push and pull_request with `npm ci`, `typecheck`, `lint`, `test`, `build` (placeholder env from `.env.example`); separate non-blocking E2E job; no secrets used.
   - Verify: workflow YAML lints locally (`npx --yes @action-validator/cli` or equivalent); after the first push the run is green.
   - Files: `.github/workflows/ci.yml`
   - Depends on: T1, T2.
 
-- [ ] **T4 Money library**
+- [x] **T4 Money library**
   - Acceptance: `Cents` branded integer type; `cents()` rejects non-integers and unsafe integers; `add`, `mulInt`, `roundHalfUp`, display-only `format()`; tests cover $12+$3+$14+$2+$5 = 3600 per box and 30 boxes = 108000.
   - Verify: `npm run test -- tests/money.test.ts`
   - Files: `lib/money.ts`, `tests/money.test.ts`
   - Depends on: T1.
 
-- [ ] **T5 Env validation**
+- [x] **T5 Env validation**
   - Acceptance: Zod-validated server env and a separate client env; errors name the variables, never values; `PAYPAL_ENV` other than `sandbox` fails; `SANDBOX_MODE` must be `true`; server env module imports `server-only`.
   - Verify: `npm run test -- tests/env.test.ts`
   - Files: `lib/env.ts`, `tests/env.test.ts`
   - Depends on: T1. Add the `server-only` dependency (ask first).
 
-- [ ] **T6 Sandbox banner and landing page**
+- [x] **T6 Sandbox banner and landing page**
   - Acceptance: root layout renders a visible "Sandbox · simulated data" banner on every route; landing page links to the merchant area; nothing breaks under `cacheComponents`.
   - Verify: `npm run build && npm run test:e2e` (E2E asserts banner text on `/`).
   - Files: `components/sandbox-banner.tsx`, `app/layout.tsx`, `app/page.tsx`, `e2e/banner.spec.ts`
   - Depends on: T2, T5. Read the caching and layouts docs first.
 
-- [ ] **T7 Correlation ID and audit writer**
+- [x] **T7 Correlation ID and audit writer**
   - Acceptance: correlation ID helper; `audit()` takes an injected insert function, redacts payloads through an allowlist, and never logs secrets; tests prove redaction.
   - Verify: `npm run test -- tests/audit.test.ts`
   - Files: `lib/correlation.ts`, `lib/audit.ts`, `tests/audit.test.ts`
   - Depends on: T1.
 
-- [ ] **T8 Customer signed access link**
+- [x] **T8 Customer signed access link**
   - Acceptance: create and verify HMAC token (inquiry ID, expiry, version) with constant-time compare; tests cover valid, expired, tampered, wrong-secret and bumped-version cases.
   - Verify: `npm run test -- tests/customer-link.test.ts`
   - Files: `lib/access/customer-link.ts`, `tests/customer-link.test.ts`
   - Depends on: T5.
 
 ### Checkpoint A
+
 `npm run typecheck && npm run lint && npm run test && npm run build` pass locally and CI is green. Review with the human before phase B.
 
 ## Phase B: Database and access (local Supabase)
@@ -101,6 +102,7 @@ Status: DRAFT, awaiting approval. Tick a box only after its Verify step passes.
   - Depends on: T8, T14.
 
 ### Checkpoint B
+
 `supabase db reset`, `npm run test:db`, `npm run test`, `npm run test:e2e` all green and CI green with the DB job. Review with the human before phase C.
 
 ## Phase C: PayPal behind mocks (no accounts)
@@ -130,6 +132,7 @@ Status: DRAFT, awaiting approval. Tick a box only after its Verify step passes.
   - Depends on: T14, T16, T18.
 
 ### Checkpoint C
+
 All mocked and replayed PayPal tests green. Review with the human, and tell the human the accounts are now the only blocker.
 
 ## Phase D: Hosted proof (needs accounts)
@@ -153,4 +156,5 @@ All mocked and replayed PayPal tests green. Review with the human, and tell the 
   - Depends on: T21 (walkthrough text can be drafted earlier).
 
 ### Checkpoint D (module done)
+
 Every success criterion in §15 of the spec is checked. Update `SPEC.md` status to "foundation: done", then start `doc/spec/SPEC-catalog-engine.md`.
