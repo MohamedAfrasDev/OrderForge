@@ -37,7 +37,7 @@ Provide everything every other module stands on, and prove the riskiest external
 3. The existing `@/*` → `./*` path alias is kept, so there is no `src/` directory. Code goes under `app/`, `lib/`, `domain/`, `services/` at the repo root.
 4. One Supabase project serves local dev, preview and demo, with a local Supabase stack for DB tests.
 5. Customer identity is a signed, unguessable access link per inquiry, with no customer accounts.
-6. Merchant login is Supabase Auth email + password (or magic link) for one seeded merchant user.
+6. Merchant login is **Supabase Auth email + password** (decided) for one seeded merchant user. No magic link, no sign-up page: the merchant user is created by the seed or the Supabase dashboard.
 7. The account-creation steps (Supabase project, PayPal sandbox merchant and buyer, Vercel project, webhook registration) are done by the human. The agent cannot create accounts or enter credentials. They are listed as prerequisites.
 8. License: **MIT**. Reconciliation: **scheduled route**, triggered by **Supabase `pg_cron`** calling it over HTTP with `pg_net` (decided: Vercel Hobby limits cron). CI: **GitHub Actions**.
 9. Supabase, PayPal and Vercel accounts do not exist yet. `.env` and `.env.example` hold placeholders only, and every task that needs a real account is blocked until the human fills them in. Work that needs no account (money, env validation, access links, domain code, mocked tests, local Supabase via the CLI) proceeds first.
@@ -248,6 +248,4 @@ Rows from the brief's test table owned here: *Another customer opens the order o
 Tasks 1–2 and the account-free parts of 3–6 can start immediately; the hosted-account parts of 3, 5, 6 and all of 7 wait for the human to create Supabase, PayPal and Vercel accounts. Note the 3 Nov tripwire: the later accounts are created, the less slack remains.
 
 ## 17. Open questions
-Resolved: accounts will be created later (placeholders in `.env`); Vercel Hobby, so cron runs on Supabase `pg_cron`; GitHub Actions CI wanted.
-1. Merchant sign-in: email + password or magic link? Default if unanswered: email + password for a deterministic demo login.
-2. Should the README include a step-by-step account-creation walkthrough (Supabase, PayPal sandbox, Vercel)? Default: yes, short.
+All resolved: accounts will be created later (placeholders in `.env`); Vercel Hobby, so cron runs on Supabase `pg_cron`; GitHub Actions CI; merchant sign-in is email + password; the README includes a short step-by-step account-creation walkthrough (Supabase, PayPal sandbox buyer and merchant, Vercel, webhook registration, Vault secrets).
