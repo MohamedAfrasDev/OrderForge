@@ -16,8 +16,9 @@ Provide everything every other module stands on, and prove the riskiest external
 3. Access: merchant login (Supabase Auth) and a customer signed access link, both enforced on the server.
 4. Cross-cutting plumbing: typed env/config, integer-minor-unit money type, audit events, correlation IDs, sandbox indicators.
 5. A thin PayPal sandbox gateway proving authorize, capture and void on the deployed preview, plus a webhook endpoint that verifies signatures.
-6. A scheduled reconciliation route skeleton. Inngest is explicitly not used in v1.
-7. Repository hygiene for submission: MIT license, README skeleton, `.env.example`, no secrets.
+6. A scheduled reconciliation route skeleton, triggered by **Supabase `pg_cron` + `pg_net`** (Vercel Hobby limits cron frequency, so Vercel Cron is not used). Inngest is explicitly not used in v1.
+7. A GitHub Actions CI workflow running typecheck, lint, unit tests, DB tests and build on every push and pull request.
+8. Repository hygiene for submission: MIT license, README skeleton, `.env.example`, no secrets.
 
 **Not in scope:** pricing and validation (`catalog-engine`), quote versions (`quote-approval`), the reservation RPC (`reservation`), the payment-attempt state machine and merchant decision flow (`payments`), preparation jobs (`fulfillment`), and any AI (`ai-intake`). Foundation creates those tables empty, with constraints, but not their business logic.
 
@@ -38,13 +39,16 @@ Provide everything every other module stands on, and prove the riskiest external
 5. Customer identity is a signed, unguessable access link per inquiry, with no customer accounts.
 6. Merchant login is Supabase Auth email + password (or magic link) for one seeded merchant user.
 7. The account-creation steps (Supabase project, PayPal sandbox merchant and buyer, Vercel project, webhook registration) are done by the human. The agent cannot create accounts or enter credentials. They are listed as prerequisites.
-8. License: **MIT**. Reconciliation: **scheduled route** (Vercel Cron).
+8. License: **MIT**. Reconciliation: **scheduled route**, triggered by **Supabase `pg_cron`** calling it over HTTP with `pg_net` (decided: Vercel Hobby limits cron). CI: **GitHub Actions**.
+9. Supabase, PayPal and Vercel accounts do not exist yet. `.env` and `.env.example` hold placeholders only, and every task that needs a real account is blocked until the human fills them in. Work that needs no account (money, env validation, access links, domain code, mocked tests, local Supabase via the CLI) proceeds first.
 
-## 3. Prerequisites (human actions)
-- [ ] Supabase project created; URL, anon key and service-role key placed in local `.env.local` and Vercel env.
+## 3. Prerequisites (human actions, to be done later)
+`.env` (gitignored) and `.env.example` (committed) already exist with placeholder values. Replace placeholders in `.env` / Vercel env as each account is created.
+- [ ] Supabase project created; URL, anon key and service-role key placed in `.env` and Vercel env. Enable the `pg_cron`, `pg_net` and Vault (`supabase_vault`) extensions.
 - [ ] PayPal developer sandbox: one business (merchant) account and one personal (buyer) account; REST app created; client ID and secret stored in env; webhook registered against the Vercel preview URL with its webhook ID stored in env.
-- [ ] Vercel project linked; `CRON_SECRET` set.
-- [ ] GitHub repo created as public.
+- [ ] Vercel project linked (Hobby plan); env vars set, including `CRON_SECRET` and `APP_BASE_URL` (the deployed URL).
+- [ ] Vault secrets created in Supabase for the cron job: `app_base_url` and `cron_secret` (same value as `CRON_SECRET`).
+- [ ] GitHub repo created as public; repository secrets added for CI only if a CI step needs them (none expected: CI uses mocks and a local Supabase stack).
 
 ## 4. Tech stack (additions to SPEC.md)
 `@supabase/supabase-js`, `@supabase/ssr`, `zod`, `vitest`, `@playwright/test`, shadcn/ui (with its Tailwind 4 setup), a PayPal server client via plain `fetch` (no heavy SDK on the server) and `@paypal/react-paypal-js` for the browser approval button. Versions are pinned exactly when installed; each addition is listed in the PR. Adding anything beyond this list requires asking first.
@@ -92,7 +96,7 @@ services/                         (empty; filled by later modules)
 components/ui/                    shadcn components
 components/sandbox-banner.tsx
 supabase/
-  migrations/                     0001_core_tables.sql, 0002_constraints.sql, 0003_rls.sql
+  migrations/                     0001_core_tables.sql, 0002_constraints.sql, 0003_rls.sql, 0004_cron.sql
   seed/seed.sql (+ seed.ts)       synthetic merchant, products, stock, rules
   config.toml
 tests/                            vitest (unit) and tests/db (database)
@@ -100,9 +104,10 @@ e2e/                              playwright
 scripts/{seed.ts,demo-reset.ts,paypal-spike.ts}
 doc/spec/                         these specs
 LICENSE                           MIT
-.env.example                      names only, placeholder values
+.env                              placeholders only, gitignored (created)
+.env.example                      names only, placeholder values, committed (created; .gitignore has `!.env.example`)
+.github/workflows/ci.yml          typecheck, lint, test, test:db, build
 README.md                         env names, migrate/seed, cron, demo reset, sandbox buyer, limitations
-vercel.json                       cron schedule for /api/cron/reconcile
 ```
 
 ## 7. Data and schema scope
@@ -154,10 +159,13 @@ The spike deliverable is a hosted `/merchant/dev/paypal` page (merchant-only, sa
 - `lib/audit.ts`: `audit({ actor, action, entity, entityId, correlationId, data })`; payload passes a redaction allowlist.
 - Correlation ID created per request and propagated to audit and payment events.
 - `components/sandbox-banner.tsx` rendered in the root layout; also appears on the PayPal approval step.
-- Reconciliation route `/api/cron/reconcile`: requires `Authorization: Bearer ${CRON_SECRET}`, is idempotent, and in this module only logs a heartbeat audit event. `vercel.json` schedules it (every 5 minutes on a plan that allows it; otherwise daily, with a documented manual "run reconcile" button on the merchant dev page).
+- Reconciliation route `/api/cron/reconcile`: requires `Authorization: Bearer ${CRON_SECRET}`, is idempotent, and in this module only logs a heartbeat audit event.
+- **Scheduler: Supabase `pg_cron`.** Migration `0004_cron.sql` enables `pg_cron` and `pg_net` and schedules a job (every 5 minutes) that calls `net.http_post` on `<app_base_url>/api/cron/reconcile` with header `Authorization: Bearer <cron_secret>`. Both values are read from Supabase Vault (`vault.decrypted_secrets`) inside the job, so no secret or URL is hardcoded in a migration. The migration is guarded so it is skipped (not failed) when the extensions or secrets are missing, which keeps local `supabase db reset` and CI green. `cron.job_run_details` and `net._http_response` are the evidence for the run history. The merchant dev page keeps a manual "run reconcile now" button. A reservation-expiry sweep that needs no HTTP call may later run as a pure SQL `pg_cron` job (owned by `reservation`); anything that talks to PayPal stays in the route.
 
 ## 11. Environment variables (names only; values never committed)
+Already present as placeholders in `.env` and `.env.example`.
 ```
+APP_BASE_URL                         # deployed origin; also stored in Supabase Vault for pg_cron
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY            # server only
@@ -207,17 +215,20 @@ Conventions: strict TypeScript; named exports; kebab-case files; domain function
 | E2E | Playwright | Merchant login gate; customer link A cannot open inquiry B; sandbox banner on every page |
 | Real sandbox | `paypal:spike` + hosted dev page | Authorize → capture and authorize → void against the actual PayPal sandbox; evidence stored and labeled |
 
+**CI (GitHub Actions, `.github/workflows/ci.yml`):** runs on push and pull_request, Node LTS, `npm ci` with the lockfile, then in order: `typecheck`, `lint`, `test`, start local Supabase via the Supabase CLI action and run `test:db`, then `build` with placeholder env from `.env.example`. CI uses no real credentials and never calls PayPal or OpenRouter. Playwright E2E runs in a separate job against the local stack and may be marked non-blocking until stable. A failing `typecheck`, `lint`, `test` or `test:db` blocks merge.
+
 Evidence labeling: every recorded result is tagged `mocked`, `replayed` or `real-sandbox`. Coverage target for `lib/money.ts`, `lib/access/*` and `lib/paypal/*`: ≥90% lines; no global coverage number is promised.
 
 Rows from the brief's test table owned here: *Another customer opens the order or a file → denied on the server*; *Forged or duplicate webhook → rejected or acknowledged with no second effect* (route level; payment effects tested in `payments`).
 
 ## 14. Boundaries
 - **Always:** run `npm run typecheck && npm run lint && npm run test` before each commit; keep secrets in env only; check the server session or token on every protected read; label evidence as mocked, replayed or real-sandbox; check PayPal docs for exact event names and endpoints before coding them.
-- **Ask first:** adding a dependency not listed in §4; changing a table or constraint after approval (use a new migration); choosing Inngest over the scheduled route; changing the Vercel cron schedule; switching intent to CAPTURE.
+- **Ask first:** adding a dependency not listed in §4; changing a table or constraint after approval (use a new migration); choosing Inngest over the scheduled route; changing the `pg_cron` schedule; switching intent to CAPTURE.
 - **Never:** commit `.env*` or any key; expose the service-role or PayPal secret to the client; accept an amount from the browser; allow `PAYPAL_ENV=live`; retry a timed-out PayPal call without querying; use real personal data; put authorization only in `proxy.ts`.
 
 ## 15. Success criteria (testable)
-- [ ] `npm run typecheck`, `lint`, `test`, `test:db`, `build` all pass in CI (GitHub Actions, if enabled) and locally.
+- [ ] `npm run typecheck`, `lint`, `test`, `test:db`, `build` all pass in GitHub Actions CI and locally.
+- [ ] `pg_cron` job exists after migration, calls `/api/cron/reconcile` with the bearer secret, and `cron.job_run_details` shows successful runs on the hosted project; the route returns 401 without the bearer.
 - [ ] Migrations apply on a clean DB; `npm run demo:reset` restores the seed exactly.
 - [ ] Real sandbox: authorize + capture succeeds on the Vercel preview; authorize + void succeeds; evidence recorded as `real-sandbox`.
 - [ ] Webhook: forged request rejected (4xx), valid replay acknowledged once, duplicate acknowledged with no new row effect.
@@ -226,16 +237,17 @@ Rows from the brief's test table owned here: *Another customer opens the order o
 - [ ] Sandbox authorization-expiry behaviour observed and recorded in this spec.
 
 ## 16. Task outline (becomes tasks/plan.md after approval)
-1. Repo hygiene: LICENSE (MIT), `.env.example`, README skeleton, scripts, Vitest + Playwright + shadcn setup.
+1. Repo hygiene: LICENSE (MIT), README skeleton, scripts, Vitest + Playwright + shadcn setup, GitHub Actions CI workflow (`.env` / `.env.example` already created).
 2. `lib/env.ts`, `lib/money.ts`, `lib/audit.ts`, correlation ID, sandbox banner, with tests.
 3. Supabase project wiring, migrations 0001–0003, seed, `demo:reset`, DB tests.
 4. Merchant auth (login, `proxy.ts`, session checks) and customer signed link, with tests.
 5. PayPal client + `paypal:spike` CLI against the sandbox (local), then the hosted dev page on Vercel.
-6. Webhook route with verification and dedupe; cron route skeleton; `vercel.json`; health route.
+6. Webhook route with verification and dedupe; cron route skeleton; `0004_cron.sql` (`pg_cron` + `pg_net` + Vault); health route.
 7. Deploy preview, run real-sandbox authorize/capture/void, record evidence; decide the CAPTURE tripwire.
 
+Tasks 1–2 and the account-free parts of 3–6 can start immediately; the hosted-account parts of 3, 5, 6 and all of 7 wait for the human to create Supabase, PayPal and Vercel accounts. Note the 3 Nov tripwire: the later accounts are created, the less slack remains.
+
 ## 17. Open questions
-1. Do the prerequisite accounts in §3 already exist, or should the README walk through creating them?
-2. Merchant sign-in: email + password or magic link? Recommended: email + password for a deterministic demo login.
-3. Is GitHub Actions CI wanted (typecheck, lint, test), or local checks only? Recommended: a minimal CI workflow.
-4. What Vercel plan applies? Hobby cron may be limited to daily; I'll default to daily plus a manual "run reconcile" button if so.
+Resolved: accounts will be created later (placeholders in `.env`); Vercel Hobby, so cron runs on Supabase `pg_cron`; GitHub Actions CI wanted.
+1. Merchant sign-in: email + password or magic link? Default if unanswered: email + password for a deterministic demo login.
+2. Should the README include a step-by-step account-creation walkthrough (Supabase, PayPal sandbox, Vercel)? Default: yes, short.
