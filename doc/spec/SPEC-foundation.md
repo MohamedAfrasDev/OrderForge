@@ -236,14 +236,16 @@ Rows from the brief's test table owned here: *Another customer opens the order o
 - **Never:** commit `.env*` or any key; expose the service-role or PayPal secret to the client; accept an amount from the browser; allow `PAYPAL_ENV=live`; retry a timed-out PayPal call without querying; use real personal data; put authorization only in `proxy.ts`.
 
 ## 15. Success criteria (testable)
-- [ ] `npm run typecheck`, `lint`, `test`, `test:db`, `build` all pass in GitHub Actions CI and locally.
-- [ ] `pg_cron` job exists after migration, calls `/api/cron/reconcile` with the bearer secret, and `cron.job_run_details` shows successful runs on the hosted project; the route returns 401 without the bearer.
-- [ ] Migrations apply on a clean DB; `npm run demo:reset` restores the seed exactly.
-- [ ] Real sandbox: authorize + capture succeeds on the Vercel preview; authorize + void succeeds; evidence recorded as `real-sandbox`.
-- [ ] Webhook: forged request rejected (4xx), valid replay acknowledged once, duplicate acknowledged with no new row effect.
-- [ ] Access: cross-inquiry and unauthenticated reads denied (DB and E2E tests).
-- [ ] Sandbox banner visible on every route; `.env.example` lists every variable above; repo contains MIT `LICENSE`; secret scan of the tree is clean.
-- [ ] Sandbox authorization-expiry behaviour observed and recorded in this spec.
+
+Checked at Checkpoint D on 2 Nov 2026: 7 of 8 met, 1 not met. Evidence per criterion: [doc/checkpoints/foundation-checkpoint-d.md](../checkpoints/foundation-checkpoint-d.md).
+- [x] `npm run typecheck`, `lint`, `test`, `test:db`, `build` all pass in GitHub Actions CI and locally.
+- [x] `pg_cron` job exists after migration, calls `/api/cron/reconcile` with the bearer secret, and `cron.job_run_details` shows successful runs on the hosted project; the route returns 401 without the bearer.
+- [x] Migrations apply on a clean DB; `npm run demo:reset` restores the seed exactly.
+- [x] Real sandbox: authorize + capture succeeds on the Vercel preview; authorize + void succeeds; evidence recorded as `real-sandbox`.
+- [x] Webhook: forged request rejected (4xx), valid replay acknowledged once, duplicate acknowledged with no new row effect.
+- [x] Access: cross-inquiry and unauthenticated reads denied (DB and E2E tests).
+- [x] Sandbox banner visible on every route; `.env.example` lists every variable above; repo contains MIT `LICENSE`; secret scan of the tree is clean.
+- [ ] Sandbox authorization-expiry behaviour observed and recorded in this spec. **NOT MET: cannot be observed before the deadline (up to 29 days); recorded as not observed. See doc/checkpoints/foundation-checkpoint-d.md.**
 
 ## 16. Task outline (becomes tasks/plan.md after approval)
 1. Repo hygiene: LICENSE (MIT), README skeleton, scripts, Vitest + Playwright + shadcn setup, GitHub Actions CI workflow (`.env` / `.env.example` already created).

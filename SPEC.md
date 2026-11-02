@@ -2,7 +2,7 @@
 
 Source: `doc/OrderForge Build Brief v1.1.md` (content titled v1.2, dated 1 Nov 2026). The brief is the source of truth for product behaviour; this file is the index of module specs plus the project-wide conventions they share.
 
-Status: capability map approved 2026-11-01. Module specs live in `doc/spec/`. `foundation`: tasks T1 to T22 done (hosted Supabase, Vercel and the real PayPal sandbox verified); only Checkpoint D (review against the success criteria) remains. Next module in build order: `catalog-engine`. CI: GitHub Actions.
+Status: capability map approved 2026-11-01. Module specs live in `doc/spec/`. `foundation`: DONE (tasks T1 to T22; Checkpoint D passed on 2 Nov, 14 of 15 criteria met, the one unmet is sandbox authorization expiry, which cannot be observed before the deadline; record in `doc/checkpoints/`). Next module in build order: `catalog-engine` (spec first, as `AGENTS.md` requires). CI: GitHub Actions.
 
 ## 1. Objective
 

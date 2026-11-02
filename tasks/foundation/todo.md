@@ -156,5 +156,4 @@ All mocked and replayed PayPal tests green. Review with the human, and tell the 
   - Depends on: T21 (walkthrough text can be drafted earlier).
 
 ### Checkpoint D (module done)
-
-Every success criterion in §15 of the spec is checked. Update `SPEC.md` status to "foundation: done", then start `doc/spec/SPEC-catalog-engine.md`.
+Reviewed on 2 Nov 2026: 14 of 15 criteria met, 1 not met (sandbox authorization expiry cannot be observed before the deadline). Record: [doc/checkpoints/foundation-checkpoint-d.md](../../doc/checkpoints/foundation-checkpoint-d.md). `SPEC.md` status updated; next module in build order: `catalog-engine`.
