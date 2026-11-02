@@ -1,7 +1,7 @@
 # Tasks: payments
 
 Spec: [doc/spec/SPEC-payments.md](../../doc/spec/SPEC-payments.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 and T2 built (0007 applied to local only), T3 to T10 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T3 built (0007 applied to local only), T4 to T10 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -33,7 +33,7 @@ Status: APPROVED 2 Nov 2026; T1 and T2 built (0007 applied to local only), T3 to
   - Files: `supabase/migrations/0007_payments.sql`, `tests/db/payments-attempts.test.ts`, `tests/db/payments-guards.test.ts`, `tests/db/payments-helpers.ts`
   - Depends on: T1. Ask first before applying anywhere but local.
 
-- [ ] **T3 `payment_begin` and `payment_settle`: attempt, reservation and decision together**
+- [x] **T3 `payment_begin` and `payment_settle`: attempt, reservation and decision together**
   - Acceptance: `payment_begin` moves the attempt into its in-flight state and calls the reservation's `begin_operation` in the same
     transaction; if the reservation refuses (`HOLD_EXPIRED`, `NOT_HELD`, `OPERATION_IN_FLIGHT`) nothing changes. Capture needs an
     accepted decision, void a declined one. `payment_settle` records the outcome and settles the reservation in one transaction:
