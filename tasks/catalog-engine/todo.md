@@ -88,7 +88,7 @@ Loader proven against real Postgres; whole suite green; CI green after the push.
 
 ## Phase C: page and review
 
-- [ ] **T9 Read-only merchant catalog page (cuttable)**
+- [x] **T9 Read-only merchant catalog page (cuttable)**
   - Acceptance: `/merchant/catalog` (merchant session required, re-checked on the server) lists products with price, food flag and
     available stock, and shows the box template; read-only (no writes); a signed-out visitor is redirected; E2E covers both.
   - Verify: `npm run build && npm run test:e2e`

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { requireMerchant } from "@/lib/access/require-merchant";
@@ -23,6 +24,9 @@ async function Dashboard() {
     <>
       <h1 className="text-3xl font-semibold tracking-tight">{merchant.name}</h1>
       <p className="text-muted-foreground">Signed in as {user.email}</p>
+      <Link href="/merchant/catalog" className="text-sm underline">
+        Catalog
+      </Link>
       <form action={signOut}>
         <Button type="submit" variant="outline">
           Sign out
