@@ -1,7 +1,7 @@
 # Tasks: reservation
 
 Spec: [doc/spec/SPEC-reservation.md](../../doc/spec/SPEC-reservation.md) · Plan: [plan.md](plan.md)
-Status: BUILT 2 Nov 2026 (T1 to T7). CI on the branch and the hosted migration 0006 are open; see doc/checkpoints/reservation-checkpoint.md. Tick a box only after its Verify step passes. Every task is test first.
+Status: BUILT 2 Nov 2026 (T1 to T7). CI green on 6609daa (PR 3); the hosted migration 0006 is open; see doc/checkpoints/reservation-checkpoint.md. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 

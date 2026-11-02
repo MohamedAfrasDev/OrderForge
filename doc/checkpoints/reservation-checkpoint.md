@@ -4,14 +4,13 @@ Date: 2 Nov 2026 · Module: `reservation` · Reviewed against: [doc/spec/SPEC-re
 · Code reviewed: `spec-4-reservation` at `f9647d0` plus one added gate (see Findings).
 
 Every verdict below was re-run on 2 Nov against current state. Evidence is labeled **local** (Docker Supabase on this machine),
-**hosted** (the real Supabase project), or **CI** (GitHub Actions). Nothing here is hosted or CI evidence: the branch has not been
-pushed and migration 0006 has not been applied to the hosted project.
+**hosted** (the real Supabase project), or **CI** (GitHub Actions). CI evidence was added after the push (criterion 10). Nothing here is hosted evidence: the branch is pushed, but
+migration 0006 has not been applied to the hosted project.
 
 ## Verdict
 
-**10 of 11 criteria met locally; 1 partly met.** The partly met one is criterion 10: every local gate is green, but CI has not run
-because the branch is not pushed. It becomes met when CI is green on the last commit. Migration 0006 is applied to the local database
-only. The module is ready for `payments` to call, locally.
+**11 of 11 criteria met.** Criterion 10 was partly met until CI ran on the pushed branch; it is now met (see its row). Every local
+gate is green and CI is green on `6609daa`. Migration 0006 is applied to the local database only. The module is ready for `payments` to call.
 
 ## Criteria
 
@@ -26,7 +25,7 @@ only. The module is ready for `payments` to call, locally.
 | 7 | `check_stock_invariants()` is empty after every database test file and after the full demo path | Met (gate added in this review, Finding 1) | Every reservation test file now ends with an `afterAll` that calls the database's `check_stock_invariants()` for every product the file created and fails on any discrepancy. It was shown to fail on a deliberately corrupted file, then removed. The full demo path (capture, decline, expiry) is asserted consistent in `reservation-sweep`, and the SQL function is cross-checked against the pure TypeScript invariant. local |
 | 8 | A superseded quote's `HELD` reservation is released; one in any other state goes to review | Met | `releaseForInvalidatedPurchases`: plain hold released as `SUPERSEDED`, awaiting confirmation flagged for review with stock held, committed and unreserved skipped, a hold that moved into flight after listing is flagged instead. The sweep does the same for anything missed (`reservation-sweep` orphans). The merchant publish action calls it and a failing release never fails the publish (6 unit tests). local |
 | 9 | RLS and customer-view tests pass: merchants read only their own holds; customers see only their own hold | Met | `reservation-reads`: a signed-in merchant's own session lists only their holds, even when another merchant's id is asked for; the customer view returns only the verified inquiry's hold, exactly two fields (state and expiry), no ids, quantities, product names or review notes. Foundation `rls.test` covers the tables. local |
-| 10 | `domain/reservation` passes the purity test; typecheck, lint, unit, database and E2E green locally and in CI | **Partly met** | Local: 0 type errors, 0 lint problems, 577 unit, 544 database, 60 E2E, production build ok. `purity.test.ts` limits `domain/reservation` imports to `domain/quote`, `lib/money`, `zod` and its own files, and bans clock, environment and `Math.random` reads. **CI: not run.** The 10 commits on this branch are not pushed. local |
+| 10 | `domain/reservation` passes the purity test; typecheck, lint, unit, database and E2E green locally and in CI | Met | Local: 0 type errors, 0 lint problems, 577 unit, 544 database, 60 E2E, production build ok. `purity.test.ts` limits `domain/reservation` imports to `domain/quote`, `lib/money`, `zod` and its own files, and bans clock, environment and `Math.random` reads. **CI: green on `6609daa` (PR 3), 8 of 8 checks: typecheck, lint, test and build; database tests (local Supabase); E2E; Vercel preview, in both the push run and the pull-request run.** local + CI |
 | 11 | The customer sees the hold and its expiry on an accepted quote, and the merchant holds page works | Met | E2E (5 tests): "held until <time> UTC" on the accepted quote; "reserved for you" once payment is under way; "the hold on your items has ended" for a hold past its expiry without waiting for the sweep; no hold line when there is no hold; the merchant's holds page lists holds with quantities and product names, a "Needs attention" list with the review note, never another merchant's holds, and nothing to submit. local |
 
 Counts: reservation-specific unit tests 78 (`tests/reservation`, `tests/reconcile-sweep.test.ts`, `tests/merchant-quote-actions.test.ts`),
@@ -63,7 +62,6 @@ has a precondition: existing `reservations` rows must already satisfy the new ch
 
 | Item | Why it is open | What closes it |
 |---|---|---|
-| CI on the branch | Nothing is pushed; criterion 10 needs CI green on the last commit | Push `spec-4-reservation`, open a PR, confirm the checks (the push and pull-request runs can collide on port 54322, as happened once on the catalog branch). |
 | Migration 0006 on hosted | Local only; hosted needs a fresh explicit yes | You say yes immediately before; then dry run, apply, read-only checks before and after. |
 | Nothing calls reserve, begin or settle in the live flow | Accepting a quote does not create a hold; `payments` (its `start_checkout`) is where `reserveForPurchase`, `beginOperation` and `settleOperation` are called | `payments` spec and build. Wiring `reserveForPurchase` into the accept action earlier is a small change if you want customers to see a hold before payments exists. |
 | Order of work inside the reconcile route | The sweep runs after the heartbeat; once `payments` adds its reconciliation it must run first, so in-flight work is reconciled before the sweep flags it | `payments` task for the reconcile route (a comment marks the spot). |

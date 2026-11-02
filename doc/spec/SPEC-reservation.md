@@ -2,7 +2,7 @@
 
 Module id: `reservation` · Depends on: `foundation` (done), `quote-approval` (done) · Index: [../../SPEC.md](../../SPEC.md) · Brief: [../OrderForge Build Brief v1.1.md](../OrderForge%20Build%20Brief%20v1.1.md)
 
-Status: **BUILT on 2 Nov 2026** (approved the same day with the defaults for all six open questions). Review: [doc/checkpoints/reservation-checkpoint.md](../checkpoints/reservation-checkpoint.md): 10 of 11 criteria met locally, CI and the hosted migration open. Target window: 7–8 Nov 2026 (brief schedule; it can run in parallel with `ai-intake`). Decisions to confirm: **one all-or-nothing reserve call, an explicit "operation in flight" state that only payments can enter and leave, timers that can only release a plain hold, and a stock invariant that a test can check at any time.**
+Status: **BUILT on 2 Nov 2026** (approved the same day with the defaults for all six open questions). Review: [doc/checkpoints/reservation-checkpoint.md](../checkpoints/reservation-checkpoint.md): 11 of 11 criteria met, CI green on 6609daa (PR 3); the hosted migration is open. Target window: 7–8 Nov 2026 (brief schedule; it can run in parallel with `ai-intake`). Decisions to confirm: **one all-or-nothing reserve call, an explicit "operation in flight" state that only payments can enter and leave, timers that can only release a plain hold, and a stock invariant that a test can check at any time.**
 
 ## 1. Objective
 
@@ -194,7 +194,7 @@ Brief test rows owned here: *concurrent reservations for the last units (allocat
 - [x] `check_stock_invariants()` is empty after every database test file and after the full demo path.
 - [x] A superseded quote's `HELD` reservation is released; one in any other state goes to review.
 - [x] RLS and customer-view tests pass: merchants read only their own holds; customers see only their own hold.
-- [ ] `domain/reservation` passes the purity test; typecheck, lint, unit, database and E2E tests green locally and in CI. (Local part met; CI open until the branch is pushed and green.)
+- [x] `domain/reservation` passes the purity test; typecheck, lint, unit, database and E2E tests green locally and in CI. (CI green on 6609daa, PR 3.)
 - [x] The customer sees the hold and its expiry on an accepted quote, and the merchant holds page works (both cuttable; the state machine, the RPCs and the sweep are not).
 
 ## 12. Task outline (becomes `tasks/reservation/` after approval)
