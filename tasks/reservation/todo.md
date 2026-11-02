@@ -1,7 +1,7 @@
 # Tasks: reservation
 
 Spec: [doc/spec/SPEC-reservation.md](../../doc/spec/SPEC-reservation.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T4 built (0006 applied to local only), T5 to T7 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T5 built (0006 applied to local only), T6 and T7 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -56,7 +56,7 @@ Status: APPROVED 2 Nov 2026; T1 to T4 built (0006 applied to local only), T5 to 
 
 ## Phase C: services
 
-- [ ] **T5 Services: reserveForPurchase, operations, release, orphan release**
+- [x] **T5 Services: reserveForPurchase, operations, release, orphan release**
   - Acceptance: `reserveForPurchase` runs `verifyApprovalBinding` first (a superseded, tampered or unaccepted quote reserves nothing
     and returns `QUOTE_NOT_ACCEPTED` with the underlying code), computes per-product quantities from the snapshot and the merchant's
     SKUs, reads the `reservation_hold_minutes` rule (default 30), calls the RPC, and audits. `beginOperation`, `settleOperation`,

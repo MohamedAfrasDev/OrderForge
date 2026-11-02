@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { audit, type AuditInsert } from "@/lib/audit";
+import { audit } from "@/lib/audit";
 import type { SweepSummary } from "@/lib/cron/reconcile-handler";
+import { auditInsertFor } from "./shared";
 
 export type SweepChange = {
   reservationId: string;
@@ -14,13 +15,6 @@ export type SweepResult = SweepSummary & { changes: SweepChange[] };
 
 type RpcChange = { reservation_id: string; kind: SweepChange["kind"]; from: string; to: string; reason: string };
 type RpcError = { reservation_id: string; kind: SweepChange["kind"]; from: string; reason: string };
-
-const insertAuditFor =
-  (db: SupabaseClient): AuditInsert =>
-  async (row) => {
-    const { error } = await db.from("audit_events").insert(row);
-    if (error) throw new Error(`audit insert: ${error.message}`);
-  };
 
 /**
  * One pass of the scheduled sweep. The database function decides and applies everything in one transaction: it releases
@@ -47,7 +41,7 @@ export async function sweepReservations(db: SupabaseClient, ctx: { now: string; 
   }));
   const errors = result.errors ?? [];
 
-  const insertAudit = insertAuditFor(db);
+  const insertAudit = auditInsertFor(db);
   for (const c of changes) {
     await audit(insertAudit, {
       actor: "system:cron",

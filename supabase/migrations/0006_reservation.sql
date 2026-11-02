@@ -662,6 +662,50 @@ as $$
     ) d;
 $$;
 
+-- 3i. flag_for_review -----------------------------------------------------------------------------
+-- Sends a PAYMENT_IN_FLIGHT or AWAITING_CONFIRMATION reservation to a person, with the reason, when something outside it
+-- (for example a replaced quote) means money may be involved. Stock stays held. Already in review is a no-op.
+create or replace function public.flag_for_review(
+  p_reservation_id uuid,
+  p_reason         text,
+  p_now            timestamptz
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_res    public.reservations%rowtype;
+  v_reason text := left(btrim(coalesce(p_reason, '')), 201);
+begin
+  if p_now is null or length(v_reason) < 1 or length(v_reason) > 200 then
+    return jsonb_build_object('ok', false, 'code', 'INVALID_INPUT');
+  end if;
+
+  select * into v_res from public.reservations where id = p_reservation_id for update;
+  if not found then
+    return jsonb_build_object('ok', false, 'code', 'NOT_FOUND');
+  end if;
+
+  if v_res.state = 'REVIEW_REQUIRED' then
+    return jsonb_build_object('ok', true, 'already', true, 'state', 'REVIEW_REQUIRED');
+  end if;
+  if v_res.state not in ('PAYMENT_IN_FLIGHT', 'AWAITING_CONFIRMATION') then
+    return jsonb_build_object('ok', false, 'code', 'ILLEGAL_TRANSITION');
+  end if;
+
+  update public.reservations
+     set state = 'REVIEW_REQUIRED', in_flight_operation = null, state_changed_at = p_now, review_reason = v_reason
+   where id = v_res.id;
+
+  return jsonb_build_object('ok', true, 'already', false, 'state', 'REVIEW_REQUIRED');
+end;
+$$;
+
+revoke all on function public.flag_for_review(uuid, text, timestamptz) from public, anon, authenticated;
+grant execute on function public.flag_for_review(uuid, text, timestamptz) to service_role;
+
 -- Only the server (service role) may call the public ones; the stock helper is internal to them.
 revoke all on function public.reservation_apply_stock(uuid, text) from public, anon, authenticated, service_role;
 revoke all on function public.sweep_reservations(timestamptz, integer) from public, anon, authenticated;
