@@ -1,7 +1,10 @@
 // Real local Postgres. Seeds the demo merchant itself (the run starts from an empty schema).
 import { randomUUID } from "node:crypto";
 import { beforeAll, describe, expect, it } from "vitest";
-import { TERMS_SENTENCE } from "@/domain/quote";
+import { calculateQuote } from "@/domain/catalog";
+import { TERMS_SENTENCE, buildQuoteSnapshot, quoteHash } from "@/domain/quote";
+import { sha256Hex } from "@/lib/hash";
+import { loadCatalogSnapshot } from "@/services/catalog/load-snapshot";
 import { createCustomerLink } from "@/lib/access/customer-link";
 import { authorizeCustomerLink, type VerifiedInquiryId } from "@/lib/access/inquiry-reads";
 import { acceptQuote } from "@/services/quote/accept";
@@ -83,6 +86,36 @@ describe("acceptQuote", () => {
     const events = await auditActions(q.quoteId);
     expect(events.at(-1)).toMatchObject({ action: "quote.accepted", actor: `customer:${q.inquiryId}` });
     expect(events.at(-1)!.data).toMatchObject({ from: "PUBLISHED", to: "ACCEPTED", quote_hash: q.hash, purchase_id: r.value.purchaseId });
+  });
+
+  it("accepts a merchant-approved quote, and its hash covers the merchant's own wording", async () => {
+    const inquiryId = await newInquiry();
+    const draft = await createQuoteDraft(
+      db,
+      { inquiryId, configuration: box30, requirements, requirementVersionId: null, conditions: [{ code: "UNSUPPORTED_CUSTOMIZATION", text: "Gold foil lid." }] },
+      ctx,
+    );
+    if (!draft.ok) throw new Error(`draft: ${draft.code}`);
+    const merchantActor = { kind: "merchant", userId: randomUUID(), merchantId: MERCHANT_ID } as const;
+    const wording = "We can foil the lid for this order.";
+    const pub = await publishQuote(db, draft.value.quoteId, merchantActor, { ...ctx, approvalText: wording });
+    if (!pub.ok) throw new Error(`publish: ${pub.code}`);
+
+    // Rebuild the snapshot independently from the catalog: with the merchant's wording it matches; with other wording it does not.
+    const { catalog } = await loadCatalogSnapshot(db, MERCHANT_ID);
+    const priced = calculateQuote(box30, catalog);
+    const hashWith = (text: string) =>
+      quoteHash(
+        buildQuoteSnapshot({ merchantId: MERCHANT_ID, inquiryId, version: 1, requirementVersionId: null, priced, conditions: [{ code: "MERCHANT_APPROVED_CUSTOMIZATION", text }] }),
+        sha256Hex,
+      );
+    expect(pub.value.hash).toBe(hashWith(wording));
+    expect(pub.value.hash).not.toBe(hashWith("Different wording."));
+
+    const accepted = await acceptQuote(db, await verified(inquiryId), draft.value.quoteId, pub.value.hash, ctx);
+    expect(accepted.ok).toBe(true);
+    const approval = must(await db.from("approvals").select("terms_text").eq("quote_version_id", draft.value.quoteId).single());
+    expect(approval.terms_text).toContain(wording);
   });
 
   it("is idempotent: a second accept returns the same ids and no second audit event", async () => {

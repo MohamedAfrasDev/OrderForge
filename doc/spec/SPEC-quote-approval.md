@@ -2,7 +2,7 @@
 
 Module id: `quote-approval` · Depends on: `catalog-engine` (done) · Index: [../../SPEC.md](../../SPEC.md) · Brief: [../OrderForge Build Brief v1.1.md](../OrderForge%20Build%20Brief%20v1.1.md)
 
-Status: **APPROVED on 2 Nov 2026 with the defaults for all five open questions.** Task list approved; build in progress (see tasks/quote-approval/todo.md). Target window: 3–4 Nov 2026 (brief schedule). Decisions to confirm: **one live quote per inquiry, hash computed in code and re-verified at every use, accept and publish as single database transactions, no new tables.**
+Status: **BUILT on 2 Nov 2026** (approved the same day with the defaults for all five open questions). Review: [doc/checkpoints/quote-approval-checkpoint.md](../checkpoints/quote-approval-checkpoint.md): 10 of 11 criteria met locally, CI and the hosted migration open. Target window: 3–4 Nov 2026 (brief schedule). Decisions to confirm: **one live quote per inquiry, hash computed in code and re-verified at every use, accept and publish as single database transactions, no new tables.**
 
 ## 1. Objective
 
@@ -181,17 +181,17 @@ Brief test rows owned here: *model proposes an unknown product ID (rejected befo
 
 ## 11. Success criteria (testable)
 
-- [ ] Demo path A to F passes: total 108000, per box 3600, golden hash, one approval and one purchase after a double accept, supersede refuses the old approval.
-- [ ] Canonical JSON and the hash pass their unit and property tests; the golden hash is committed.
-- [ ] `transition` covers the full table; the database guard rejects every transition the table forbids, including `ACCEPTED → PUBLISHED`.
-- [ ] A blocked configuration, an unknown SKU, and an input carrying an amount or discount each create no quote.
-- [ ] The publish gate holds a quote with `UNSUPPORTED_CUSTOMIZATION` as a draft with the inquiry `REVIEW_REQUIRED`; only a merchant actor can publish it, and the merchant's wording appears in the quote and the hash.
-- [ ] Acceptance refuses a wrong hash, a tampered row, an expired, superseded or withdrawn quote, a changed price and insufficient stock, each with its own code.
-- [ ] Two simultaneous accepts, and an accept racing a publish, are proven safe by database tests.
-- [ ] `verifyApprovalBinding` refuses an approval whose quote is superseded, tampered, or whose hash differs.
-- [ ] RLS and server access tests pass: customers read only their own published or accepted quote; drafts are merchant-only.
-- [ ] `domain/quote` passes the purity test; typecheck, lint, unit, database and E2E tests green locally and in CI.
-- [ ] The order room shows the exact quote, conditions and terms, and the merchant review queue works (richer quote history is cuttable; the gate and the accept flow are not).
+- [x] Demo path A to F passes: total 108000, per box 3600, golden hash, one approval and one purchase after a double accept, supersede refuses the old approval.
+- [x] Canonical JSON and the hash pass their unit and property tests; the golden hash is committed.
+- [x] `transition` covers the full table; the database guard rejects every transition the table forbids, including `ACCEPTED → PUBLISHED`.
+- [x] A blocked configuration, an unknown SKU, and an input carrying an amount or discount each create no quote.
+- [x] The publish gate holds a quote with `UNSUPPORTED_CUSTOMIZATION` as a draft with the inquiry `REVIEW_REQUIRED`; only a merchant actor can publish it, and the merchant's wording appears in the quote and the hash.
+- [x] Acceptance refuses a wrong hash, a tampered row, an expired, superseded or withdrawn quote, a changed price and insufficient stock, each with its own code.
+- [x] Two simultaneous accepts, and an accept racing a publish, are proven safe by database tests.
+- [x] `verifyApprovalBinding` refuses an approval whose quote is superseded, tampered, or whose hash differs.
+- [x] RLS and server access tests pass: customers read only their own published or accepted quote; drafts are merchant-only.
+- [ ] `domain/quote` passes the purity test; typecheck, lint, unit, database and E2E tests green locally and in CI. (Local part met; CI open until the branch is pushed and green.)
+- [x] The order room shows the exact quote, conditions and terms, and the merchant review queue works (richer quote history is cuttable; the gate and the accept flow are not).
 
 ## 12. Task outline (becomes `tasks/quote-approval/` after approval)
 

@@ -1,7 +1,7 @@
 # Tasks: quote-approval
 
 Spec: [doc/spec/SPEC-quote-approval.md](../../doc/spec/SPEC-quote-approval.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T8 built (0005 applied to local only), T9 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: BUILT 2 Nov 2026 (T1 to T9). CI on the branch and the hosted migration are open; see doc/checkpoints/quote-approval-checkpoint.md. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -79,7 +79,7 @@ Status: APPROVED 2 Nov 2026; T1 to T8 built (0005 applied to local only), T9 ope
   - Files: `app/merchant/quotes/page.tsx`, `app/merchant/quotes/actions.ts`, `app/merchant/dev/` (extend), `e2e/quote-review.spec.ts`
   - Depends on: T5. Quote history display is cuttable; the gate and publish action are not.
 
-- [ ] **T9 Checkpoint**
+- [x] **T9 Checkpoint**
   - Acceptance: every spec success criterion reviewed against current state with labeled evidence; CI green on the last code
     commit; record in `doc/checkpoints/quote-approval-checkpoint.md`; statuses updated in `SPEC.md` and this file. Applying 0005
     to the hosted project only after a fresh explicit yes.
