@@ -295,14 +295,14 @@ export function createPayPalClient(config: PayPalConfig) {
           const auth = r.data.purchase_units?.[0]?.payments?.authorizations?.[0];
           if (!auth?.amount) return null;
           const amountMinor = toMinorUnits(auth.amount.value);
-          if (amountMinor === null || auth.amount.currency_code !== "USD") return null;
+          if (amountMinor === null) return null;
           return {
             orderId: r.data.id,
             orderStatus: r.data.status,
             authorizationId: auth.id,
             authorizationStatus: auth.status,
             amountMinor,
-            currency: "USD" as const,
+            currency: auth.amount.currency_code,
             expirationTime: auth.expiration_time,
           };
         },

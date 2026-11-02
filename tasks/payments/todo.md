@@ -1,7 +1,7 @@
 # Tasks: payments
 
 Spec: [doc/spec/SPEC-payments.md](../../doc/spec/SPEC-payments.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T4 built (0007 applied to local only), T5 to T10 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T5 built (0007 applied to local only), T6 to T10 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -58,7 +58,7 @@ Status: APPROVED 2 Nov 2026; T1 to T4 built (0007 applied to local only), T5 to 
 
 ## Phase C: services (local fake PayPal, evidence labeled mocked)
 
-- [ ] **T5 Checkout service: `startCheckout` and `completeApproval`**
+- [x] **T5 Checkout service: `startCheckout` and `completeApproval`**
   - Acceptance: `startCheckout` (verified inquiry only) requires an intact accepted quote, reserves stock through the reservation
     service, creates the attempt and a PayPal order with intent AUTHORIZE for exactly the snapshot's total, USD, with `reference_id`
     set to the attempt id and the `return_url` to the order room, stores the order id and https approval link, and returns the link.

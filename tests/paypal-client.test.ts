@@ -217,6 +217,14 @@ describe("authorizeOrder", () => {
     expect((await client(m.fetch).authorizeOrder("ORDER1", REQUEST_ID)).kind).toBe("malformed");
   });
 
+  it("reports another currency as PayPal gave it, so payments can flag it as an exception", async () => {
+    const body = structuredClone(authorizeBody);
+    body.purchase_units[0].payments.authorizations[0].amount.currency_code = "EUR";
+    const m = mockFetch(() => json(body, 201));
+    const result = await client(m.fetch).authorizeOrder("ORDER1", REQUEST_ID);
+    expect(result.kind === "ok" && result.data.currency).toBe("EUR");
+  });
+
   it("is malformed when the amount is not an exact two-decimal USD string", async () => {
     const body = structuredClone(authorizeBody);
     body.purchase_units[0].payments.authorizations[0].amount.value = "1080";
