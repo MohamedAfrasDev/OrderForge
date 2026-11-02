@@ -143,7 +143,7 @@ All mocked and replayed PayPal tests green. Review with the human, and tell the 
   - Files: none in git (configuration only); notes appended to `README.md`
   - Depends on: Checkpoint C and human prerequisites in the spec §3.
 
-- [ ] **T21 Real sandbox authorize, capture, void**
+- [x] **T21 Real sandbox authorize, capture, void** (real-sandbox authorize+capture and authorize+void succeeded on the hosted site on 2 Nov; tripwire passed, stay on AUTHORIZE; evidence in doc/evidence/foundation-real-sandbox.md)
   - Acceptance: on the hosted preview, authorize + capture succeeds and authorize + void succeeds with a sandbox buyer; evidence stored and labeled `real-sandbox`; forged webhook rejected and a real webhook event deduped; sandbox authorization-expiry behaviour observed and recorded in the spec; CAPTURE-fallback decision recorded (tripwire: end of 3 Nov).
   - Verify: `payment_events` rows exist for each real operation; screenshot or log of the PayPal sandbox dashboard saved under `doc/evidence/`.
   - Files: `doc/evidence/foundation-real-sandbox.md`, `doc/spec/SPEC-foundation.md`

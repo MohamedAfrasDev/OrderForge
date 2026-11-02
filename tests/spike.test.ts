@@ -276,3 +276,39 @@ describe("evidence and secrets", () => {
     expect(everything).not.toContain("fake-access-token");
   });
 });
+
+describe("evidence keeps what PayPal said, so it never exists only on a screen", () => {
+  it("stores each step's detail text in the event payload, truncated", async () => {
+    const { deps, events } = makeDeps();
+    const orderId = await approvedOrder(deps);
+    fake.inject("/capture", {
+      type: "status",
+      status: 422,
+      body: { name: "UNPROCESSABLE_ENTITY", details: [{ issue: "INSTRUMENT_DECLINED" }] },
+    });
+    await finishSpike(deps, { orderId, mode: "capture" });
+
+    const failed = events.find((e) => e.event_type === "spike.capture_failed");
+    expect(failed?.payload.detail).toContain("HTTP 422");
+    expect(failed?.payload.detail).toContain("UNPROCESSABLE_ENTITY");
+    expect(failed?.payload.detail).toContain("INSTRUMENT_DECLINED");
+    for (const e of events) expect(String(e.payload.detail ?? "").length).toBeLessThanOrEqual(300);
+  });
+
+  it("records PayPal's real refusal for voiding an authorization that was already captured", async () => {
+    const { deps, events } = makeDeps();
+    const orderId = await approvedOrder(deps);
+    await finishSpike(deps, { orderId, mode: "capture" });
+
+    const rerun = await finishSpike(deps, { orderId, mode: "void" });
+
+    expect(stepNames(rerun)).toEqual(["authorize_skipped", "void_failed"]);
+    expect(rerun.steps[1].outcome).toBe("failed");
+    expect(rerun.steps[1].detail).toContain("HTTP 422 UNPROCESSABLE_ENTITY");
+    expect(rerun.steps[1].detail).toContain("PREVIOUSLY_CAPTURED");
+    const stored = events.filter((e) => e.event_type === "spike.void_failed").at(-1);
+    expect(stored?.payload.detail).toContain("PREVIOUSLY_CAPTURED");
+    // The capture is untouched.
+    expect(capturesFor(orderId)).toHaveLength(1);
+  });
+});

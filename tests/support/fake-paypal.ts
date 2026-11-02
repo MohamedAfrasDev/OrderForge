@@ -144,7 +144,8 @@ export async function startFakePayPal(options: { port?: number } = {}): Promise<
     if (method === "POST" && m) {
       const auth = authorizations.get(m[1]);
       if (!auth) return error(404, "RESOURCE_NOT_FOUND", "INVALID_RESOURCE_ID");
-      if (auth.status === "CAPTURED") return error(422, "UNPROCESSABLE_ENTITY", "AUTHORIZATION_ALREADY_CAPTURED");
+      // Observed on the real sandbox (T21): voiding a captured authorization is HTTP 422 PREVIOUSLY_CAPTURED.
+      if (auth.status === "CAPTURED") return error(422, "UNPROCESSABLE_ENTITY", "PREVIOUSLY_CAPTURED");
       if (auth.status === "VOIDED") return error(422, "UNPROCESSABLE_ENTITY", "AUTHORIZATION_VOIDED");
       auth.status = "VOIDED";
       return prefer?.includes("return=representation") ? { status: 200, body: authBody(auth) } : { status: 204 };

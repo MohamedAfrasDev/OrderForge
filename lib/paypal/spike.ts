@@ -67,7 +67,8 @@ async function log(
     event_type: `spike.${step}`,
     source: "spike",
     evidence_label: deps.evidenceLabel,
-    payload: { outcome, order_id: orderId, ...data },
+    // The detail is what PayPal actually said (HTTP status, error name, issues). Keep it with the evidence.
+    payload: { outcome, order_id: orderId, detail: detail.slice(0, 300), ...data },
   });
   await audit(deps.insertAudit, {
     actor: deps.actor,
