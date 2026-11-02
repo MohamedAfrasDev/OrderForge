@@ -1,7 +1,7 @@
 # Tasks: quote-approval
 
 Spec: [doc/spec/SPEC-quote-approval.md](../../doc/spec/SPEC-quote-approval.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T6 built (0005 applied to local only), T7 to T9 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T7 built (0005 applied to local only), T8 and T9 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -64,7 +64,7 @@ Status: APPROVED 2 Nov 2026; T1 to T6 built (0005 applied to local only), T7 to 
 
 ## Phase D: screens and review
 
-- [ ] **T7 Customer quote card in the order room**
+- [x] **T7 Customer quote card in the order room**
   - Acceptance: `readCustomerQuote` returns only the inquiry's own `PUBLISHED` or `ACCEPTED` quote (never a draft); `/o/[token]`
     shows lines, totals, disclosed conditions, terms and an accept action bound to the shown hash; refresh after accepting shows
     the accepted state; superseded or expired quotes show no accept button; sandbox banner stays visible.
