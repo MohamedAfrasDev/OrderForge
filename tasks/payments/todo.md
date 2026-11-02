@@ -1,7 +1,7 @@
 # Tasks: payments
 
 Spec: [doc/spec/SPEC-payments.md](../../doc/spec/SPEC-payments.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T3 built (0007 applied to local only), T4 to T10 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T4 built (0007 applied to local only), T5 to T10 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -45,7 +45,7 @@ Status: APPROVED 2 Nov 2026; T1 to T3 built (0007 applied to local only), T4 to 
   - Files: `supabase/migrations/0007_payments.sql` (extend), `tests/db/payments-begin-settle.test.ts`
   - Depends on: T2.
 
-- [ ] **T4 `payment_decide`, `payment_resolve_unknown`, `payment_expire`**
+- [x] **T4 `payment_decide`, `payment_resolve_unknown`, `payment_expire`**
   - Acceptance: `payment_decide` moves the decision `pending` to `accepted` or `declined` under the decision row's lock and begins
     capture or void in the same transaction; accepting needs every pending condition confirmed (`CONDITIONS_UNCONFIRMED`), declining
     a reason (`REASON_REQUIRED`); a repeated decision returns the existing one (`DECISION_ALREADY_MADE`) and starts nothing new.

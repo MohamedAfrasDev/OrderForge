@@ -472,18 +472,121 @@ begin
 end;
 $$;
 
--- 4c. payment_settle ---------------------------------------------------------------------------------
--- Payments calls this after PayPal's own answer (or a reconciliation) says what happened. The attempt, the reservation
--- and, for AUTHORIZED, the pending merchant decision are changed in one transaction. Outcomes:
+-- 4c. internal: apply an outcome to the attempt, the reservation and the decision -------------------------------
+-- The one place the effects of an outcome are written, shared by payment_settle (an operation that was in flight) and
+-- payment_resolve_unknown (an uncertain one resolved by PayPal's evidence). Callers have validated the inputs, checked
+-- that the outcome fits, and hold the purchase and attempt row locks. The reservation settles first: if it refuses, the
+-- whole transaction rolls back. Returns the attempt's new state.
+create or replace function public.payment_apply_outcome(
+  p_attempt_id               uuid,
+  p_outcome                  text,
+  p_op                       text,
+  p_now                      timestamptz,
+  p_authorization_id         text default null,
+  p_authorization_expires_at timestamptz default null,
+  p_capture_id               text default null,
+  p_failure_code             text default null,
+  p_exception_reason         text default null,
+  p_release_reason           text default null,
+  p_note                     text default null,
+  p_hold_minutes             integer default 30
+)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_att      public.payment_attempts%rowtype;
+  v_purchase public.purchases%rowtype;
+  v_dec      public.merchant_decisions%rowtype;
+  v_res_id   uuid;
+  v_failure  text := left(btrim(coalesce(p_failure_code, '')), 65);
+  v_note     text;
+  v_state    text;
+begin
+  select * into v_att from public.payment_attempts where id = p_attempt_id;
+  select * into v_purchase from public.purchases where id = v_att.purchase_id;
+
+  v_note := coalesce(
+    nullif(left(btrim(coalesce(p_note, '')), 200), ''),
+    case when p_outcome = 'EXCEPTION' then 'financial exception: ' || p_exception_reason else null end);
+
+  select id into v_res_id from public.reservations where purchase_id = v_att.purchase_id for update;
+  if v_res_id is null then
+    raise exception 'payment_settle: purchase % has a payment in doubt or in flight but no reservation', v_att.purchase_id;
+  end if;
+  perform public.payment_settle_reservation(v_res_id, p_outcome, p_now, p_hold_minutes, coalesce(p_release_reason, 'DECLINED'), v_note);
+
+  if p_outcome = 'AUTHORIZED' then
+    update public.payment_attempts
+       set state = 'AUTHORIZED', unknown_operation = null, authorization_id = p_authorization_id, authorized_at = p_now,
+           authorization_expires_at = p_authorization_expires_at, state_changed_at = p_now
+     where id = v_att.id;
+
+    select * into v_dec from public.merchant_decisions where purchase_id = v_att.purchase_id for update;
+    if not found then
+      insert into public.merchant_decisions (purchase_id, quote_version_id, merchant_id, authorization_id)
+      values (v_att.purchase_id, v_purchase.quote_version_id, v_purchase.merchant_id, p_authorization_id);
+    elsif v_dec.decision = 'pending' then
+      update public.merchant_decisions set authorization_id = p_authorization_id where id = v_dec.id;
+    else
+      raise exception 'payment_settle: purchase % already has a final decision', v_att.purchase_id;
+    end if;
+    v_state := 'AUTHORIZED';
+
+  elsif p_outcome = 'AUTHORIZE_FAILED' then
+    update public.payment_attempts set state = 'FAILED', unknown_operation = null, failure_code = v_failure, state_changed_at = p_now where id = v_att.id;
+    v_state := 'FAILED';
+
+  elsif p_outcome = 'AUTHORIZE_NOT_DONE' then
+    update public.payment_attempts set state = 'APPROVED', unknown_operation = null, state_changed_at = p_now where id = v_att.id;
+    v_state := 'APPROVED';
+
+  elsif p_outcome = 'CAPTURED' then
+    update public.payment_attempts set state = 'CAPTURED', unknown_operation = null, capture_id = p_capture_id, state_changed_at = p_now where id = v_att.id;
+    v_state := 'CAPTURED';
+
+  elsif p_outcome in ('CAPTURE_FAILED', 'VOID_FAILED') then
+    update public.payment_attempts set state = 'AUTHORIZED', unknown_operation = null, state_changed_at = p_now where id = v_att.id;
+    v_state := 'AUTHORIZED';
+
+  elsif p_outcome = 'VOIDED' then
+    update public.payment_attempts set state = 'VOIDED', unknown_operation = null, state_changed_at = p_now where id = v_att.id;
+    v_state := 'VOIDED';
+
+  elsif p_outcome = 'UNKNOWN' then
+    update public.payment_attempts set state = 'OUTCOME_UNKNOWN', unknown_operation = p_op, state_changed_at = p_now where id = v_att.id;
+    v_state := 'OUTCOME_UNKNOWN';
+
+  else
+    -- EXCEPTION: keep whatever evidence PayPal gave, so a person can find it.
+    update public.payment_attempts
+       set state = 'EXCEPTION', unknown_operation = null, exception_reason = p_exception_reason, state_changed_at = p_now,
+           authorization_id = coalesce(authorization_id, p_authorization_id),
+           authorized_at = case when authorization_id is null and p_authorization_id is not null then p_now else authorized_at end,
+           capture_id = coalesce(capture_id, p_capture_id)
+     where id = v_att.id;
+    v_state := 'EXCEPTION';
+  end if;
+
+  return v_state;
+end;
+$$;
+
+-- 4d. payment_settle ---------------------------------------------------------------------------------
+-- Payments calls this after PayPal's own answer says what happened to an operation that was IN FLIGHT. The attempt, the
+-- reservation and, for AUTHORIZED, the pending merchant decision are changed in one transaction. Outcomes:
 --   AUTHORIZED          needs p_authorization_id; the reservation awaits the merchant; the pending decision is created
 --   AUTHORIZE_FAILED    needs p_failure_code; the attempt FAILED, the hold restarts (p_hold_minutes)
---   AUTHORIZE_NOT_DONE  reconciled: nothing was authorized; back to APPROVED, the hold restarts
+--   AUTHORIZE_NOT_DONE  nothing was authorized; back to APPROVED, the hold restarts
 --   CAPTURED            needs p_capture_id; the stock is committed
 --   CAPTURE_FAILED / VOID_FAILED  back to AUTHORIZED, awaiting the merchant
 --   VOIDED              the stock is released (p_release_reason DECLINED by default, or VOIDED)
 --   UNKNOWN             OUTCOME_UNKNOWN for the operation in flight; the reservation goes to review (p_note kept)
 --   EXCEPTION           needs p_exception_reason; final; the reservation goes to review, stock held
--- Repeating a success outcome whose state is already reached returns the same result and changes nothing.
+-- Repeating a success outcome whose state is already reached returns the same result and changes nothing. An attempt that is
+-- OUTCOME_UNKNOWN is refused here: payment_resolve_unknown is the only way out of doubt.
 create or replace function public.payment_settle(
   p_attempt_id               uuid,
   p_outcome                  text,
@@ -504,14 +607,10 @@ set search_path = ''
 as $$
 declare
   v_purchase_id uuid;
-  v_purchase    public.purchases%rowtype;
   v_att         public.payment_attempts%rowtype;
-  v_dec         public.merchant_decisions%rowtype;
-  v_res_id      uuid;
   v_op          text;
   v_owner       text;
   v_failure     text := left(btrim(coalesce(p_failure_code, '')), 65);
-  v_note        text;
   v_state       text;
 begin
   if p_now is null or p_outcome is null
@@ -535,7 +634,7 @@ begin
   if v_purchase_id is null then
     return jsonb_build_object('ok', false, 'code', 'NOT_FOUND');
   end if;
-  select * into v_purchase from public.purchases where id = v_purchase_id for update;
+  perform 1 from public.purchases where id = v_purchase_id for update;
   select * into v_att from public.payment_attempts where id = p_attempt_id for update;
 
   -- A success outcome whose state was already reached is a no-op.
@@ -565,68 +664,9 @@ begin
     return jsonb_build_object('ok', false, 'code', 'ILLEGAL_TRANSITION', 'state', v_att.state);
   end if;
 
-  v_note := coalesce(
-    nullif(left(btrim(coalesce(p_note, '')), 200), ''),
-    case when p_outcome = 'EXCEPTION' then 'financial exception: ' || p_exception_reason else null end);
-
-  -- The reservation settles first: if it refuses, everything rolls back.
-  select id into v_res_id from public.reservations where purchase_id = v_purchase_id for update;
-  if v_res_id is null then
-    raise exception 'payment_settle: purchase % has an attempt in flight but no reservation', v_purchase_id;
-  end if;
-  perform public.payment_settle_reservation(v_res_id, p_outcome, p_now, p_hold_minutes, coalesce(p_release_reason, 'DECLINED'), v_note);
-
-  if p_outcome = 'AUTHORIZED' then
-    update public.payment_attempts
-       set state = 'AUTHORIZED', authorization_id = p_authorization_id, authorized_at = p_now,
-           authorization_expires_at = p_authorization_expires_at, state_changed_at = p_now
-     where id = v_att.id;
-
-    select * into v_dec from public.merchant_decisions where purchase_id = v_purchase_id for update;
-    if not found then
-      insert into public.merchant_decisions (purchase_id, quote_version_id, merchant_id, authorization_id)
-      values (v_purchase_id, v_purchase.quote_version_id, v_purchase.merchant_id, p_authorization_id);
-    elsif v_dec.decision = 'pending' then
-      update public.merchant_decisions set authorization_id = p_authorization_id where id = v_dec.id;
-    else
-      raise exception 'payment_settle: purchase % already has a final decision', v_purchase_id;
-    end if;
-    v_state := 'AUTHORIZED';
-
-  elsif p_outcome = 'AUTHORIZE_FAILED' then
-    update public.payment_attempts set state = 'FAILED', failure_code = v_failure, state_changed_at = p_now where id = v_att.id;
-    v_state := 'FAILED';
-
-  elsif p_outcome = 'AUTHORIZE_NOT_DONE' then
-    update public.payment_attempts set state = 'APPROVED', state_changed_at = p_now where id = v_att.id;
-    v_state := 'APPROVED';
-
-  elsif p_outcome = 'CAPTURED' then
-    update public.payment_attempts set state = 'CAPTURED', capture_id = p_capture_id, state_changed_at = p_now where id = v_att.id;
-    v_state := 'CAPTURED';
-
-  elsif p_outcome in ('CAPTURE_FAILED', 'VOID_FAILED') then
-    update public.payment_attempts set state = 'AUTHORIZED', state_changed_at = p_now where id = v_att.id;
-    v_state := 'AUTHORIZED';
-
-  elsif p_outcome = 'VOIDED' then
-    update public.payment_attempts set state = 'VOIDED', state_changed_at = p_now where id = v_att.id;
-    v_state := 'VOIDED';
-
-  elsif p_outcome = 'UNKNOWN' then
-    update public.payment_attempts set state = 'OUTCOME_UNKNOWN', unknown_operation = v_op, state_changed_at = p_now where id = v_att.id;
-    v_state := 'OUTCOME_UNKNOWN';
-
-  else
-    -- EXCEPTION: keep whatever evidence PayPal gave, so a person can find it.
-    update public.payment_attempts
-       set state = 'EXCEPTION', exception_reason = p_exception_reason, state_changed_at = p_now,
-           authorization_id = coalesce(authorization_id, p_authorization_id),
-           authorized_at = case when authorization_id is null and p_authorization_id is not null then p_now else authorized_at end,
-           capture_id = coalesce(capture_id, p_capture_id)
-     where id = v_att.id;
-    v_state := 'EXCEPTION';
-  end if;
+  v_state := public.payment_apply_outcome(
+    v_att.id, p_outcome, v_op, p_now, p_authorization_id, p_authorization_expires_at, p_capture_id,
+    p_failure_code, p_exception_reason, p_release_reason, p_note, p_hold_minutes);
 
   return jsonb_build_object('ok', true, 'already', false, 'attempt_id', v_att.id, 'state', v_state);
 end;
@@ -638,3 +678,292 @@ revoke all on function public.payment_begin(uuid, text, timestamptz) from public
 revoke all on function public.payment_settle(uuid, text, timestamptz, text, timestamptz, text, text, text, text, text, integer) from public, anon, authenticated;
 grant execute on function public.payment_begin(uuid, text, timestamptz) to service_role;
 grant execute on function public.payment_settle(uuid, text, timestamptz, text, timestamptz, text, text, text, text, text, integer) to service_role;
+revoke all on function public.payment_apply_outcome(uuid, text, text, timestamptz, text, timestamptz, text, text, text, text, text, integer) from public, anon, authenticated, service_role;
+
+-- ================================================================================================
+-- Part 3: the merchant decision, resolving doubt, and expiry.
+-- Lock order stays: purchase row (the serializer for everything about one purchase), then the decision row, then the
+-- attempt row, then the reservation row.
+-- ================================================================================================
+
+-- 5a. payment_decide ---------------------------------------------------------------------------------
+-- The merchant's single decision on an authorized order. Under the decision row's lock it moves pending to accepted or
+-- declined and, in the same transaction, begins the capture or the void (payment_begin). If the begin is refused, the
+-- decision is rolled back to pending and the refusal is returned, so a decision is never recorded that cannot be acted
+-- on. A second decision, the same or the opposite, is DECISION_ALREADY_MADE and begins nothing: a confirm racing a
+-- decline has exactly one winner, and a capture and a void can never both start.
+--   accepted: every pending condition on the quote (production slot, artwork) must be in p_confirmed_conditions.
+--   declined: a reason is required.
+create or replace function public.payment_decide(
+  p_purchase_id          uuid,
+  p_merchant_id          uuid,
+  p_decision             text,
+  p_confirmed_conditions jsonb,
+  p_reason               text,
+  p_now                  timestamptz
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_purchase  public.purchases%rowtype;
+  v_dec       public.merchant_decisions%rowtype;
+  v_att       public.payment_attempts%rowtype;
+  v_reason    text := left(btrim(coalesce(p_reason, '')), 501);
+  v_confirmed jsonb := coalesce(p_confirmed_conditions, '[]'::jsonb);
+  v_missing   jsonb;
+  v_begin     jsonb;
+  v_failure   jsonb;
+  v_op        text;
+begin
+  if p_now is null or p_merchant_id is null or p_decision is null or p_decision not in ('accepted', 'declined') then
+    return jsonb_build_object('ok', false, 'code', 'INVALID_INPUT');
+  end if;
+  if jsonb_typeof(v_confirmed) <> 'array' or jsonb_array_length(v_confirmed) > 10
+     or exists (select 1 from jsonb_array_elements(v_confirmed) e
+                 where jsonb_typeof(e) <> 'string' or length(e #>> '{}') > 64) then
+    return jsonb_build_object('ok', false, 'code', 'INVALID_INPUT');
+  end if;
+  if p_decision = 'declined' then
+    if length(v_reason) < 1 then
+      return jsonb_build_object('ok', false, 'code', 'REASON_REQUIRED');
+    end if;
+    if length(v_reason) > 500 then
+      return jsonb_build_object('ok', false, 'code', 'INVALID_INPUT');
+    end if;
+  end if;
+
+  select * into v_purchase from public.purchases where id = p_purchase_id and merchant_id = p_merchant_id for update;
+  if not found then
+    return jsonb_build_object('ok', false, 'code', 'NOT_FOUND');
+  end if;
+
+  select * into v_dec from public.merchant_decisions where purchase_id = p_purchase_id for update;
+  if not found then
+    return jsonb_build_object('ok', false, 'code', 'NOT_FOUND', 'cause', 'no payment is waiting for a decision');
+  end if;
+  if v_dec.decision <> 'pending' then
+    return jsonb_build_object('ok', false, 'code', 'DECISION_ALREADY_MADE', 'decision', v_dec.decision);
+  end if;
+
+  select * into v_att from public.payment_attempts where purchase_id = p_purchase_id and state = 'AUTHORIZED' for update;
+  if not found then
+    return jsonb_build_object('ok', false, 'code', 'ILLEGAL_TRANSITION', 'cause', 'the payment is not waiting for a decision');
+  end if;
+
+  if p_decision = 'accepted' then
+    select coalesce(jsonb_agg(g.code order by g.ord), '[]'::jsonb) into v_missing
+      from (
+        select c ->> 'code' as code, min(t.ord) as ord
+          from public.quote_versions q
+          cross join lateral jsonb_array_elements(q.pending_conditions) with ordinality as t(c, ord)
+         where q.id = v_purchase.quote_version_id
+           and c ->> 'code' in ('PRODUCTION_SLOT_CONFIRMATION', 'ARTWORK_ACCEPTANCE')
+         group by c ->> 'code'
+      ) g
+     where not (v_confirmed ? g.code);
+    if jsonb_array_length(v_missing) > 0 then
+      return jsonb_build_object('ok', false, 'code', 'CONDITIONS_UNCONFIRMED', 'missing', v_missing);
+    end if;
+  end if;
+
+  v_op := case p_decision when 'accepted' then 'capture' else 'void' end;
+
+  begin
+    update public.merchant_decisions
+       set decision = p_decision, decided_at = p_now,
+           confirmed_conditions = case when p_decision = 'accepted' then v_confirmed else '[]'::jsonb end,
+           reason = case when p_decision = 'declined' then v_reason else null end
+     where id = v_dec.id;
+
+    v_begin := public.payment_begin(v_att.id, v_op, p_now);
+    if not coalesce((v_begin ->> 'ok')::boolean, false) then
+      v_failure := v_begin;
+      -- Roll the decision back: it must never be recorded if the operation cannot begin.
+      raise exception 'payment_decide: the operation could not begin' using errcode = 'P0001';
+    end if;
+  exception when raise_exception then
+    if v_failure is null then
+      raise;
+    end if;
+    return v_failure;
+  end;
+
+  return jsonb_build_object('ok', true, 'already', false, 'decision', p_decision, 'state', v_begin ->> 'state',
+                            'operation', v_op, 'attempt_id', v_att.id, 'authorization_id', v_att.authorization_id);
+end;
+$$;
+
+-- 5b. payment_resolve_unknown ---------------------------------------------------------------------------
+-- The only way out of OUTCOME_UNKNOWN. The caller has asked PayPal what really happened and passes its evidence. Which
+-- resolutions fit depends on the operation that was uncertain:
+--   authorize: AUTHORIZED (needs p_authorization_id) | APPROVED (it never happened) | FAILED (needs p_failure_code) | EXCEPTION
+--   capture:   CAPTURED (needs p_capture_id) | AUTHORIZED (it never happened) | EXCEPTION
+--   void:      VOIDED | AUTHORIZED (it never happened) | EXCEPTION
+-- EXCEPTION needs p_exception_reason. Effects on the reservation and the decision are the same as for payment_settle.
+create or replace function public.payment_resolve_unknown(
+  p_attempt_id               uuid,
+  p_resolution               text,
+  p_now                      timestamptz,
+  p_authorization_id         text default null,
+  p_authorization_expires_at timestamptz default null,
+  p_capture_id               text default null,
+  p_failure_code             text default null,
+  p_exception_reason         text default null,
+  p_release_reason           text default null,
+  p_note                     text default null,
+  p_hold_minutes             integer default 30
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_purchase_id uuid;
+  v_att         public.payment_attempts%rowtype;
+  v_op          text;
+  v_outcome     text;
+  v_failure     text := left(btrim(coalesce(p_failure_code, '')), 65);
+  v_state       text;
+begin
+  if p_now is null or p_resolution is null
+     or p_resolution not in ('AUTHORIZED', 'APPROVED', 'FAILED', 'CAPTURED', 'VOIDED', 'EXCEPTION')
+     or p_hold_minutes is null or p_hold_minutes < 1
+     or (p_authorization_id is not null and p_authorization_id !~ '^[A-Za-z0-9_-]{1,64}$')
+     or (p_capture_id is not null and p_capture_id !~ '^[A-Za-z0-9_-]{1,64}$')
+     or (p_exception_reason is not null and p_exception_reason not in (
+           'ORDER_MISMATCH', 'AUTHORIZATION_MISMATCH', 'STATUS_NOT_AS_EXPECTED', 'AMOUNT_MISMATCH',
+           'CURRENCY_MISMATCH', 'PAYEE_MISMATCH', 'EVIDENCE_MISSING'))
+     or (p_release_reason is not null and p_release_reason not in ('DECLINED', 'VOIDED'))
+     or (p_resolution = 'CAPTURED' and p_capture_id is null)
+     or (p_resolution = 'EXCEPTION' and p_exception_reason is null)
+     or (p_resolution = 'FAILED' and (length(v_failure) < 1 or length(v_failure) > 64)) then
+    return jsonb_build_object('ok', false, 'code', 'INVALID_INPUT');
+  end if;
+
+  select purchase_id into v_purchase_id from public.payment_attempts where id = p_attempt_id;
+  if v_purchase_id is null then
+    return jsonb_build_object('ok', false, 'code', 'NOT_FOUND');
+  end if;
+  perform 1 from public.purchases where id = v_purchase_id for update;
+  select * into v_att from public.payment_attempts where id = p_attempt_id for update;
+
+  if v_att.state <> 'OUTCOME_UNKNOWN' then
+    -- Already resolved to the same thing: a no-op.
+    if v_att.state = p_resolution
+       and (p_resolution <> 'CAPTURED' or v_att.capture_id = p_capture_id)
+       and (p_resolution <> 'AUTHORIZED' or p_authorization_id is null or v_att.authorization_id = p_authorization_id) then
+      return jsonb_build_object('ok', true, 'already', true, 'attempt_id', v_att.id, 'state', v_att.state);
+    end if;
+    return jsonb_build_object('ok', false, 'code', 'ILLEGAL_TRANSITION', 'state', v_att.state);
+  end if;
+
+  v_op := v_att.unknown_operation;
+  v_outcome := case
+    when v_op = 'authorize' and p_resolution = 'AUTHORIZED' then 'AUTHORIZED'
+    when v_op = 'authorize' and p_resolution = 'APPROVED' then 'AUTHORIZE_NOT_DONE'
+    when v_op = 'authorize' and p_resolution = 'FAILED' then 'AUTHORIZE_FAILED'
+    when v_op = 'capture' and p_resolution = 'CAPTURED' then 'CAPTURED'
+    when v_op = 'capture' and p_resolution = 'AUTHORIZED' then 'CAPTURE_FAILED'
+    when v_op = 'void' and p_resolution = 'VOIDED' then 'VOIDED'
+    when v_op = 'void' and p_resolution = 'AUTHORIZED' then 'VOID_FAILED'
+    when p_resolution = 'EXCEPTION' then 'EXCEPTION'
+    else null end;
+  if v_outcome is null then
+    return jsonb_build_object('ok', false, 'code', 'ILLEGAL_TRANSITION', 'state', v_att.state, 'cause', 'that resolution does not fit the uncertain operation');
+  end if;
+  if v_outcome = 'AUTHORIZED' and p_authorization_id is null then
+    return jsonb_build_object('ok', false, 'code', 'INVALID_INPUT');
+  end if;
+
+  v_state := public.payment_apply_outcome(
+    v_att.id, v_outcome, v_op, p_now, p_authorization_id, p_authorization_expires_at, p_capture_id,
+    p_failure_code, p_exception_reason, p_release_reason, p_note, p_hold_minutes);
+
+  return jsonb_build_object('ok', true, 'already', false, 'attempt_id', v_att.id, 'state', v_state);
+end;
+$$;
+
+-- 5c. payment_expire ----------------------------------------------------------------------------------
+-- Ends an attempt that can no longer succeed because time ran out:
+--   before authorization (CREATED, PROVIDER_CREATED, APPROVED): only once the reservation's hold has run out (or the
+--     reservation is already released). The reservation itself is left to the sweep.
+--   AUTHORIZED: only once PayPal's authorization expiry on file has been reached. The reservation is sent to review and
+--     resolved as released (EXPIRED) with the evidence, so the stock goes back. The pending decision is left pending: a
+--     new attempt can authorize again on it.
+create or replace function public.payment_expire(
+  p_attempt_id uuid,
+  p_evidence   text,
+  p_now        timestamptz
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_purchase_id uuid;
+  v_att         public.payment_attempts%rowtype;
+  v_res         public.reservations%rowtype;
+  v_evidence    text := left(btrim(coalesce(p_evidence, '')), 201);
+  v_out         jsonb;
+begin
+  if p_now is null or length(v_evidence) < 1 or length(v_evidence) > 200 then
+    return jsonb_build_object('ok', false, 'code', 'INVALID_INPUT');
+  end if;
+
+  select purchase_id into v_purchase_id from public.payment_attempts where id = p_attempt_id;
+  if v_purchase_id is null then
+    return jsonb_build_object('ok', false, 'code', 'NOT_FOUND');
+  end if;
+  perform 1 from public.purchases where id = v_purchase_id for update;
+  select * into v_att from public.payment_attempts where id = p_attempt_id for update;
+
+  if v_att.state = 'EXPIRED' then
+    return jsonb_build_object('ok', true, 'already', true, 'attempt_id', v_att.id, 'state', 'EXPIRED');
+  end if;
+
+  if v_att.state in ('CREATED', 'PROVIDER_CREATED', 'APPROVED') then
+    select * into v_res from public.reservations where purchase_id = v_purchase_id for update;
+    if found and v_res.state = 'HELD' and v_res.expires_at is not null and v_res.expires_at > p_now then
+      return jsonb_build_object('ok', false, 'code', 'ILLEGAL_TRANSITION', 'state', v_att.state, 'cause', 'the hold has not run out');
+    end if;
+    update public.payment_attempts set state = 'EXPIRED', state_changed_at = p_now where id = v_att.id;
+    return jsonb_build_object('ok', true, 'already', false, 'attempt_id', v_att.id, 'state', 'EXPIRED');
+  end if;
+
+  if v_att.state = 'AUTHORIZED' then
+    if v_att.authorization_expires_at is null or p_now < v_att.authorization_expires_at then
+      return jsonb_build_object('ok', false, 'code', 'ILLEGAL_TRANSITION', 'state', v_att.state, 'cause', 'the authorization has not expired');
+    end if;
+
+    select * into v_res from public.reservations where purchase_id = v_purchase_id for update;
+    if not found or v_res.state <> 'AWAITING_CONFIRMATION' then
+      raise exception 'payment_expire: the reservation of purchase % is not awaiting confirmation', v_purchase_id;
+    end if;
+    v_out := public.flag_for_review(v_res.id, 'authorization expired', p_now);
+    if not coalesce((v_out ->> 'ok')::boolean, false) then
+      raise exception 'payment_expire: the reservation refused review (%)', v_out ->> 'code';
+    end if;
+    v_out := public.resolve_review(v_res.id, 'RELEASED', v_evidence, p_now, 30, 'EXPIRED');
+    if not coalesce((v_out ->> 'ok')::boolean, false) then
+      raise exception 'payment_expire: the reservation refused release (%)', v_out ->> 'code';
+    end if;
+
+    update public.payment_attempts set state = 'EXPIRED', state_changed_at = p_now where id = v_att.id;
+    return jsonb_build_object('ok', true, 'already', false, 'attempt_id', v_att.id, 'state', 'EXPIRED');
+  end if;
+
+  return jsonb_build_object('ok', false, 'code', 'ILLEGAL_TRANSITION', 'state', v_att.state);
+end;
+$$;
+
+revoke all on function public.payment_decide(uuid, uuid, text, jsonb, text, timestamptz) from public, anon, authenticated;
+revoke all on function public.payment_resolve_unknown(uuid, text, timestamptz, text, timestamptz, text, text, text, text, text, integer) from public, anon, authenticated;
+revoke all on function public.payment_expire(uuid, text, timestamptz) from public, anon, authenticated;
+grant execute on function public.payment_decide(uuid, uuid, text, jsonb, text, timestamptz) to service_role;
+grant execute on function public.payment_resolve_unknown(uuid, text, timestamptz, text, timestamptz, text, text, text, text, text, integer) to service_role;
+grant execute on function public.payment_expire(uuid, text, timestamptz) to service_role;

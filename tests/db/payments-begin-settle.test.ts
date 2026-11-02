@@ -408,7 +408,7 @@ describe("payment_settle", () => {
   describe("repeating and racing", () => {
     it.each([
       ["AUTHORIZED", async (s: Setup): Promise<void> => { await begin(s.attemptId, "authorize"); }, { p_authorization_id: "AUTH-REPEAT" }],
-      ["CAPTURED", async (s: Setup): Promise<void> => { await authorize(s); await decide(s, "accepted"); await begin(s.attemptId, "capture"); }, { p_capture_id: "CAP-REPEAT" }],
+      ["CAPTURED", async (s: Setup): Promise<void> => { await authorize(s); await decide(s, "accepted"); await begin(s.attemptId, "capture"); }, { p_capture_id: "CAP-REPEAT-" + unique("R") }],
       ["VOIDED", async (s: Setup): Promise<void> => { await authorize(s); await decide(s, "declined"); await begin(s.attemptId, "void"); }, {}],
       ["UNKNOWN", async (s: Setup): Promise<void> => { await begin(s.attemptId, "authorize"); }, {}],
       ["EXCEPTION", async (s: Setup): Promise<void> => { await begin(s.attemptId, "authorize"); }, { p_exception_reason: "ORDER_MISMATCH" }],
@@ -436,7 +436,8 @@ describe("payment_settle", () => {
       const s = await setup("AUTHORIZED");
       await decide(s, "accepted");
       await begin(s.attemptId, "capture");
-      const results = await Promise.all(Array.from({ length: 5 }, () => settle(s.attemptId, "CAPTURED", { p_capture_id: "CAP-RACE" })));
+      const sharedCapture = unique("CAP");
+      const results = await Promise.all(Array.from({ length: 5 }, () => settle(s.attemptId, "CAPTURED", { p_capture_id: sharedCapture })));
       expect(results.every((r) => r.ok)).toBe(true);
       expect(results.filter((r) => r.already === false)).toHaveLength(1);
       expect(await s.stock()).toEqual({ on_hand: 6, reserved: 0 });
@@ -447,7 +448,7 @@ describe("payment_settle", () => {
       const s = await setup();
       await begin(s.attemptId, "authorize");
       for (const outcome of ["CAPTURED", "CAPTURE_FAILED", "VOIDED", "VOID_FAILED"]) {
-        expect(await settle(s.attemptId, outcome, { p_capture_id: "CAP-X" }), outcome).toMatchObject({ ok: false, code: "ILLEGAL_TRANSITION" });
+        expect(await settle(s.attemptId, outcome, { p_capture_id: unique("CAP") }), outcome).toMatchObject({ ok: false, code: "ILLEGAL_TRANSITION" });
       }
       expect((await s.attempt()).state).toBe("AUTHORIZE_IN_FLIGHT");
 
@@ -484,7 +485,7 @@ describe("payment_settle", () => {
         await decide(x, "accepted");
         await begin(x.attemptId, "capture");
       });
-      expect(await settle(s.attemptId, "CAPTURED", { p_capture_id: "CAP-LATE" })).toMatchObject({ ok: true, state: "CAPTURED" });
+      expect(await settle(s.attemptId, "CAPTURED", { p_capture_id: unique("CAP") })).toMatchObject({ ok: true, state: "CAPTURED" });
       expect((await s.reservation())!.state).toBe("COMMITTED");
       expect(await s.stock()).toEqual({ on_hand: 6, reserved: 0 });
       await expectPaired(s);
