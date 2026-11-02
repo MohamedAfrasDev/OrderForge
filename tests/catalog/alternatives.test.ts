@@ -90,6 +90,16 @@ describe("proposeAlternatives: rules", () => {
     expect(proposeAlternatives(big, { limit: 100 }).considered).toBe(39);
   });
 
+  it("never offers an SKU the catalog does not have, even if a slot's list names it", () => {
+    const ghostly: Catalog = {
+      ...catalog,
+      slots: [{ ...slots[0]!, allowedSkus: ["A1", "GHOST", "A2"] }, slots[1]!],
+    };
+    const r = proposeAlternatives({ ...base, catalog: ghostly });
+    expect(r.alternatives.map((a) => a.toSku)).toEqual(["A2", "B2"]);
+    expect(r.considered).toBe(3); // GHOST was tried and rejected by validation
+  });
+
   it("rejects a limit below 1 or not an integer", () => {
     expect(() => proposeAlternatives(base, { limit: 0 })).toThrow(RangeError);
     expect(() => proposeAlternatives(base, { limit: 1.5 })).toThrow(RangeError);

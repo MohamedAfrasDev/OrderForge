@@ -1,7 +1,7 @@
 # Tasks: catalog-engine
 
 Spec: [doc/spec/SPEC-catalog-engine.md](../../doc/spec/SPEC-catalog-engine.md) · Plan: [plan.md](plan.md)
-Status: IN PROGRESS (build started 2 Nov 2026 on the human's go-ahead). Tick a box only after its Verify step passes. Every task is test first.
+Status: BUILT, all tasks ticked (CI on the last commit pending push). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure engine (no database, no network)
 
@@ -95,7 +95,7 @@ Loader proven against real Postgres; whole suite green; CI green after the push.
   - Files: `app/merchant/catalog/page.tsx`, `e2e/catalog-page.spec.ts` (plus a link from the merchant home)
   - Depends on: T8.
 
-- [ ] **T10 Checkpoint: criteria review and hosted re-seed**
+- [x] **T10 Checkpoint: criteria review and hosted re-seed**
   - Acceptance: every success criterion in spec section 10 is ticked or explained in `doc/checkpoints/catalog-engine-checkpoint.md`;
     the hosted re-seed (adds one rule row) is done **only after a fresh explicit OK** and checked read-only afterwards; `SPEC.md`
     status updated; next module in build order is `quote-approval`.

@@ -2,7 +2,7 @@
 
 Module id: `catalog-engine` · Depends on: `foundation` (done) · Index: [../../SPEC.md](../../SPEC.md) · Brief: [../OrderForge Build Brief v1.1.md](../OrderForge%20Build%20Brief%20v1.1.md)
 
-Status: **APPROVED on 2 Nov 2026** (with the defaults for the four open questions). Decisions: **slots from a template, one swap at a time, plain-sum pricing.**
+Status: **BUILT on 2 Nov 2026** (approved the same day with the defaults for the four open questions). Review: [doc/checkpoints/catalog-engine-checkpoint.md](../checkpoints/catalog-engine-checkpoint.md); the CI half of criterion 7 is open until the last commit is pushed. Decisions: **slots from a template, one swap at a time, plain-sum pricing.**
 
 ## 1. Objective
 
@@ -188,17 +188,17 @@ revalidated)*; *a message says to charge $1 or discount (server price unchanged,
 
 ## 10. Success criteria (testable)
 
-- [ ] Demo path A to D passes with exact numbers: 3500 and 70000 cents (valid, 20 boxes with the bottle); blocked with
+- [x] Demo path A to D passes with exact numbers: 3500 and 70000 cents (valid, 20 boxes with the bottle); blocked with
       `INSUFFICIENT_STOCK` needed 30, available 24; alternatives exactly `[organizer]`; 3600 per box and 108000 total.
-- [ ] Every blocker code has a test; several blockers at once are reported together in the fixed order.
-- [ ] An unknown SKU, an inactive product, a product not allowed in its slot and a food product under `noFood` are each blocked
+- [x] Every blocker code has a test; several blockers at once are reported together in the fixed order.
+- [x] An unknown SKU, an inactive product, a product not allowed in its slot and a food product under `noFood` are each blocked
       and none is ever returned as an alternative.
-- [ ] `Configuration` with an extra field (price, discount, amount) is rejected by the strict schema.
-- [ ] Alternatives: single swap only, all valid, bounded (<= 20), deterministic and order-independent.
-- [ ] Stock needed is summed per product across slots (a product used in two slots counts twice).
+- [x] `Configuration` with an extra field (price, discount, amount) is rejected by the strict schema.
+- [x] Alternatives: single swap only, all valid, bounded (<= 20), deterministic and order-independent.
+- [x] Stock needed is summed per product across slots (a product used in two slots counts twice).
 - [ ] `domain/catalog` passes the purity test; typecheck, lint, unit, database and E2E tests green locally and in CI.
-- [ ] `loadCatalogSnapshot` returns the seeded merchant's catalog and template from real Postgres, and fails clearly on a bad template.
-- [ ] The read-only merchant catalog page shows products, stock and the template (cuttable; see cut order).
+- [x] `loadCatalogSnapshot` returns the seeded merchant's catalog and template from real Postgres, and fails clearly on a bad template.
+- [x] The read-only merchant catalog page shows products, stock and the template (cuttable; see cut order).
 
 ## 11. Task outline (becomes `tasks/catalog-engine/` after approval)
 
