@@ -1,7 +1,7 @@
 # Tasks: reservation
 
 Spec: [doc/spec/SPEC-reservation.md](../../doc/spec/SPEC-reservation.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 and T2 built (0006 applied to local only), T3 to T7 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T3 built (0006 applied to local only), T4 to T7 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -31,7 +31,7 @@ Status: APPROVED 2 Nov 2026; T1 and T2 built (0006 applied to local only), T3 to
   - Files: `supabase/migrations/0006_reservation.sql`, `tests/db/reservation-reserve.test.ts`, `tests/db/reservation-guards.test.ts`, `tests/db/reservation-helpers.ts`
   - Depends on: T1. Ask first before applying anywhere but local.
 
-- [ ] **T3 begin_operation, settle_operation, resolve_review**
+- [x] **T3 begin_operation, settle_operation, resolve_review**
   - Acceptance: `begin_operation` moves `HELD` to `PAYMENT_IN_FLIGHT` (authorize) or `AWAITING_CONFIRMATION` to `PAYMENT_IN_FLIGHT`
     (capture, void), records the operation, and refuses everything else (`NOT_HELD`, `OPERATION_IN_FLIGHT`); on an expired `HELD` it
     releases and returns `HOLD_EXPIRED`. `settle_operation` takes only outcomes that match the recorded operation (`OUTCOME_MISMATCH`

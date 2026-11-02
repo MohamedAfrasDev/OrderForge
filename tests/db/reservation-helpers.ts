@@ -13,6 +13,7 @@ export type RpcOut = {
   already?: boolean;
   reheld?: boolean;
   reservation_id?: string;
+  operation?: string;
   expires_at?: string;
   state?: string;
   shortages?: Array<{ product_id: string; needed: number; available: number }>;
