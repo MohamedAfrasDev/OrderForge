@@ -1,7 +1,7 @@
 # Tasks: quote-approval
 
 Spec: [doc/spec/SPEC-quote-approval.md](../../doc/spec/SPEC-quote-approval.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 built, T2 to T9 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 and T2 built, T3 to T9 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -13,7 +13,7 @@ Status: APPROVED 2 Nov 2026; T1 built, T2 to T9 open. Tick a box only after its 
   - Files: `domain/quote/types.ts`, `domain/quote/schemas.ts`, `domain/quote/canonical.ts`, `lib/hash.ts`, `tests/quote/canonical.test.ts`
   - Depends on: catalog-engine.
 
-- [ ] **T2 Snapshot, quote hash, terms text**
+- [x] **T2 Snapshot, quote hash, terms text**
   - Acceptance: `buildQuoteSnapshot` covers exactly the fields in spec assumption 4; `quoteHash` is stable, key-order independent,
     changes when any single covered field changes, ignores status and timestamps. Golden hash for the 30-box organizer quote
     (3600 per box, 108000) is committed. `renderTerms` contains the fixed sentence and every disclosed condition.
