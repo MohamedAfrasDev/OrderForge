@@ -4,14 +4,13 @@ Date: 2 Nov 2026 · Module: `quote-approval` · Reviewed against: [doc/spec/SPEC
 · Code reviewed: `spec-3-quote-approval` at `79aabdd` plus one added test (see Findings).
 
 Every verdict below was re-run on 2 Nov against current state. Evidence is labeled **local** (Docker Supabase on this machine),
-**hosted** (the real Supabase project), or **CI** (GitHub Actions). CI evidence was added after the push (criterion 10). Nothing here is hosted evidence: the branch is pushed, but
-migration 0005 has not been applied to the hosted project.
+**hosted** (the real Supabase project), or **CI** (GitHub Actions). CI evidence was added after the push (criterion 10). Hosted evidence is limited to the migration check below.
 
 ## Verdict
 
 **11 of 11 criteria met.** Criterion 10 was partly met until CI ran on the pushed branch; it is now met (see its row). Every local gate is green and
 CI is green on `5c2507c`. Migration 0005 is applied to the
-local database only. The module is ready for `reservation` and `ai-intake` to build on, locally.
+local database and to the hosted project (see Hosted migration). The module is ready for `reservation` and `ai-intake` to build on.
 
 ## Criteria
 
@@ -30,6 +29,24 @@ local database only. The module is ready for `reservation` and `ai-intake` to bu
 | 11 | The order room shows the exact quote, conditions and terms; the merchant review queue works | Met | E2E (5 tests): exact quote with $36.00, $1,080.00, conditions and the fixed terms sentence; accept once and stay accepted after reload; a stale page cannot accept a replaced quote; an expired quote has no button; a held draft is invisible. E2E (6 tests): the queue shows the draft with amounts, approve in own words, blank wording refused, withdraw with reason, another merchant's draft hidden. The richer quote history view was not built (it was cuttable). local |
 
 Counts: quote-specific unit tests 123 (`tests/quote`), quote-specific database tests 138 (`tests/db/quote-*`), 11 quote E2E tests.
+
+## Hosted migration
+
+Applied after a fresh explicit OK on 2 Nov, with `supabase db push --db-url` against the hosted project (ref `twkepbycivkmhrmurxwi`, the one in `.env`).
+A dry run first listed exactly one pending migration, `0005_quote_approval.sql`. Checked read-only before and after, over the same connection:
+
+| | Before | After |
+|---|---|---|
+| Applied migrations | 0001 to 0004 | 0001 to 0005 |
+| Quotes, approvals, purchases, inquiries | 0, 0, 0, 0 | 0, 0, 0, 0 (no data touched) |
+| Inquiries with two live quotes | 0 (so the new index could not conflict) | not applicable |
+| Table check on `quote_versions` | `quote_versions_check` | replaced by `quote_versions_hash_after_draft_check` |
+| `quote_versions_one_live_per_inquiry` index | absent | present |
+| `create_quote_draft`, `publish_quote`, `accept_quote` | absent | present, executable by `service_role` only (not `anon`, not `authenticated`) |
+| Status guard trigger function | old version | new version (contains the new transition rule) |
+
+Not run against hosted: the database tests, which clear application data (local only by design). The hosted app picks the change up
+when PR 2 is merged to `main`; until then the hosted app does not call these functions.
 
 ## Findings from this review
 
@@ -53,7 +70,6 @@ Counts: quote-specific unit tests 123 (`tests/quote`), quote-specific database t
 
 | Item | Why it is open | What closes it |
 |---|---|---|
-| Migration 0005 on hosted | Applied to local only; hosted needs a fresh explicit yes | You say yes immediately before; then apply and check read-only before and after, as for the catalog re-seed. |
 | Expiry sweep | The spec mentioned a scheduled sweep to mark `EXPIRED` for tidiness; not built. Expiry is evaluated at the moment of use and shown to the customer, and the next publish supersedes an expired quote anyway | Decide with `reservation` whether the reconcile route should sweep; no correctness gap today. |
 | "Payment is the next step" | Placeholder text on an accepted quote until `payments` exists | Replaced by `payments`. |
 | `MERCHANT_ONLY` code | Defined in the contract, not yet returned by any service (every merchant function takes a merchant actor by type) | Used or removed when `payments` calls into this module. |

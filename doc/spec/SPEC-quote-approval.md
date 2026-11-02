@@ -2,7 +2,7 @@
 
 Module id: `quote-approval` · Depends on: `catalog-engine` (done) · Index: [../../SPEC.md](../../SPEC.md) · Brief: [../OrderForge Build Brief v1.1.md](../OrderForge%20Build%20Brief%20v1.1.md)
 
-Status: **BUILT on 2 Nov 2026** (approved the same day with the defaults for all five open questions). Review: [doc/checkpoints/quote-approval-checkpoint.md](../checkpoints/quote-approval-checkpoint.md): 11 of 11 criteria met, CI green on 5c2507c (PR 2); the hosted migration is open. Target window: 3–4 Nov 2026 (brief schedule). Decisions to confirm: **one live quote per inquiry, hash computed in code and re-verified at every use, accept and publish as single database transactions, no new tables.**
+Status: **BUILT on 2 Nov 2026** (approved the same day with the defaults for all five open questions). Review: [doc/checkpoints/quote-approval-checkpoint.md](../checkpoints/quote-approval-checkpoint.md): 11 of 11 criteria met, CI green on 5c2507c (PR 2); migration 0005 applied to hosted. Target window: 3–4 Nov 2026 (brief schedule). Decisions to confirm: **one live quote per inquiry, hash computed in code and re-verified at every use, accept and publish as single database transactions, no new tables.**
 
 ## 1. Objective
 
