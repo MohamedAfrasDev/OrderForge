@@ -54,7 +54,20 @@ export const stock = [
   { product_id: PRODUCT_IDS.truffles, on_hand: 50, reserved: 0 },
 ];
 
+// The merchant's box template (catalog-engine). Products are named by SKU. Every slot is required;
+// the card slot carries the logo, and the gift slot is where substitutions happen.
+export const boxTemplate = {
+  slots: [
+    { id: "notebook", label: "Notebook", quantity: 1, allowedSkus: ["NOTEBOOK-A5"] },
+    { id: "pen", label: "Pen", quantity: 1, allowedSkus: ["PEN-BLK"] },
+    { id: "gift", label: "Gift item", quantity: 1, allowedSkus: ["BOTTLE-STEEL", "ORGANIZER-DESK", "TRUFFLES-BOX"] },
+    { id: "card", label: "Branded card", quantity: 1, allowedSkus: ["CARD-BRANDED"], customization: "logo" },
+    { id: "packaging", label: "Packaging", quantity: 1, allowedSkus: ["PACK-BOX"] },
+  ],
+};
+
 export const businessRules = [
+  { merchant_id: MERCHANT_ID, key: "box_template", value: boxTemplate },
   { merchant_id: MERCHANT_ID, key: "logo_print", value: { formats: ["png", "svg"], min_width_px: 600 } },
   { merchant_id: MERCHANT_ID, key: "production_lead_days", value: { days: 7 } },
   { merchant_id: MERCHANT_ID, key: "fulfilment", value: { method: "customer_pickup" } },

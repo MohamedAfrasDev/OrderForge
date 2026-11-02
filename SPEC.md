@@ -3,6 +3,7 @@
 Source: `doc/OrderForge Build Brief v1.1.md` (content titled v1.2, dated 1 Nov 2026). The brief is the source of truth for product behaviour; this file is the index of module specs plus the project-wide conventions they share.
 
 Status: capability map approved 2026-11-01. Module specs live in `doc/spec/`. `foundation`: DONE (tasks T1 to T22; Checkpoint D passed on 2 Nov, 14 of 15 criteria met, the one unmet is sandbox authorization expiry, which cannot be observed before the deadline; record in `doc/checkpoints/`). Next module in build order: `catalog-engine` (spec first, as `AGENTS.md` requires). CI: GitHub Actions.
+`catalog-engine`: spec APPROVED 2 Nov (`doc/spec/SPEC-catalog-engine.md`); IN PROGRESS, tasks T1 to T8 done (pure engine, seed template, loader), T9 and T10 remain (`tasks/catalog-engine/`).
 
 ## 1. Objective
 
