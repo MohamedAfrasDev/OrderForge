@@ -2,9 +2,21 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { audit, type AuditInsert } from "@/lib/audit";
 import { correlationIdFrom } from "@/lib/correlation";
 
+/** What one reservation sweep changed. Counts only; the details are audited per reservation by the sweep itself. */
+export type SweepSummary = {
+  expiredReleased: number;
+  orphansReleased: number;
+  staleFlagged: number;
+  orphansFlagged: number;
+};
+
 export type ReconcileDeps = {
   cronSecret: string;
   insertAudit: AuditInsert;
+  /** Runs after the heartbeat. The reservation module supplies it; omitted, a run is just the heartbeat. */
+  sweepReservations?: (context: { now: string; correlationId: string }) => Promise<SweepSummary>;
+  /** The clock, injectable for tests. */
+  now?: () => string;
 };
 
 const reply = (body: Record<string, string>, status: number) =>
@@ -46,14 +58,21 @@ export async function handleReconcile(request: Request, deps: ReconcileDeps): Pr
     return reply({ error: "unauthorized" }, 401);
   }
 
+  const correlationId = correlationIdFrom(request.headers);
   try {
-    await recordReconcileHeartbeat(deps.insertAudit, {
-      actor: "system:cron",
-      correlationId: correlationIdFrom(request.headers),
-    });
+    await recordReconcileHeartbeat(deps.insertAudit, { actor: "system:cron", correlationId });
   } catch {
     // A non-2xx shows up in the scheduler's run history. Nothing about the cause is returned.
     return reply({ error: "heartbeat_failed" }, 500);
+  }
+
+  if (deps.sweepReservations) {
+    try {
+      await deps.sweepReservations({ now: (deps.now ?? (() => new Date().toISOString()))(), correlationId });
+    } catch {
+      // The heartbeat is already recorded. A failed sweep must be visible to the scheduler, and reveals nothing else.
+      return reply({ error: "sweep_failed" }, 500);
+    }
   }
   return reply({ status: "ok" }, 200);
 }

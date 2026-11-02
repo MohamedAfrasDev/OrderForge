@@ -6,6 +6,7 @@ import { getCustomerMessages } from "@/lib/access/inquiry-reads";
 import { authorizeCustomerToken } from "@/lib/access/customer-session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readCustomerQuote } from "@/services/quote/read";
+import { readHoldForCustomer } from "@/services/reservation/read";
 import { acceptQuoteAction } from "./actions";
 
 // The token is a credential: keep it out of search indexes and Referer headers.
@@ -37,7 +38,9 @@ async function OrderRoom({ params }: { params: PageProps<"/o/[token]">["params"]
   const { inquiry } = access;
   const db = createAdminClient();
   const messages = await getCustomerMessages(db, inquiry.id);
-  const quote = await readCustomerQuote(db, inquiry.id, new Date().toISOString());
+  const now = new Date().toISOString();
+  const quote = await readCustomerQuote(db, inquiry.id, now);
+  const hold = quote?.status === "ACCEPTED" ? await readHoldForCustomer(db, inquiry.id, now) : null;
 
   return (
     <>
@@ -49,7 +52,7 @@ async function OrderRoom({ params }: { params: PageProps<"/o/[token]">["params"]
         </p>
       </header>
 
-      {quote ? <QuoteCard quote={quote} accept={acceptQuoteAction.bind(null, token)} /> : null}
+      {quote ? <QuoteCard quote={quote} hold={hold} accept={acceptQuoteAction.bind(null, token)} /> : null}
 
       <section aria-label="Conversation" className="flex flex-col gap-3">
         {messages.length === 0 ? (

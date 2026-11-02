@@ -6,6 +6,7 @@ import { newCorrelationId } from "@/lib/correlation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { merchantFailureMessage } from "@/services/quote/merchant-messages";
 import { publishQuote, withdrawQuote } from "@/services/quote/publish";
+import { releaseForInvalidatedPurchases } from "@/services/reservation/release";
 
 export type ReviewState = { status: "idle" } | { status: "error"; message: string } | { status: "done"; message: string };
 
@@ -24,12 +25,19 @@ export async function publishDraftAction(_previous: ReviewState, formData: FormD
   const quoteId = field(formData, "quoteId");
   if (!UUID.test(quoteId)) return { status: "error", message: merchantFailureMessage("NOT_FOUND") };
 
-  const result = await publishQuote(
-    createAdminClient(),
-    quoteId,
-    { kind: "merchant", userId: user.id, merchantId: merchant.id },
-    { now: new Date().toISOString(), correlationId: newCorrelationId(), approvalText: field(formData, "wording") },
-  );
+  const db = createAdminClient();
+  const context = { now: new Date().toISOString(), correlationId: newCorrelationId() };
+  const result = await publishQuote(db, quoteId, { kind: "merchant", userId: user.id, merchantId: merchant.id }, { ...context, approvalText: field(formData, "wording") });
+
+  // A newer quote may have replaced an accepted one: its holds must not outlive it. A failure here never fails the publish,
+  // because the scheduled reservation sweep finds any hold whose quote is no longer accepted.
+  if (result.ok && result.value.invalidatedPurchaseIds.length > 0) {
+    try {
+      await releaseForInvalidatedPurchases(db, result.value.invalidatedPurchaseIds, { ...context, actor: `merchant:${user.id}` });
+    } catch {
+      // Left for the sweep.
+    }
+  }
   refresh();
   return result.ok ? { status: "done", message: "Published. The customer can now see and accept it." } : { status: "error", message: merchantFailureMessage(result.code) };
 }

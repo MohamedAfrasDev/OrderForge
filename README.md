@@ -60,7 +60,7 @@ Then open `/merchant/login`, sign in, and open `/merchant/dev/paypal` for the Pa
 | `npm run typecheck` | Generates Next route types, then `tsc --noEmit` |
 | `npm run lint` | ESLint |
 | `npm run test` | Unit tests (Vitest), no network |
-| `npm run test:db` | Database tests against the **local** Supabase (needs `supabase start`); clears local app data first, so run `npm run seed` again afterwards if you want the demo data |
+| `npm run test:db` | Database tests against the **local** Supabase (needs `supabase start`); clears local app data before and after the run (some fixtures are inconsistent on purpose, and the scheduled reservation sweep would report them), so run `npm run seed` afterwards if you want the demo data |
 | `npm run test:e2e` | Browser tests (Playwright) against a production build wired to the **local** Supabase and a local fake PayPal |
 | `npm run seed` | Creates the demo merchant, login, products, stock and rules, including the `box_template` rule (the five box slots and which SKUs each allows) that the catalog engine reads |
 | `npm run demo:reset` | Wipes application data and re-seeds (see "Demo reset") |
