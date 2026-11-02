@@ -83,13 +83,13 @@ Status: DRAFT, awaiting approval. Tick a box only after its Verify step passes.
   - Files: `tests/db/constraints.test.ts`, `tests/db/rls.test.ts`, `tests/db/helpers.ts`, `vitest.db.config.ts`, `package.json`
   - Depends on: T11.
 
-- [ ] **T13 CI database job** (written; same commands pass locally; waiting for first green GitHub run)
+- [x] **T13 CI database job** (green on GitHub: 63 DB tests on a local Supabase stack, ~2m)
   - Acceptance: CI starts local Supabase via the Supabase CLI action and runs `test:db`; a failure blocks merge.
   - Verify: CI run shows the `test:db` job green.
   - Files: `.github/workflows/ci.yml`
   - Depends on: T12, T3.
 
-- [ ] **T14 Supabase clients and merchant auth (email + password)**
+- [x] **T14 Supabase clients and merchant auth (email + password)** (no browser client: sign-in is a server action; E2E needs a local Supabase and runs a production build, see spec)
   - Acceptance: server, browser and admin Supabase clients; `/merchant/login` email + password form; `proxy.ts` redirects unauthenticated `/merchant/*`; `lib/access/merchant.ts` re-checks session and `merchant_id` in server code; no sign-up page.
   - Verify: `npm run test` (unit for the access helper) and `npm run test:e2e` (unauthenticated `/merchant` redirects to login; seeded merchant can sign in).
   - Files: `lib/supabase/server.ts`, `lib/supabase/browser.ts`, `lib/supabase/admin.ts`, `lib/access/merchant.ts`, `proxy.ts` (plus the login page and an E2E; this task may split in two if it exceeds five files)

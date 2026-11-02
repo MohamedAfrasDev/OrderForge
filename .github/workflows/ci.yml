@@ -43,6 +43,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: cp .env.example .env
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.119.0
+      # The sign-in tests run against a local Supabase stack; Playwright reads its keys from `supabase status`.
+      - run: supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4
@@ -53,6 +58,8 @@ jobs:
             playwright-report/
             test-results/
           if-no-files-found: ignore
+      - if: always()
+        run: supabase stop --no-backup
 
   db:
     name: Database tests (local Supabase)
