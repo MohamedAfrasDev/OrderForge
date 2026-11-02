@@ -1,7 +1,7 @@
 # Tasks: quote-approval
 
 Spec: [doc/spec/SPEC-quote-approval.md](../../doc/spec/SPEC-quote-approval.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T5 built (0005 applied to local only), T6 to T9 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T6 built (0005 applied to local only), T7 to T9 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -53,7 +53,7 @@ Status: APPROVED 2 Nov 2026; T1 to T5 built (0005 applied to local only), T6 to 
   - Files: `services/quote/create-draft.ts`, `services/quote/publish.ts`, `tests/db/quote-draft-publish.test.ts`, `tests/quote/fixtures.ts`
   - Depends on: T4.
 
-- [ ] **T6 acceptQuote and verifyApprovalBinding**
+- [x] **T6 acceptQuote and verifyApprovalBinding**
   - Acceptance: acceptance recomputes the hash from the stored row and compares it with the customer's; refuses `HASH_MISMATCH`,
     `QUOTE_TAMPERED`, `NOT_PUBLISHED`, `SUPERSEDED`, `EXPIRED`, `WITHDRAWN`, `QUOTE_STALE` (price change) and the stock blockers;
     another customer's quote returns `NOT_FOUND`; a double accept returns the same approval and purchase; `verifyApprovalBinding`

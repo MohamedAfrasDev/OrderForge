@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import {
+  DEFAULT_VALIDITY_HOURS,
   buildQuoteSnapshot,
   storedConditionsSchema,
   storedLinesSchema,
@@ -56,6 +58,23 @@ export async function loadQuote(db: SupabaseClient, quoteId: string): Promise<{ 
 export async function setInquiryStatus(db: SupabaseClient, inquiryId: string, status: string): Promise<void> {
   const { error } = await db.from("inquiries").update({ status }).eq("id", inquiryId);
   if (error) throw new Error(`set inquiry status: ${error.message}`);
+}
+
+const validityRuleSchema = z.strictObject({ hours: z.number().int().min(1).max(720) });
+
+/** The merchant rule `quote_validity_hours` ({ "hours": 72 }); 72 when the merchant has not set one. */
+export async function loadValidityHours(db: SupabaseClient, merchantId: string): Promise<number> {
+  const { data, error } = await db
+    .from("business_rules")
+    .select("value")
+    .eq("merchant_id", merchantId)
+    .eq("key", "quote_validity_hours")
+    .maybeSingle();
+  if (error) throw new Error(`load quote_validity_hours: ${error.message}`);
+  if (!data) return DEFAULT_VALIDITY_HOURS;
+  const parsed = validityRuleSchema.safeParse(data.value);
+  if (!parsed.success) throw new Error('business rule "quote_validity_hours" is malformed');
+  return parsed.data.hours;
 }
 
 export function parseConditions(raw: unknown): Condition[] | null {
