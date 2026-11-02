@@ -1,7 +1,7 @@
 # Tasks: reservation
 
 Spec: [doc/spec/SPEC-reservation.md](../../doc/spec/SPEC-reservation.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 built, T2 to T7 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 and T2 built (0006 applied to local only), T3 to T7 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -19,7 +19,7 @@ Status: APPROVED 2 Nov 2026; T1 built, T2 to T7 open. Tick a box only after its 
 
 ## Phase B: database
 
-- [ ] **T2 Migration 0006: columns, guard trigger, reserve_stock, release_hold**
+- [x] **T2 Migration 0006: columns, guard trigger, reserve_stock, release_hold**
   - Acceptance: `reservations` gains `in_flight_operation`, `release_reason`, `review_reason`, `state_changed_at` with checks that
     `in_flight_operation` is set exactly while `PAYMENT_IN_FLIGHT` and `release_reason` exactly while `RELEASED`. A guard trigger
     enforces the transition table. `reserve_stock` reserves every product or none, locks stock in product-id order, is idempotent per
