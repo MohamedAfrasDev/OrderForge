@@ -2,7 +2,7 @@
 
 Module id: `reservation` · Depends on: `foundation` (done), `quote-approval` (done) · Index: [../../SPEC.md](../../SPEC.md) · Brief: [../OrderForge Build Brief v1.1.md](../OrderForge%20Build%20Brief%20v1.1.md)
 
-Status: **BUILT on 2 Nov 2026** (approved the same day with the defaults for all six open questions). Review: [doc/checkpoints/reservation-checkpoint.md](../checkpoints/reservation-checkpoint.md): 11 of 11 criteria met, CI green on 6609daa (PR 3); the hosted migration is open. Target window: 7–8 Nov 2026 (brief schedule; it can run in parallel with `ai-intake`). Decisions to confirm: **one all-or-nothing reserve call, an explicit "operation in flight" state that only payments can enter and leave, timers that can only release a plain hold, and a stock invariant that a test can check at any time.**
+Status: **BUILT on 2 Nov 2026** (approved the same day with the defaults for all six open questions). Review: [doc/checkpoints/reservation-checkpoint.md](../checkpoints/reservation-checkpoint.md): 11 of 11 criteria met, CI green on 6609daa (PR 3); migration 0006 applied to hosted. Target window: 7–8 Nov 2026 (brief schedule; it can run in parallel with `ai-intake`). Decisions to confirm: **one all-or-nothing reserve call, an explicit "operation in flight" state that only payments can enter and leave, timers that can only release a plain hold, and a stock invariant that a test can check at any time.**
 
 ## 1. Objective
 

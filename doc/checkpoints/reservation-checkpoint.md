@@ -4,13 +4,12 @@ Date: 2 Nov 2026 · Module: `reservation` · Reviewed against: [doc/spec/SPEC-re
 · Code reviewed: `spec-4-reservation` at `f9647d0` plus one added gate (see Findings).
 
 Every verdict below was re-run on 2 Nov against current state. Evidence is labeled **local** (Docker Supabase on this machine),
-**hosted** (the real Supabase project), or **CI** (GitHub Actions). CI evidence was added after the push (criterion 10). Nothing here is hosted evidence: the branch is pushed, but
-migration 0006 has not been applied to the hosted project.
+**hosted** (the real Supabase project), or **CI** (GitHub Actions). CI evidence was added after the push (criterion 10). Hosted evidence is limited to the migration check below.
 
 ## Verdict
 
 **11 of 11 criteria met.** Criterion 10 was partly met until CI ran on the pushed branch; it is now met (see its row). Every local
-gate is green and CI is green on `6609daa`. Migration 0006 is applied to the local database only. The module is ready for `payments` to call.
+gate is green and CI is green on `6609daa`. Migration 0006 is applied to the local database and to the hosted project (see Hosted migration). The module is ready for `payments` to call.
 
 ## Criteria
 
@@ -33,10 +32,23 @@ reservation-specific database tests 307 (`tests/db/reservation-*`), 5 reservatio
 
 ## Hosted migration
 
-**Not applied.** Migration 0006 is local only. Before applying it to the hosted project (after your explicit yes) the plan is the
-same as for 0005: confirm the project ref, dry-run `supabase db push --db-url`, and read the tables before and after. The migration
-has a precondition: existing `reservations` rows must already satisfy the new checks. Hosted had no purchases when last checked
-(so no reservations); that has to be re-checked read-only immediately before applying.
+Applied after a fresh explicit OK on 2 Nov, with `supabase db push --db-url` against the hosted project (ref `twkepbycivkmhrmurxwi`, the one in `.env`).
+A dry run first listed exactly one pending migration, `0006_reservation.sql`. Checked read-only before and after, over the same connection:
+
+| | Before | After |
+|---|---|---|
+| Applied migrations | 0001 to 0005 | 0001 to 0006 |
+| Reservations, reservation lines, purchases | 0, 0, 0 (so the migration's precondition held) | 0, 0, 0 (no data touched) |
+| Stock rows with anything reserved | 0 | not changed |
+| New reservation columns (`in_flight_operation`, `release_reason`, `review_reason`, `state_changed_at`) | absent | present |
+| Checks tying the operation and the release reason to their states | absent | present (`reservations_in_flight_matches_state`, `reservations_release_reason_matches_state`) |
+| Transition guard trigger | absent | present, and the function is the new version |
+| Nine reservation functions | absent | present; the eight public ones executable by `service_role` only (not `anon`, not `authenticated`), the internal stock helper by nobody through the API |
+| `check_stock_invariants()` over all stock | not available | returns an empty array |
+
+Ordering matters: once PR 3 is merged and deployed, the hosted reconcile route calls `sweep_reservations` every run. The functions now
+exist on hosted, so that call will work from the first deploy. Not run against hosted: the database tests, which clear application data
+(local only by design).
 
 ## Findings from this review
 
@@ -62,7 +74,6 @@ has a precondition: existing `reservations` rows must already satisfy the new ch
 
 | Item | Why it is open | What closes it |
 |---|---|---|
-| Migration 0006 on hosted | Local only; hosted needs a fresh explicit yes | You say yes immediately before; then dry run, apply, read-only checks before and after. |
 | Nothing calls reserve, begin or settle in the live flow | Accepting a quote does not create a hold; `payments` (its `start_checkout`) is where `reserveForPurchase`, `beginOperation` and `settleOperation` are called | `payments` spec and build. Wiring `reserveForPurchase` into the accept action earlier is a small change if you want customers to see a hold before payments exists. |
 | Order of work inside the reconcile route | The sweep runs after the heartbeat; once `payments` adds its reconciliation it must run first, so in-flight work is reconciled before the sweep flags it | `payments` task for the reconcile route (a comment marks the spot). |
 | Merchant rules introduced | `reservation_hold_minutes` and `inflight_review_minutes` (each `{ "minutes": n }`), defaults 30 and 30, are not in the seed or the README | Add to the README's rules section when `payments` lands, or on request. |
