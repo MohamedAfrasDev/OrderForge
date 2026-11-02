@@ -137,7 +137,7 @@ All mocked and replayed PayPal tests green. Review with the human, and tell the 
 
 ## Phase D: Hosted proof (needs accounts)
 
-- [ ] **T20 Hosted wiring (human + agent)** (MOSTLY DONE: hosted Supabase migrated (19 tables, RLS on all, 4 migrations), Vault secrets set, pg_cron fired by itself with a 200 and a heartbeat, Vercel production clean at https://order-forge-lake.vercel.app. OPEN: `PAYPAL_WEBHOOK_ID` in .env/Vercel holds the webhook URL, not the id; production needs one redeploy for the health-check fix and the corrected id; hosted merchant not seeded yet)
+- [x] **T20 Hosted wiring (human + agent)** (hosted Supabase migrated and verified; Vault secrets set; pg_cron fired on its own with a 200 and a heartbeat; Vercel production clean at https://order-forge-lake.vercel.app with a real database health check; PayPal webhook id corrected. hosted merchant seeded and verified: sign-in ok, RLS correct. Prerequisites for T21 are in place)
   - Acceptance: Supabase project created and migrated (`supabase db push`), Vault secrets `app_base_url` and `cron_secret` set, `pg_cron` job visible; Vercel project deployed with all env vars from `.env.example`; PayPal sandbox merchant, buyer and webhook registered with the webhook ID in env. Agent never enters credentials: the human fills in `.env` and Vercel/Supabase dashboards.
   - Verify: `/api/health` on the preview returns healthy; `cron.job_run_details` shows a successful run; reconcile returns 401 without the bearer.
   - Files: none in git (configuration only); notes appended to `README.md`

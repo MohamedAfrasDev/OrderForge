@@ -54,6 +54,8 @@ const deps: SpikeDeps = {
   recordEvent: store.recordEvent,
   insertAudit: store.insertAudit,
   evidenceLabel,
+  // Where PayPal sends the buyer after approving. The CLI polls instead, so this only avoids an error page.
+  approvalReturnUrl: new URL("/merchant/dev/paypal", process.env.APP_BASE_URL || "http://localhost:3000").toString(),
   correlationId: randomUUID(),
   actor: "cli:paypal-spike",
 };

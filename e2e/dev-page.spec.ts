@@ -114,3 +114,24 @@ test.describe("dev page (local Supabase + fake PayPal)", () => {
     expect(after).toBe(before);
   });
 });
+
+test.describe("coming back from PayPal (local Supabase + fake PayPal)", () => {
+  test.skip(needsLocalSupabase, "needs a local Supabase stack: run `supabase start`");
+
+  test("?token=<order id> from PayPal's redirect makes the order ready to authorize", async ({ page }) => {
+    await signIn(page);
+    await page.goto(`${PAGE}?token=5O190127TN364715T&PayerID=ABC`);
+    await expect(page.getByTestId("order-id")).toHaveText("5O190127TN364715T");
+    await expect(page.getByRole("status").filter({ hasText: "Back from PayPal" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Authorize, then capture" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Authorize, then void" })).toBeVisible();
+  });
+
+  test("ignores a malformed token instead of trusting it", async ({ page }) => {
+    await signIn(page);
+    for (const bad of ["../etc/passwd", "a b", "x".repeat(65), "<script>alert(1)</script>"]) {
+      await page.goto(`${PAGE}?token=${encodeURIComponent(bad)}`);
+      await expect(page.getByTestId("order-id")).toHaveCount(0);
+    }
+  });
+});

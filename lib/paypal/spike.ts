@@ -36,6 +36,8 @@ export type SpikeDeps = {
   evidenceLabel: EvidenceLabel;
   correlationId: string;
   actor: string;
+  /** Where PayPal sends the buyer after approving (the dev page). Required for the link-based approval flow. */
+  approvalReturnUrl?: string;
   /** Source of the idempotency key for the order. Defaults to crypto.randomUUID. */
   newRequestId?: () => string;
 };
@@ -102,6 +104,7 @@ export async function createSpikeOrder(
     amount: SPIKE_AMOUNT,
     referenceId: `spike-${requestId.slice(0, 8)}`,
     requestId,
+    returnUrl: deps.approvalReturnUrl,
   });
 
   if (result.kind !== "ok") {

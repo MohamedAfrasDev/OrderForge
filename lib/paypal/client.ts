@@ -64,6 +64,19 @@ function approvalLink(links: Array<{ rel: string; href: string }> | undefined): 
   }
 }
 
+/** Where PayPal sends the buyer afterwards. https only, or http for a local address while developing. */
+function checkReturnUrl(value: string): string {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new TypeError("invalid return URL");
+  }
+  const local = LOCAL_HOSTS.has(url.hostname);
+  if (url.protocol !== "https:" && !(url.protocol === "http:" && local)) throw new TypeError("return URL must be https");
+  return url.toString();
+}
+
 function checkRequestId(id: string): string {
   if (!REQUEST_ID.test(id)) throw new TypeError("invalid PayPal-Request-Id");
   return id;
@@ -220,9 +233,21 @@ export function createPayPalClient(config: PayPalConfig) {
 
   return {
     /** Create an order with intent AUTHORIZE. The amount comes from the caller (the accepted quote), never the browser. */
-    createOrder(input: { amount: Cents; referenceId: string; requestId: string }): Promise<PayPalResult<CreatedOrder>> {
+    /**
+     * Create an order with intent AUTHORIZE. When the buyer approves through a link (not the PayPal popup),
+     * PayPal needs a return URL or the buyer lands on an error page, so pass `returnUrl` for that flow.
+     */
+    createOrder(input: {
+      amount: Cents;
+      referenceId: string;
+      requestId: string;
+      returnUrl?: string;
+      cancelUrl?: string;
+    }): Promise<PayPalResult<CreatedOrder>> {
       if (!(input.amount > 0)) throw new RangeError("order amount must be positive");
       if (input.referenceId.length < 1 || input.referenceId.length > 256) throw new TypeError("invalid reference id");
+      const returnUrl = input.returnUrl === undefined ? undefined : checkReturnUrl(input.returnUrl);
+      const cancelUrl = input.cancelUrl === undefined ? returnUrl : checkReturnUrl(input.cancelUrl);
       return send({
         method: "POST",
         path: "/v2/checkout/orders",
@@ -235,6 +260,20 @@ export function createPayPalClient(config: PayPalConfig) {
               amount: { currency_code: "USD", value: toPayPalAmount(input.amount) },
             },
           ],
+          ...(returnUrl
+            ? {
+                payment_source: {
+                  paypal: {
+                    experience_context: {
+                      return_url: returnUrl,
+                      cancel_url: cancelUrl,
+                      user_action: "CONTINUE",
+                      shipping_preference: "NO_SHIPPING",
+                    },
+                  },
+                },
+              }
+            : {}),
         },
         read: (json) => {
           const r = orderSchema.safeParse(json);

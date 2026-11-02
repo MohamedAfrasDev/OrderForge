@@ -430,3 +430,69 @@ describe("createOrder approval link", () => {
     if (result.kind === "ok") expect(result.data.approveUrl).toBeUndefined();
   });
 });
+
+describe("createOrder return URLs (needed when the buyer approves via a link, not the PayPal popup)", () => {
+  const create = (extra: Record<string, unknown>) => {
+    const m = mockFetch(() => json({ id: "ORDER1", status: "PAYER_ACTION_REQUIRED" }, 201));
+    const promise = client(m.fetch).createOrder({
+      amount: cents(1080),
+      referenceId: "p",
+      requestId: REQUEST_ID,
+      ...extra,
+    } as Parameters<ReturnType<typeof client>["createOrder"]>[0]);
+    return { m, promise };
+  };
+
+  it("sends no payment_source when no return URL is given (unchanged behaviour)", async () => {
+    const { m, promise } = create({});
+    await promise;
+    expect(JSON.parse(String(m.apiCalls()[0].init.body))).not.toHaveProperty("payment_source");
+  });
+
+  it("puts the URLs in payment_source.paypal.experience_context and asks for a return to the app", async () => {
+    const { m, promise } = create({ returnUrl: "https://app.example.com/back", cancelUrl: "https://app.example.com/cancel" });
+    await promise;
+    expect(JSON.parse(String(m.apiCalls()[0].init.body))).toEqual({
+      intent: "AUTHORIZE",
+      purchase_units: [{ reference_id: "p", amount: { currency_code: "USD", value: "10.80" } }],
+      payment_source: {
+        paypal: {
+          experience_context: {
+            return_url: "https://app.example.com/back",
+            cancel_url: "https://app.example.com/cancel",
+            user_action: "CONTINUE",
+            shipping_preference: "NO_SHIPPING",
+          },
+        },
+      },
+    });
+  });
+
+  it("uses the return URL for cancel too when no cancel URL is given", async () => {
+    const { m, promise } = create({ returnUrl: "https://app.example.com/back" });
+    await promise;
+    const body = JSON.parse(String(m.apiCalls()[0].init.body));
+    expect(body.payment_source.paypal.experience_context.cancel_url).toBe("https://app.example.com/back");
+  });
+
+  it.each([
+    ["http://app.example.com/back"],
+    ["javascript:alert(1)"],
+    ["ftp://app.example.com/back"],
+    ["not a url"],
+    [""],
+  ])("refuses an unsafe return URL %j before sending anything", (returnUrl) => {
+    const m = mockFetch(() => json({}));
+    expect(() =>
+      client(m.fetch).createOrder({ amount: cents(100), referenceId: "p", requestId: REQUEST_ID, returnUrl }),
+    ).toThrow();
+    expect(m.calls).toHaveLength(0);
+  });
+
+  it("allows http only for a local address", () => {
+    const m = mockFetch(() => json({ id: "O", status: "CREATED" }, 201));
+    expect(() =>
+      client(m.fetch).createOrder({ amount: cents(100), referenceId: "p", requestId: REQUEST_ID, returnUrl: "http://localhost:3000/back" }),
+    ).not.toThrow();
+  });
+});

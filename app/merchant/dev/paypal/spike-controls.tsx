@@ -10,8 +10,13 @@ const outcomeStyle = {
   unknown: "text-amber-700 dark:text-amber-400",
 } as const;
 
-export function SpikeControls({ isFake }: { isFake: boolean }) {
-  const [state, action, pending] = useActionState<SpikeState, FormData>(spikeAction, null);
+export function SpikeControls({ isFake, returnedOrderId }: { isFake: boolean; returnedOrderId?: string }) {
+  const [state, action, pending] = useActionState<SpikeState, FormData>(
+    spikeAction,
+    returnedOrderId
+      ? { orderId: returnedOrderId, steps: [], message: `Back from PayPal. Order ${returnedOrderId} is ready to authorize.` }
+      : null,
+  );
   const [reconcile, reconcileAction, reconciling] = useActionState<ReconcileState>(reconcileNowAction, null);
   const orderId = state?.orderId;
 

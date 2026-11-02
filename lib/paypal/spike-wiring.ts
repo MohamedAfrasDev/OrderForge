@@ -30,6 +30,8 @@ export function createSpikeDeps(actor: string): SpikeDeps {
     recordEvent: store.recordEvent,
     insertAudit: store.insertAudit,
     evidenceLabel: target.evidence,
+    // After approving, PayPal sends the buyer back to the dev page, which picks the order up from ?token=
+    approvalReturnUrl: new URL("/merchant/dev/paypal", env.APP_BASE_URL).toString(),
     correlationId: newCorrelationId(),
     actor,
   };
