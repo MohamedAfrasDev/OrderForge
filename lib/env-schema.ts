@@ -48,3 +48,10 @@ export const parseServerEnv = (source: Record<string, string | undefined>): Serv
 
 export const parseClientEnv = (source: Record<string, string | undefined>): ClientEnv =>
   parse(clientSchema, source);
+
+/** Only the link-signing secret, for code (like proxy.ts) that must not require the whole server environment. */
+export function parseAccessLinkSecret(source: Record<string, string | undefined>): string {
+  const result = secret.safeParse(source.ACCESS_LINK_SECRET);
+  if (!result.success) throw new EnvError(["ACCESS_LINK_SECRET"]);
+  return result.data;
+}

@@ -150,6 +150,7 @@ The spike deliverable is a hosted `/merchant/dev/paypal` page (merchant-only, sa
 ## 9. Access control
 - **Merchant:** Supabase Auth session cookie via `@supabase/ssr`. `proxy.ts` redirects unauthenticated `/merchant/*` requests. Every merchant server action and route re-checks the session and the `merchant_id`; the proxy is never the only check.
 - **Customer:** `lib/access/customer-link.ts` creates and verifies a signed token (HMAC with `ACCESS_LINK_SECRET`, inquiry ID + expiry + version, constant-time compare). Every server read of inquiries, messages and assets takes the verified inquiry ID and filters on it. Revocation is by bumping a per-inquiry token version.
+- **Not-found behaviour (decided in T15):** with Cache Components, request-time reads must stream inside `<Suspense>`, so a `notFound()` raised after a database lookup cannot change the HTTP status (it is already 200) but renders the not-found view with no inquiry data. `proxy.ts` therefore verifies the link signature and expiry itself (no database) and returns a real 404 for forged, expired and malformed links; revoked links and unknown inquiries or stores show the not-found view. Customer reads require a `VerifiedInquiryId` (a branded type only `authorizeCustomerLink()` can produce).
 - **Rate limit:** a simple DB- or memory-backed limiter on `/store/[slug]` intake and the access-link verification route.
 - **Assets:** Supabase Storage bucket is private; access only via short-lived signed URLs minted after the server check.
 

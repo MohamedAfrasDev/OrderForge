@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { createCustomerLink } from "../lib/access/customer-link";
 
 // Creates throwaway accounts in the LOCAL Supabase stack for the sign-in tests.
 // Skipped (and the tests skip too) when no local stack is running.
@@ -29,10 +30,39 @@ export default async function globalSetup() {
   const outsider = await createUser("outsider");
 
   const merchantName = `E2E Merchant ${tag}`;
-  const { error } = await db
+  const slug = `e2e-${tag}`;
+  const merchant = await db
     .from("merchants")
-    .insert({ slug: `e2e-${tag}`, name: merchantName, owner_user_id: merchantUser.id });
-  if (error) throw new Error(`merchant insert: ${error.message}`);
+    .insert({ slug, name: merchantName, owner_user_id: merchantUser.id })
+    .select("id")
+    .single();
+  if (merchant.error) throw new Error(`merchant insert: ${merchant.error.message}`);
+
+  // Two inquiries with distinctive messages and one signed customer link each.
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+  async function createInquiry(label: string) {
+    const text = `Secret request ${label} ${tag}`;
+    const inquiry = await db.from("inquiries").insert({ merchant_id: merchant.data!.id }).select("id").single();
+    if (inquiry.error) throw new Error(`inquiry ${label}: ${inquiry.error.message}`);
+    const message = await db.from("messages").insert({ inquiry_id: inquiry.data.id, role: "customer", body: text });
+    if (message.error) throw new Error(`message ${label}: ${message.error.message}`);
+    const link = createCustomerLink({
+      inquiryId: inquiry.data.id,
+      version: 1,
+      expiresAt,
+      secret: process.env.E2E_ACCESS_LINK_SECRET!,
+    });
+    return { id: inquiry.data.id as string, text, link };
+  }
+  const a = await createInquiry("A");
+  const b = await createInquiry("B");
+  process.env.E2E_INQUIRY_A_ID = a.id;
+  process.env.E2E_INQUIRY_A_LINK = a.link;
+  process.env.E2E_INQUIRY_A_TEXT = a.text;
+  process.env.E2E_INQUIRY_B_ID = b.id;
+  process.env.E2E_INQUIRY_B_LINK = b.link;
+  process.env.E2E_INQUIRY_B_TEXT = b.text;
+  process.env.E2E_STORE_SLUG = slug;
 
   process.env.E2E_MERCHANT_EMAIL = merchantUser.email;
   process.env.E2E_MERCHANT_PASSWORD = merchantUser.password;

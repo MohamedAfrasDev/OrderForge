@@ -95,7 +95,7 @@ Status: DRAFT, awaiting approval. Tick a box only after its Verify step passes.
   - Files: `lib/supabase/server.ts`, `lib/supabase/browser.ts`, `lib/supabase/admin.ts`, `lib/access/merchant.ts`, `proxy.ts` (plus the login page and an E2E; this task may split in two if it exceeds five files)
   - Depends on: T5, T11. Read `01-app/01-getting-started/16-proxy.md` and `01-app/02-guides/authentication.md` first.
 
-- [ ] **T15 Customer link routes and server-side isolation**
+- [x] **T15 Customer link routes and server-side isolation** (forged/expired/malformed links: real 404 from the proxy; revoked/unknown: not-found view after streaming, status 200; asset signed-URL helper untested until Storage exists)
   - Acceptance: `/o/[token]` verifies the token and loads only that inquiry; every server read filters on the verified inquiry ID; asset URLs are short-lived signed URLs after the check; a simple rate limit on token verification and `/store/[slug]`.
   - Verify: `npm run test:e2e` where link A cannot open inquiry B, and `npm run test:db` for the read helpers.
   - Files: `app/o/[token]/page.tsx`, `app/store/[slug]/page.tsx`, `lib/access/inquiry-reads.ts`, `lib/rate-limit.ts`, `e2e/access.spec.ts`

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EnvError, parseClientEnv, parseServerEnv } from "@/lib/env-schema";
+import { EnvError, parseAccessLinkSecret, parseClientEnv, parseServerEnv } from "@/lib/env-schema";
 
 const SECRET = "s3cr3t-value-that-must-never-leak-0123456789";
 
@@ -95,5 +95,17 @@ describe("parseClientEnv", () => {
       "NEXT_PUBLIC_PAYPAL_CLIENT_ID",
       "NEXT_PUBLIC_SUPABASE_ANON_KEY",
     ]);
+  });
+});
+
+describe("parseAccessLinkSecret", () => {
+  it("returns a long enough secret", () => {
+    expect(parseAccessLinkSecret({ ACCESS_LINK_SECRET: SECRET })).toBe(SECRET);
+  });
+
+  it.each([undefined, "", "short"])("rejects %j and names only the variable", (value) => {
+    const err = errorOf(() => parseAccessLinkSecret({ ACCESS_LINK_SECRET: value }));
+    expect(err.variables).toEqual(["ACCESS_LINK_SECRET"]);
+    expect(err.message).not.toContain(String(value || "zzz-never"));
   });
 });
