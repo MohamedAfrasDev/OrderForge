@@ -1,5 +1,6 @@
 import { getServerEnv } from "@/lib/env";
 import { handleHealth } from "@/lib/health";
+import { canReadTable } from "@/lib/health-checks";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
@@ -12,9 +13,6 @@ export async function GET() {
         return false;
       }
     },
-    checkDatabase: async () => {
-      const { error } = await createAdminClient().from("merchants").select("id", { head: true }).limit(1);
-      return !error;
-    },
+    checkDatabase: () => canReadTable(createAdminClient()),
   });
 }

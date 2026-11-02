@@ -1,0 +1,11 @@
+# Files the Vercel CLI must never upload. Secrets live in Vercel's encrypted environment
+# settings (Project -> Settings -> Environment Variables), not in the deployment source.
+.env
+.env.*
+!.env.example
+
+# Local tooling output
+.vercel
+supabase/.temp
+test-results
+playwright-report
