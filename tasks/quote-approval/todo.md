@@ -1,7 +1,7 @@
 # Tasks: quote-approval
 
 Spec: [doc/spec/SPEC-quote-approval.md](../../doc/spec/SPEC-quote-approval.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 and T2 built, T3 to T9 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T3 built, T4 to T9 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -21,7 +21,7 @@ Status: APPROVED 2 Nov 2026; T1 and T2 built, T3 to T9 open. Tick a box only aft
   - Files: `domain/quote/snapshot.ts`, `tests/quote/snapshot.test.ts`
   - Depends on: T1.
 
-- [ ] **T3 Publish gate, transition table, expiry, purity**
+- [x] **T3 Publish gate, transition table, expiry, purity**
   - Acceptance: `gateForPublish` holds `UNSUPPORTED_CUSTOMIZATION` and lets the two disclosable conditions through; `transition`
     covers every status and event pair (legal ones per the spec table, all others `ILLEGAL_TRANSITION`); `isExpired` is correct
     at the exact boundary; a purity test limits `domain/quote` imports to `domain/catalog`, `lib/money`, `zod` and itself;
