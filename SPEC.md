@@ -2,7 +2,8 @@
 
 Source: `doc/OrderForge Build Brief v1.1.md` (content titled v1.2, dated 1 Nov 2026). The brief is the source of truth for product behaviour; this file is the index of module specs plus the project-wide conventions they share.
 
-Status: capability map approved 2026-11-01. Module specs live in `doc/spec/`. Written so far: `foundation` (draft).
+Status: capability map approved 2026-11-01. Module specs live in `doc/spec/`. `foundation`: DONE (tasks T1 to T22; Checkpoint D passed on 2 Nov, 14 of 15 criteria met, the one unmet is sandbox authorization expiry, which cannot be observed before the deadline; record in `doc/checkpoints/`). Next module in build order: `catalog-engine` (spec first, as `AGENTS.md` requires). CI: GitHub Actions.
+`catalog-engine`: DONE (tasks T1 to T10; checkpoint 2 Nov, 9 of 9 criteria met, CI green on the last commit; record in `doc/checkpoints/catalog-engine-checkpoint.md`). Next module in build order: `quote-approval` (spec first).
 
 ## 1. Objective
 
@@ -175,7 +176,7 @@ Cut order if behind: analytics and sponsor tools, CSV import, notifications, ric
 ## 6. Open questions (need your input before the affected module spec is approved)
 1. **Spec pacing:** all seven module specs in one pass, or one at a time with review? Recommended: one at a time, starting with `doc/spec/SPEC-foundation.md`.
 2. **Accounts:** are the Supabase project, PayPal sandbox merchant and buyer accounts, OpenRouter key and Vercel project already created? If not, `foundation` includes setup steps.
-3. ~~Background work~~ Decided: scheduled route (Vercel Cron); Inngest only as a later upgrade (ask first).
+3. ~~Background work~~ Decided: scheduled route triggered by Supabase pg_cron + pg_net (Vercel Hobby limits cron); Inngest only as a later upgrade (ask first).
 4. ~~License~~ Decided: MIT.
 5. **Model choice:** primary and fallback model IDs, to be decided by testing on the eval set (owned by `ai-intake`).
 6. **Logo check:** ship or cut? It is decided by the 6 Nov tripwire.

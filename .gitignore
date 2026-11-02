@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# keep the placeholder template committed
+!.env.example
+
+# playwright
+/playwright-report/
+/test-results/
