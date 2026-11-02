@@ -4,13 +4,13 @@ Date: 2 Nov 2026 · Module: `quote-approval` · Reviewed against: [doc/spec/SPEC
 · Code reviewed: `spec-3-quote-approval` at `79aabdd` plus one added test (see Findings).
 
 Every verdict below was re-run on 2 Nov against current state. Evidence is labeled **local** (Docker Supabase on this machine),
-**hosted** (the real Supabase project), or **CI** (GitHub Actions). Nothing here is hosted or CI evidence yet: the branch has not
-been pushed and migration 0005 has not been applied to the hosted project.
+**hosted** (the real Supabase project), or **CI** (GitHub Actions). CI evidence was added after the push (criterion 10). Nothing here is hosted evidence: the branch is pushed, but
+migration 0005 has not been applied to the hosted project.
 
 ## Verdict
 
-**10 of 11 criteria met locally; 1 partly met.** The partly met one is criterion 10: every local gate is green, but CI has not run
-on this branch because nothing is pushed. It becomes met when CI is green on the last commit. Migration 0005 is applied to the
+**11 of 11 criteria met.** Criterion 10 was partly met until CI ran on the pushed branch; it is now met (see its row). Every local gate is green and
+CI is green on `5c2507c`. Migration 0005 is applied to the
 local database only. The module is ready for `reservation` and `ai-intake` to build on, locally.
 
 ## Criteria
@@ -26,7 +26,7 @@ local database only. The module is ready for `reservation` and `ai-intake` to bu
 | 7 | Two simultaneous accepts, and an accept racing a publish, are proven safe | Met | `quote-rpc` and `quote-accept`: five parallel accepts give one approval and one purchase (at the SQL function and at the service); eight rounds of accept racing a newer publish always end with exactly one live quote, the new one, and either a coded refusal with no approval or an accepted-then-superseded purchase that is reported. Five parallel drafts get versions 1 to 5. local |
 | 8 | `verifyApprovalBinding` refuses a superseded or tampered quote, or a differing hash | Met | `quote-accept`: `SUPERSEDED` after a newer publish (the brief's "old acceptance cannot authorize payment"), `HASH_MISMATCH` when approval and quote hashes differ, `QUOTE_TAMPERED` for an accepted quote whose stored hash is not its content's hash, `NOT_FOUND`. The success case returns the snapshot with amount, currency and hash. local |
 | 9 | RLS and server access: customers read only their own published or accepted quote; drafts are merchant-only | Met | `quote-reads`: no draft or held draft is ever returned; only the verified inquiry's quote; a quote with a bad stored hash is not shown; the view carries no merchant id, stock figure or internal id. `quote-review-queue`: a signed-in merchant's own session sees only their drafts, even when another merchant's id is asked for. E2E: a forged form field cannot accept another customer's quote nor publish another merchant's draft. local |
-| 10 | `domain/quote` passes the purity test; typecheck, lint, unit, database and E2E green locally and in CI | **Partly met** | Local: 0 type errors, 0 lint errors, 499 unit, 237 database, 55 E2E, production build ok. `purity.test.ts` limits `domain/quote` imports to `lib/money`, `zod`, `domain/catalog` and sibling files, and bans clock, environment and `Math.random` reads. **CI: not run.** The 8 commits on this branch are not pushed. local |
+| 10 | `domain/quote` passes the purity test; typecheck, lint, unit, database and E2E green locally and in CI | Met | Local: 0 type errors, 0 lint errors, 499 unit, 237 database, 55 E2E, production build ok. `purity.test.ts` limits `domain/quote` imports to `lib/money`, `zod`, `domain/catalog` and sibling files, and bans clock, environment and `Math.random` reads. **CI: green on `5c2507c` (PR 2), 8 of 8 checks: typecheck, lint, test and build; database tests (local Supabase); E2E; Vercel preview, in both the push run and the pull-request run.** local + CI |
 | 11 | The order room shows the exact quote, conditions and terms; the merchant review queue works | Met | E2E (5 tests): exact quote with $36.00, $1,080.00, conditions and the fixed terms sentence; accept once and stay accepted after reload; a stale page cannot accept a replaced quote; an expired quote has no button; a held draft is invisible. E2E (6 tests): the queue shows the draft with amounts, approve in own words, blank wording refused, withdraw with reason, another merchant's draft hidden. The richer quote history view was not built (it was cuttable). local |
 
 Counts: quote-specific unit tests 123 (`tests/quote`), quote-specific database tests 138 (`tests/db/quote-*`), 11 quote E2E tests.
@@ -53,7 +53,6 @@ Counts: quote-specific unit tests 123 (`tests/quote`), quote-specific database t
 
 | Item | Why it is open | What closes it |
 |---|---|---|
-| CI on the branch | Nothing is pushed; criterion 10 needs CI green on the last commit | Push `spec-3-quote-approval`, open a PR, and confirm the checks on the last commit (the push and pull-request runs can collide on port 54322, as happened once on the catalog branch). |
 | Migration 0005 on hosted | Applied to local only; hosted needs a fresh explicit yes | You say yes immediately before; then apply and check read-only before and after, as for the catalog re-seed. |
 | Expiry sweep | The spec mentioned a scheduled sweep to mark `EXPIRED` for tidiness; not built. Expiry is evaluated at the moment of use and shown to the customer, and the next publish supersedes an expired quote anyway | Decide with `reservation` whether the reconcile route should sweep; no correctness gap today. |
 | "Payment is the next step" | Placeholder text on an accepted quote until `payments` exists | Replaced by `payments`. |

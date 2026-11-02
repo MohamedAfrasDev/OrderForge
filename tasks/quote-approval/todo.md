@@ -1,7 +1,7 @@
 # Tasks: quote-approval
 
 Spec: [doc/spec/SPEC-quote-approval.md](../../doc/spec/SPEC-quote-approval.md) · Plan: [plan.md](plan.md)
-Status: BUILT 2 Nov 2026 (T1 to T9). CI on the branch and the hosted migration are open; see doc/checkpoints/quote-approval-checkpoint.md. Tick a box only after its Verify step passes. Every task is test first.
+Status: BUILT 2 Nov 2026 (T1 to T9). CI green on 5c2507c (PR 2); the hosted migration is open; see doc/checkpoints/quote-approval-checkpoint.md. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
