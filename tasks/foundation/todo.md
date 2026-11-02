@@ -59,31 +59,31 @@ Status: DRAFT, awaiting approval. Tick a box only after its Verify step passes.
 
 ## Phase B: Database and access (local Supabase)
 
-- [ ] **T9 Supabase init and core tables**
+- [x] **T9 Supabase init and core tables**
   - Acceptance: `supabase/config.toml`; migration `0001_core_tables.sql` creating `merchants, products, stock, business_rules, inquiries, messages, requirement_versions, quote_versions, approvals, assets, audit_events` with brief-exact state names as CHECK-constrained text, `bigint` money, `currency` fixed to USD.
   - Verify: `supabase start && supabase db reset` completes with no errors.
   - Files: `supabase/config.toml`, `supabase/migrations/0001_core_tables.sql`
   - Depends on: T1. Needs Docker.
 
-- [ ] **T10 Purchase, payment and preparation tables with constraints**
+- [x] **T10 Purchase, payment and preparation tables with constraints**
   - Acceptance: migration `0002_constraints.sql` creating `purchases, merchant_decisions, reservations, reservation_lines, payment_attempts, payment_events, preparation_jobs, preparation_events`; unique on PayPal order ID, authorization ID, capture ID and provider event ID; partial unique index for one active attempt per purchase; unique `preparation_jobs.purchase_id`; `unknown_operation` required when state is OUTCOME_UNKNOWN; immutability trigger on published quote versions.
   - Verify: `supabase db reset` clean (constraint behaviour is proven in T12).
   - Files: `supabase/migrations/0002_constraints.sql`
   - Depends on: T9.
 
-- [ ] **T11 RLS, seed and demo reset**
-  - Acceptance: `0003_rls.sql` enables RLS on every table with merchant-scoped policies and no anon policy; seed creates "Demo Gift Boxes", products at 1200/300/1400/200/500 cents, bottle stock 24, one `food: true` item, one merchant auth user; `npm run seed` and `npm run demo:reset` work and refuse to run unless `SANDBOX_MODE=true`.
+- [x] **T11 RLS, seed and demo reset**
+  - Acceptance: `0003_rls.sql` enables RLS on every table with merchant-scoped policies and no anon policy; seed creates "Demo Gift Boxes", products at 1200/300/1400/200/500 cents, bottle stock 24, one `food: true` item, one merchant auth user; `npm run seed` and `npm run demo:reset` work and refuse to run unless `SANDBOX_MODE=true`; against any non-local Supabase host they also require `--confirm-host=<host>`.
   - Verify: `npm run demo:reset` twice gives identical row counts.
-  - Files: `supabase/migrations/0003_rls.sql`, `supabase/seed/seed.sql`, `scripts/seed.ts`, `scripts/demo-reset.ts`, `package.json`
+  - Files: `supabase/migrations/0003_rls.sql`, `supabase/seed/fixtures.ts` (replaces seed.sql: one seed source for local and hosted), `scripts/lib.ts`, `scripts/seed.ts`, `scripts/demo-reset.ts`, `package.json`, `tsconfig.json`
   - Depends on: T10, T5.
 
-- [ ] **T12 Database tests**
+- [x] **T12 Database tests**
   - Acceptance: tests prove duplicate PayPal IDs and provider event IDs are rejected; two active attempts for one purchase are rejected while a new one after VOIDED is allowed; second preparation job for a purchase is rejected; published quote edit is blocked; OUTCOME_UNKNOWN without `unknown_operation` is rejected; anon and cross-merchant reads are denied.
   - Verify: `npm run test:db`
   - Files: `tests/db/constraints.test.ts`, `tests/db/rls.test.ts`, `tests/db/helpers.ts`, `vitest.db.config.ts`, `package.json`
   - Depends on: T11.
 
-- [ ] **T13 CI database job**
+- [ ] **T13 CI database job** (written; same commands pass locally; waiting for first green GitHub run)
   - Acceptance: CI starts local Supabase via the Supabase CLI action and runs `test:db`; a failure blocks merge.
   - Verify: CI run shows the `test:db` job green.
   - Files: `.github/workflows/ci.yml`

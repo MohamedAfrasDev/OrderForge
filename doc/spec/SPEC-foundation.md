@@ -66,7 +66,7 @@ DB tests:       npm run test:db          # vitest against local Supabase (supaba
 E2E:            npm run test:e2e         # playwright test
 Local DB:       supabase start | supabase db reset | supabase db push
 Seed:           npm run seed
-Demo reset:     npm run demo:reset       # reset DB + reseed, refuses to run if SANDBOX_MODE != "true"
+Demo reset:     npm run demo:reset       # calls demo_reset() then reseeds; refuses if SANDBOX_MODE != "true"; for a non-local Supabase host it also needs `-- --confirm-host=<host>`
 PayPal spike:   npm run paypal:spike     # CLI authorize→capture→void against sandbox, prints labeled evidence
 ```
 
