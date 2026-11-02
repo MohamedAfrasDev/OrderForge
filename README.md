@@ -193,8 +193,8 @@ unit tests and build; database tests against a local Supabase; and the browser t
 - **The rate limiter is in memory**, so each server instance counts separately. It slows abuse; it is not a quota.
 - **Sandbox accounts must be in a country that can receive payments** (use United States).
 - **The direct Supabase database host is IPv6-only;** use the Session pooler string.
-- **Real-sandbox webhook delivery** was verified on the Vercel address on 2 Nov 2026; after any domain change, re-check it
-  with one real run.
+- **Real-sandbox webhook delivery** was verified on the Vercel address and again on the custom domain (2 Nov 2026). After any
+  domain change, update the webhook URL in PayPal and re-check it with one real run.
 - **Next.js 16:** uses `proxy.ts` instead of middleware and Cache Components. See `AGENTS.md` and `node_modules/next/dist/docs`.
 - The merchant dev page contacts the real PayPal sandbox whenever `PAYPAL_SPIKE_BASE_URL` is not set.
 

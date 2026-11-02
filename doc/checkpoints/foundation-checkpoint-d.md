@@ -10,7 +10,8 @@ Actions), or **real-sandbox** (the real PayPal sandbox).
 ## Verdict
 
 **14 of 15 criteria met. 1 not met, because it cannot be met inside the schedule: observing sandbox authorization expiry.**
-The module is ready to build on. Four items are open or deserve a decision (see Open items).
+The module is ready to build on. Three items are open or deserve a decision (see Open items). A fourth, webhook delivery on the
+custom domain, was open at review time and **closed the same day** (see below).
 
 ## Criteria
 
@@ -48,10 +49,18 @@ The module is ready to build on. Four items are open or deserve a decision (see 
 
 | Item | Why it is open | What closes it |
 |---|---|---|
-| PayPal webhook delivery on `order-forge.afras.dev` | The webhook URL was changed after the last real delivery (07:33 UTC). Nothing has arrived since. | One real run on the new domain (create, approve with the US buyer, capture), then check the hosted `payment_events` for new `webhook` rows. |
 | Criterion 15 (expiry) | Needs up to 29 days of waiting | Decision: accept "recorded as not observed, covered by application-level tests in `payments`" and amend the criterion, or keep it open. |
 | Vercel Git integration is active | A merge to `main` would likely deploy production automatically | Keep it, or disconnect it in Vercel's Git settings. |
 | Environment hygiene on the developer machine | A stray old Supabase CLI at `C:\Users\moham\node_modules\.bin` (2.24.3) and an older global npm one (2.107.0) shadow the current CLI (2.119.0) in some folders | Remove the stray installs. The tests now explain this clearly if it happens. |
+
+## Closed after the review
+
+**PayPal webhook delivery on `order-forge.afras.dev`: confirmed (2 Nov, 08:53 to 08:54 UTC).** After the custom domain and the
+webhook URL were changed, one real run on the new domain (order `3WY781850P793110Y`, real-sandbox) created, authorized and
+captured 1080 USD, and PayPal delivered all three webhooks to the new address, each verified and stored once:
+`CHECKOUT.ORDER.APPROVED` (08:54:03), `PAYMENT.AUTHORIZATION.CREATED` (08:54:17, status already CAPTURED) and
+`PAYMENT.CAPTURE.COMPLETED` (08:54:27, capture `9X373408WX8223824`, matching the capture the dev page recorded). Ten webhook
+rows, ten distinct event ids. The arrival order differed from the first run, which again shows that event order cannot be relied on.
 
 ## Not part of this checkpoint
 

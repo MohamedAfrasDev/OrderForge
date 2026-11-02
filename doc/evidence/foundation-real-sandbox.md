@@ -68,3 +68,11 @@ No fall back to intent CAPTURE.**
 
 - **Sandbox authorization expiry.** The brief says to confirm in your own sandbox whether authorizations expire. That needs up
   to 29 days, so it was not observed. Deadline handling stays covered by application-level tests labeled as such.
+
+## Second run: custom domain (2 Nov, 08:53 to 08:54 UTC)
+
+After the site moved to `order-forge.afras.dev` and the PayPal webhook URL was updated, one more real run on the new domain:
+order `3WY781850P793110Y` created (08:53:23), authorized (08:54:03), captured as `9X373408WX8223824` (08:54:06), 1080 USD, all
+`real-sandbox`. PayPal delivered `CHECKOUT.ORDER.APPROVED` (08:54:03), `PAYMENT.AUTHORIZATION.CREATED` (08:54:17, resource status
+CAPTURED) and `PAYMENT.CAPTURE.COMPLETED` (08:54:27) to the new address; each was verified and stored once. The authorization
+event arrived *before* the capture event this time and *after* it in the first run: arrival order is not dependable.
