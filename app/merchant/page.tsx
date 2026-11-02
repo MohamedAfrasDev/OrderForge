@@ -27,6 +27,9 @@ async function Dashboard() {
       <Link href="/merchant/catalog" className="text-sm underline">
         Catalog
       </Link>
+      <Link href="/merchant/quotes" className="text-sm underline">
+        Quote review
+      </Link>
       <form action={signOut}>
         <Button type="submit" variant="outline">
           Sign out

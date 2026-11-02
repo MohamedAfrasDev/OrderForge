@@ -1,7 +1,7 @@
 # Tasks: quote-approval
 
 Spec: [doc/spec/SPEC-quote-approval.md](../../doc/spec/SPEC-quote-approval.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T7 built (0005 applied to local only), T8 and T9 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T8 built (0005 applied to local only), T9 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -72,7 +72,7 @@ Status: APPROVED 2 Nov 2026; T1 to T7 built (0005 applied to local only), T8 and
   - Files: `services/quote/read.ts`, `app/o/[token]/page.tsx`, `app/o/[token]/actions.ts`, `tests/db/quote-reads.test.ts`, `e2e/quote-accept.spec.ts`
   - Depends on: T6.
 
-- [ ] **T8 Merchant review queue**
+- [x] **T8 Merchant review queue**
   - Acceptance: a signed-in merchant lists held drafts for their own inquiries only, approves and publishes one with their wording,
     or withdraws one with a reason; another merchant sees nothing; the dev action creates demo inquiries and drafts until intake exists.
   - Verify: `npm run test:e2e -- e2e/quote-review.spec.ts`
