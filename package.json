@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:db": "node -e \"console.log(\\\"test:db: not implemented yet\\\")\"",
     "test:e2e": "playwright test",
