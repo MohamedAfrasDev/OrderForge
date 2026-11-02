@@ -503,8 +503,171 @@ begin
 end;
 $$;
 
+-- 3g. sweep_reservations --------------------------------------------------------------------------
+-- The scheduled sweep (runs from the reconcile route). It can change only these, in this order:
+--   1. orphans: a live reservation whose quote is no longer ACCEPTED. HELD is released (SUPERSEDED); PAYMENT_IN_FLIGHT and
+--      AWAITING_CONFIRMATION go to REVIEW_REQUIRED, because money may be involved.
+--   2. expired holds: HELD with expires_at reached is released (EXPIRED).
+--   3. stale in-flight work: PAYMENT_IN_FLIGHT for the limit or longer goes to REVIEW_REQUIRED (stock stays held). The limit is the
+--      merchant rule inflight_review_minutes ({ "minutes": n }) when valid, otherwise p_inflight_review_minutes.
+-- A hold whose stock cannot be given back (an accounting error) is left as it is and reported in `errors`; it never stops the
+-- sweep for the others. It never releases or commits anything that is in flight, awaiting confirmation, in review or committed. Rows another
+-- transaction holds locked are skipped (picked up next run), so a sweep never waits behind, or races past, begin_operation.
+create or replace function public.sweep_reservations(
+  p_now                      timestamptz,
+  p_inflight_review_minutes  integer default 30
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_r       record;
+  v_changes jsonb := '[]'::jsonb;
+  v_errors  jsonb := '[]'::jsonb;
+begin
+  if p_now is null or p_inflight_review_minutes is null or p_inflight_review_minutes < 1 then
+    return jsonb_build_object('ok', false, 'code', 'INVALID_INPUT');
+  end if;
+
+  for v_r in
+    select r.id, r.state
+      from public.reservations r
+      join public.purchases p on p.id = r.purchase_id
+      join public.quote_versions q on q.id = p.quote_version_id
+     where q.status <> 'ACCEPTED'
+       and r.state in ('HELD', 'PAYMENT_IN_FLIGHT', 'AWAITING_CONFIRMATION')
+     order by r.id
+       for update of r skip locked
+  loop
+    if v_r.state = 'HELD' then
+      begin
+        perform public.reservation_apply_stock(v_r.id, 'RELEASE');
+        update public.reservations
+           set state = 'RELEASED', release_reason = 'SUPERSEDED', state_changed_at = p_now
+         where id = v_r.id;
+        v_changes := v_changes || jsonb_build_array(jsonb_build_object(
+          'reservation_id', v_r.id, 'kind', 'orphan', 'from', 'HELD', 'to', 'RELEASED', 'reason', 'SUPERSEDED'));
+      exception when others then
+        -- Stock that cannot be given back (an accounting error) must not stop the sweep for everyone else.
+        v_errors := v_errors || jsonb_build_array(jsonb_build_object(
+          'reservation_id', v_r.id, 'kind', 'orphan', 'from', 'HELD',
+          'reason', left('stock accounting error: ' || sqlerrm, 190)));
+      end;
+    else
+      update public.reservations
+         set state = 'REVIEW_REQUIRED', in_flight_operation = null, state_changed_at = p_now,
+             review_reason = 'quote is no longer accepted'
+       where id = v_r.id;
+      v_changes := v_changes || jsonb_build_array(jsonb_build_object(
+        'reservation_id', v_r.id, 'kind', 'orphan', 'from', v_r.state, 'to', 'REVIEW_REQUIRED', 'reason', 'quote is no longer accepted'));
+    end if;
+  end loop;
+
+  for v_r in
+    select r.id
+      from public.reservations r
+     where r.state = 'HELD' and r.expires_at is not null and r.expires_at <= p_now
+     order by r.id
+       for update of r skip locked
+  loop
+    begin
+      perform public.reservation_apply_stock(v_r.id, 'RELEASE');
+      update public.reservations
+         set state = 'RELEASED', release_reason = 'EXPIRED', state_changed_at = p_now
+       where id = v_r.id;
+      v_changes := v_changes || jsonb_build_array(jsonb_build_object(
+        'reservation_id', v_r.id, 'kind', 'expired', 'from', 'HELD', 'to', 'RELEASED', 'reason', 'EXPIRED'));
+    exception when others then
+      v_errors := v_errors || jsonb_build_array(jsonb_build_object(
+        'reservation_id', v_r.id, 'kind', 'expired', 'from', 'HELD',
+        'reason', left('stock accounting error: ' || sqlerrm, 190)));
+    end;
+  end loop;
+
+  for v_r in
+    select r.id, m.minutes
+      from public.reservations r
+      join public.purchases p on p.id = r.purchase_id
+     cross join lateral (
+       select coalesce(
+         (select (br.value ->> 'minutes')::integer
+            from public.business_rules br
+           where br.merchant_id = p.merchant_id
+             and br.key = 'inflight_review_minutes'
+             and jsonb_typeof(br.value -> 'minutes') = 'number'
+             and (br.value ->> 'minutes') ~ '^[0-9]{1,6}$'
+             and (br.value ->> 'minutes')::integer >= 1),
+         p_inflight_review_minutes) as minutes
+     ) m
+     where r.state = 'PAYMENT_IN_FLIGHT'
+       and r.state_changed_at <= p_now - make_interval(mins => m.minutes)
+     order by r.id
+       for update of r skip locked
+  loop
+    update public.reservations
+       set state = 'REVIEW_REQUIRED', in_flight_operation = null, state_changed_at = p_now,
+           review_reason = format('operation still in flight after %s minutes', v_r.minutes)
+     where id = v_r.id;
+    v_changes := v_changes || jsonb_build_array(jsonb_build_object(
+      'reservation_id', v_r.id, 'kind', 'stale', 'from', 'PAYMENT_IN_FLIGHT', 'to', 'REVIEW_REQUIRED',
+      'reason', format('operation still in flight after %s minutes', v_r.minutes)));
+  end loop;
+
+  return jsonb_build_object('ok', true, 'changes', v_changes, 'errors', v_errors);
+end;
+$$;
+
+-- 3h. check_stock_invariants ----------------------------------------------------------------------
+-- Is stock consistent with the reservations? For every product (or the ones given), `reserved` must equal the quantity on
+-- live reservations (HELD, PAYMENT_IN_FLIGHT, AWAITING_CONFIRMATION, REVIEW_REQUIRED) and never exceed on_hand.
+-- Returns a jsonb array of discrepancies; an empty array means consistent. Same rules as stockInvariant in TypeScript.
+create or replace function public.check_stock_invariants(p_product_ids uuid[] default null)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with live as (
+    select rl.product_id, sum(rl.quantity)::bigint as expected
+      from public.reservation_lines rl
+      join public.reservations r on r.id = rl.reservation_id
+     where r.state in ('HELD', 'PAYMENT_IN_FLIGHT', 'AWAITING_CONFIRMATION', 'REVIEW_REQUIRED')
+     group by rl.product_id
+  ),
+  ids as (
+    select product_id from public.stock
+    union
+    select product_id from live
+  ),
+  figures as (
+    select i.product_id,
+           coalesce(s.on_hand, 0) as on_hand,
+           coalesce(s.reserved, 0) as reserved,
+           coalesce(l.expected, 0) as expected
+      from ids i
+      left join public.stock s on s.product_id = i.product_id
+      left join live l on l.product_id = i.product_id
+     where p_product_ids is null or i.product_id = any (p_product_ids)
+  )
+  select coalesce(jsonb_agg(d.item order by d.item ->> 'product_id', d.item ->> 'code'), '[]'::jsonb)
+    from (
+      select jsonb_build_object('code', 'RESERVED_EXCEEDS_ON_HAND', 'product_id', product_id, 'on_hand', on_hand, 'reserved', reserved) as item
+        from figures where reserved > on_hand
+      union all
+      select jsonb_build_object('code', 'RESERVED_MISMATCH', 'product_id', product_id, 'reserved', reserved, 'expected', expected)
+        from figures where reserved <> expected
+    ) d;
+$$;
+
 -- Only the server (service role) may call the public ones; the stock helper is internal to them.
 revoke all on function public.reservation_apply_stock(uuid, text) from public, anon, authenticated, service_role;
+revoke all on function public.sweep_reservations(timestamptz, integer) from public, anon, authenticated;
+revoke all on function public.check_stock_invariants(uuid[]) from public, anon, authenticated;
+grant execute on function public.sweep_reservations(timestamptz, integer) to service_role;
+grant execute on function public.check_stock_invariants(uuid[]) to service_role;
 revoke all on function public.reserve_stock(uuid, jsonb, timestamptz, integer) from public, anon, authenticated;
 revoke all on function public.release_hold(uuid, text, timestamptz) from public, anon, authenticated;
 revoke all on function public.begin_operation(uuid, text, timestamptz) from public, anon, authenticated;

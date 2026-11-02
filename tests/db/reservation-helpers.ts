@@ -106,3 +106,23 @@ export async function discrepancies(db: SupabaseClient, productIds: string[]) {
 }
 
 export const unknownId = () => randomUUID();
+
+/** Marks the quote behind a chain as ACCEPTED, as it is for any real purchase (the sweep treats other statuses as orphaned). */
+export async function acceptQuoteOf(db: SupabaseClient, quoteId: string): Promise<void> {
+  must(await db.from("quote_versions").update({ status: "ACCEPTED" }).eq("id", quoteId), "accept quote");
+}
+
+/** A stocked chain whose quote is ACCEPTED. */
+export async function acceptedChain(db: SupabaseClient, onHandBySku: Record<string, number>): Promise<Stocked> {
+  const s = await stockedChain(db, onHandBySku);
+  await acceptQuoteOf(db, s.chain.quoteId);
+  return s;
+}
+
+/** Another customer's purchase for the same merchant, with an ACCEPTED quote. */
+export async function acceptedPurchaseFor(db: SupabaseClient, merchantId: string): Promise<{ purchaseId: string; quoteId: string }> {
+  const purchaseId = await purchaseFor(db, merchantId);
+  const row = must(await db.from("purchases").select("quote_version_id").eq("id", purchaseId).single(), "purchase");
+  await acceptQuoteOf(db, row.quote_version_id as string);
+  return { purchaseId, quoteId: row.quote_version_id as string };
+}

@@ -1,7 +1,7 @@
 # Tasks: reservation
 
 Spec: [doc/spec/SPEC-reservation.md](../../doc/spec/SPEC-reservation.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T3 built (0006 applied to local only), T4 to T7 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T4 built (0006 applied to local only), T5 to T7 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -43,7 +43,7 @@ Status: APPROVED 2 Nov 2026; T1 to T3 built (0006 applied to local only), T4 to 
   - Files: `supabase/migrations/0006_reservation.sql` (extend), `tests/db/reservation-operations.test.ts`
   - Depends on: T2.
 
-- [ ] **T4 sweep_reservations, check_stock_invariants, reconcile wiring**
+- [x] **T4 sweep_reservations, check_stock_invariants, reconcile wiring**
   - Acceptance: the sweep releases only `HELD` rows past `expires_at` (conditional update), moves `PAYMENT_IN_FLIGHT` older than the
     in-flight limit to `REVIEW_REQUIRED`, releases a `HELD` reservation whose purchase's quote is no longer `ACCEPTED` (reason
     `SUPERSEDED`) and flags any other state for review, and never touches `AWAITING_CONFIRMATION`, `COMMITTED` or `REVIEW_REQUIRED`
@@ -61,7 +61,7 @@ Status: APPROVED 2 Nov 2026; T1 to T3 built (0006 applied to local only), T4 to 
     and returns `QUOTE_NOT_ACCEPTED` with the underlying code), computes per-product quantities from the snapshot and the merchant's
     SKUs, reads the `reservation_hold_minutes` rule (default 30), calls the RPC, and audits. `beginOperation`, `settleOperation`,
     `resolveReview`, `releaseHold` and `releaseForInvalidatedPurchases` wrap their RPCs with coded results and audit events.
-    `sweepReservations` reads the in-flight rule (default 30). A product in two slots reserves double.
+    A product in two slots reserves double. (`sweepReservations` was built in T4, with the reconcile wiring.)
   - Verify: `npm run test:db -- tests/db/reservation-services.test.ts`
   - Files: `services/reservation/reserve.ts`, `services/reservation/operations.ts`, `services/reservation/release.ts`, `services/reservation/sweep.ts`, `tests/db/reservation-services.test.ts`
   - Depends on: T4.
