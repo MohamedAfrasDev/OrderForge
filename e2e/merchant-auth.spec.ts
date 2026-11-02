@@ -41,18 +41,20 @@ test.describe("merchant sign in (local Supabase)", () => {
   });
 
   test("signs the merchant in, shows their portal, and signs them out", async ({ page }) => {
+    // Uses its own account: signing out ends every session of the account, which would log out
+    // other tests that run in parallel with the shared merchant.
     await page.goto("/merchant/login");
-    await page.getByLabel("Email").fill(process.env.E2E_MERCHANT_EMAIL!);
-    await page.getByLabel("Password").fill(process.env.E2E_MERCHANT_PASSWORD!);
+    await page.getByLabel("Email").fill(process.env.E2E_SIGNOUT_EMAIL!);
+    await page.getByLabel("Password").fill(process.env.E2E_SIGNOUT_PASSWORD!);
     await page.getByRole("button", { name: "Sign in" }).click();
 
     await expect(page).toHaveURL(/\/merchant$/);
-    await expect(page.getByRole("heading", { name: process.env.E2E_MERCHANT_NAME! })).toBeVisible();
-    await expect(page.getByText(process.env.E2E_MERCHANT_EMAIL!)).toBeVisible();
+    await expect(page.getByRole("heading", { name: process.env.E2E_SIGNOUT_NAME! })).toBeVisible();
+    await expect(page.getByText(process.env.E2E_SIGNOUT_EMAIL!)).toBeVisible();
 
     // Survives a reload (session cookie), then ends on sign out.
     await page.reload();
-    await expect(page.getByRole("heading", { name: process.env.E2E_MERCHANT_NAME! })).toBeVisible();
+    await expect(page.getByRole("heading", { name: process.env.E2E_SIGNOUT_NAME! })).toBeVisible();
 
     await page.getByRole("button", { name: "Sign out" }).click();
     await expect(page).toHaveURL(/\/merchant\/login$/);

@@ -1,11 +1,18 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { createCustomerLink } from "../lib/access/customer-link";
+import { startFakePayPal } from "../tests/support/fake-paypal";
 
 // Creates throwaway accounts in the LOCAL Supabase stack for the sign-in tests.
 // Skipped (and the tests skip too) when no local stack is running.
 export default async function globalSetup() {
-  if (process.env.E2E_LOCAL_SUPABASE !== "1") return;
+  // The fake PayPal the dev page talks to (mocked evidence only). Closed again in the returned teardown.
+  const fakePayPal = await startFakePayPal({ port: Number(new URL(process.env.E2E_FAKE_PAYPAL_URL!).port) });
+  const teardown = async () => {
+    await fakePayPal.close();
+  };
+
+  if (process.env.E2E_LOCAL_SUPABASE !== "1") return teardown;
 
   const url = process.env.E2E_SUPABASE_URL!;
   const host = new URL(url).hostname;
@@ -28,6 +35,8 @@ export default async function globalSetup() {
 
   const merchantUser = await createUser("merchant");
   const outsider = await createUser("outsider");
+  // Signing out revokes every session of that account, so the sign-out test gets one of its own.
+  const signOutUser = await createUser("signout");
 
   const merchantName = `E2E Merchant ${tag}`;
   const slug = `e2e-${tag}`;
@@ -37,6 +46,12 @@ export default async function globalSetup() {
     .select("id")
     .single();
   if (merchant.error) throw new Error(`merchant insert: ${merchant.error.message}`);
+
+  const signOutMerchantName = `E2E Sign-out Merchant ${tag}`;
+  const signOutMerchant = await db
+    .from("merchants")
+    .insert({ slug: `e2e-signout-${tag}`, name: signOutMerchantName, owner_user_id: signOutUser.id });
+  if (signOutMerchant.error) throw new Error(`sign-out merchant insert: ${signOutMerchant.error.message}`);
 
   // Two inquiries with distinctive messages and one signed customer link each.
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
@@ -67,6 +82,11 @@ export default async function globalSetup() {
   process.env.E2E_MERCHANT_EMAIL = merchantUser.email;
   process.env.E2E_MERCHANT_PASSWORD = merchantUser.password;
   process.env.E2E_MERCHANT_NAME = merchantName;
+  process.env.E2E_SIGNOUT_EMAIL = signOutUser.email;
+  process.env.E2E_SIGNOUT_PASSWORD = signOutUser.password;
+  process.env.E2E_SIGNOUT_NAME = signOutMerchantName;
   process.env.E2E_OUTSIDER_EMAIL = outsider.email;
   process.env.E2E_OUTSIDER_PASSWORD = outsider.password;
+
+  return teardown;
 }

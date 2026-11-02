@@ -29,6 +29,8 @@ const serverSchema = z.object({
   OPENROUTER_API_KEY: nonEmpty,
   ACCESS_LINK_SECRET: secret,
   CRON_SECRET: secret,
+  // Optional: point the PayPal spike at a local fake server (see lib/paypal/client.ts for what is accepted).
+  PAYPAL_SPIKE_BASE_URL: z.preprocess((v) => (v === "" ? undefined : v), z.url().optional()),
 });
 
 const clientSchema = z.object(clientShape);

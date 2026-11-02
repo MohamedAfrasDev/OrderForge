@@ -3,6 +3,8 @@ import { randomBytes } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
 
 const port = 3100;
+// The local fake PayPal that e2e/global-setup.ts starts. The app under test talks to it, never to PayPal.
+const FAKE_PAYPAL_PORT = 4011;
 
 // E2E must never touch a hosted Supabase project (the real .env may point at one), so the dev
 // server is started with the LOCAL stack's keys. Without a local stack it gets a dead URL and
@@ -25,6 +27,8 @@ const local = localSupabase();
 process.env.E2E_LOCAL_SUPABASE = local ? "1" : "0";
 // Workers re-load this file; ??= keeps the value the main process generated.
 process.env.E2E_ACCESS_LINK_SECRET ??= randomBytes(32).toString("hex");
+process.env.E2E_CRON_SECRET ??= randomBytes(32).toString("hex");
+process.env.E2E_FAKE_PAYPAL_URL = `http://127.0.0.1:${FAKE_PAYPAL_PORT}`;
 if (local) {
   process.env.E2E_SUPABASE_URL = local.url;
   process.env.E2E_SUPABASE_SERVICE_KEY = local.serviceKey;
@@ -55,6 +59,12 @@ export default defineConfig({
       NEXT_PUBLIC_SUPABASE_ANON_KEY: local?.anonKey ?? "e2e-placeholder-anon-key",
       SUPABASE_SERVICE_ROLE_KEY: local?.serviceKey ?? "e2e-placeholder-service-role-key",
       ACCESS_LINK_SECRET: process.env.E2E_ACCESS_LINK_SECRET!,
+      CRON_SECRET: process.env.E2E_CRON_SECRET!,
+      PAYPAL_SPIKE_BASE_URL: `http://127.0.0.1:${FAKE_PAYPAL_PORT}`,
+      // Dummy credentials: the test server must not carry the real ones from .env.
+      PAYPAL_CLIENT_ID: "e2e-client-id",
+      NEXT_PUBLIC_PAYPAL_CLIENT_ID: "e2e-client-id",
+      PAYPAL_CLIENT_SECRET: "e2e-client-secret-0000000000",
     },
   },
 });

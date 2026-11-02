@@ -107,25 +107,25 @@ Status: DRAFT, awaiting approval. Tick a box only after its Verify step passes.
 
 ## Phase C: PayPal behind mocks (no accounts)
 
-- [ ] **T16 PayPal client with mocked tests**
+- [x] **T16 PayPal client with mocked tests** (36 MOCKED tests; five result kinds; real-sandbox behaviour still unverified until T21)
   - Acceptance: token fetch and cache; `createOrder` (AUTHORIZE, caller-supplied amount), `authorizeOrder` returning `purchase_units[0].payments.authorizations[0].id`, `captureAuthorization`, `voidAuthorization`, `getOrder`, `getAuthorization`, `getCapture`; every call sends `PayPal-Request-Id`; results are `ok | provider_error | timeout`; no internal retry; secrets redacted from logs.
   - Verify: `npm run test -- tests/paypal-client.test.ts` (mocked fetch, labeled `mocked`).
   - Files: `lib/paypal/client.ts`, `lib/paypal/auth.ts`, `lib/paypal/types.ts`, `tests/paypal-client.test.ts`
   - Depends on: T4, T5. Check PayPal's current Orders v2 / Payments v2 docs before coding.
 
-- [ ] **T17 Webhook verification and route**
+- [x] **T17 Webhook verification and route** (MOCKED/REPLAYED unit tests, real-Postgres dedupe tests, E2E rejection tests; real PayPal delivery still unverified until T21)
   - Acceptance: `verifyWebhook` using PayPal's verification API and `PAYPAL_WEBHOOK_ID`; route rejects forged or unsigned requests, writes a `payment_events` row keyed by provider event ID, acknowledges a duplicate with no second effect; verified event names recorded in the spec.
   - Verify: `npm run test -- tests/webhook.test.ts` (verification mocked, duplicate replayed; labeled `mocked`/`replayed`).
   - Files: `lib/paypal/verify-webhook.ts`, `app/api/webhooks/paypal/route.ts`, `tests/webhook.test.ts`, `doc/spec/SPEC-foundation.md`
   - Depends on: T16, T12. Read `01-app/01-getting-started/15-route-handlers.md` first.
 
-- [ ] **T18 Cron route, `pg_cron` migration and health route**
+- [x] **T18 Cron route, `pg_cron` migration and health route** (local proof: pg_cron -> pg_net -> route -> heartbeat, wrong secret -> 401, idempotent migration; hosted Supabase untested until T20)
   - Acceptance: `/api/cron/reconcile` requires `Authorization: Bearer ${CRON_SECRET}` (401 otherwise), is idempotent and writes a heartbeat audit event; `0004_cron.sql` schedules a 5-minute `pg_cron` job using `pg_net` with URL and secret read from Vault, guarded to skip when extensions or secrets are absent; `/api/health` reports DB and env reachability with no secrets in output.
   - Verify: `npm run test -- tests/cron.test.ts`; `supabase db reset` still clean locally.
   - Files: `app/api/cron/reconcile/route.ts`, `app/api/health/route.ts`, `supabase/migrations/0004_cron.sql`, `tests/cron.test.ts`
   - Depends on: T5, T7, T11.
 
-- [ ] **T19 PayPal spike CLI and merchant dev page**
+- [x] **T19 PayPal spike CLI and merchant dev page** (all evidence MOCKED via a local fake PayPal; the real sandbox has not been contacted, that is T21)
   - Acceptance: `npm run paypal:spike` runs authorize → capture and authorize → void with a hard-coded demo amount, writes `payment_events` and `audit_events`, and prints evidence labeled `mocked` or `real-sandbox`; `/merchant/dev/paypal` page (merchant-only) with the same actions and a "run reconcile now" button; refuses to run when `PAYPAL_ENV` is not `sandbox`.
   - Verify: spike runs end to end against a local fake PayPal server in a test; E2E confirms the page is merchant-only.
   - Files: `scripts/paypal-spike.ts`, `app/merchant/dev/paypal/page.tsx`, `app/merchant/dev/paypal/actions.ts`, `tests/spike.test.ts`, `e2e/dev-page.spec.ts`
