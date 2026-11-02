@@ -1,7 +1,7 @@
 # Tasks: reservation
 
 Spec: [doc/spec/SPEC-reservation.md](../../doc/spec/SPEC-reservation.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T5 built (0006 applied to local only), T6 and T7 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T6 built (0006 applied to local only), T7 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -68,7 +68,7 @@ Status: APPROVED 2 Nov 2026; T1 to T5 built (0006 applied to local only), T6 and
 
 ## Phase D: screens and review
 
-- [ ] **T6 Customer hold line and merchant holds page (cuttable)**
+- [x] **T6 Customer hold line and merchant holds page (cuttable)**
   - Acceptance: `readHoldForCustomer` returns only the verified inquiry's hold (state and expiry, nothing else); the accepted quote
     card shows "Your items are held until ..." while `HELD`, and a neutral note otherwise; `/merchant/holds` lists the merchant's
     holds and a separate "needs attention" list for `REVIEW_REQUIRED`, read under the merchant's own session; another merchant sees

@@ -34,8 +34,8 @@ export const releaseHold = (db: SupabaseClient, reservationId: string, reason: s
 export type Stocked = { chain: Chain; merchantId: string; products: Record<string, string> };
 
 /** A merchant with a purchase and the given products, each with `on_hand` stock and nothing reserved. */
-export async function stockedChain(db: SupabaseClient, onHandBySku: Record<string, number>): Promise<Stocked> {
-  const chain = await createChain(db);
+export async function stockedChain(db: SupabaseClient, onHandBySku: Record<string, number>, ownerUserId?: string): Promise<Stocked> {
+  const chain = await createChain(db, ownerUserId);
   const products: Record<string, string> = {};
   for (const [sku, onHand] of Object.entries(onHandBySku)) {
     const row = must(
@@ -113,8 +113,8 @@ export async function acceptQuoteOf(db: SupabaseClient, quoteId: string): Promis
 }
 
 /** A stocked chain whose quote is ACCEPTED. */
-export async function acceptedChain(db: SupabaseClient, onHandBySku: Record<string, number>): Promise<Stocked> {
-  const s = await stockedChain(db, onHandBySku);
+export async function acceptedChain(db: SupabaseClient, onHandBySku: Record<string, number>, ownerUserId?: string): Promise<Stocked> {
+  const s = await stockedChain(db, onHandBySku, ownerUserId);
   await acceptQuoteOf(db, s.chain.quoteId);
   return s;
 }

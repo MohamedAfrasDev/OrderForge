@@ -2,17 +2,26 @@ import type { AcceptState } from "@/app/o/[token]/actions";
 import { AcceptQuoteForm } from "@/components/accept-quote-form";
 import { cents, format } from "@/lib/money";
 import type { CustomerQuoteView } from "@/services/quote/read";
+import type { CustomerHoldView } from "@/services/reservation/read";
 
 const usd = (minor: number) => format(cents(minor));
 const formatTime = (iso: string) => `${iso.slice(0, 16).replace("T", " ")} UTC`;
 
 type Props = {
   quote: CustomerQuoteView;
+  /** The hold on an accepted quote, when there is one. */
+  hold?: CustomerHoldView | null;
   accept: (previous: AcceptState, formData: FormData) => Promise<AcceptState>;
 };
 
+function holdText(hold: CustomerHoldView): string {
+  if (hold.state === "HELD") return hold.expiresAt ? `Your items are held until ${formatTime(hold.expiresAt)}.` : "Your items are being held.";
+  if (hold.state === "SECURED") return "Your items are reserved for you.";
+  return "The hold on your items has ended. If you still want them, ask the merchant to hold them again.";
+}
+
 /** The exact quote the customer is being asked to accept, with its conditions and terms. */
-export function QuoteCard({ quote, accept }: Props) {
+export function QuoteCard({ quote, hold, accept }: Props) {
   return (
     <section aria-label="Quote" className="flex flex-col gap-4 rounded-lg border border-border p-4">
       <header className="flex flex-col gap-1">
@@ -66,9 +75,12 @@ export function QuoteCard({ quote, accept }: Props) {
       </div>
 
       {quote.status === "ACCEPTED" ? (
-        <p role="status" className="rounded-md bg-muted p-3 text-sm">
-          You accepted this exact quote{quote.acceptedAt ? ` on ${formatTime(quote.acceptedAt)}` : ""}. Payment is the next step.
-        </p>
+        <>
+          <p role="status" className="rounded-md bg-muted p-3 text-sm">
+            You accepted this exact quote{quote.acceptedAt ? ` on ${formatTime(quote.acceptedAt)}` : ""}. Payment is the next step.
+          </p>
+          {hold ? <p className="text-sm">{holdText(hold)}</p> : null}
+        </>
       ) : quote.expired ? (
         <p role="status" className="rounded-md bg-muted p-3 text-sm">
           This quote expired{quote.expiresAt ? ` on ${formatTime(quote.expiresAt)}` : ""}. Ask the merchant for a new one.
