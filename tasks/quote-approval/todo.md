@@ -1,7 +1,7 @@
 # Tasks: quote-approval
 
 Spec: [doc/spec/SPEC-quote-approval.md](../../doc/spec/SPEC-quote-approval.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T3 built, T4 to T9 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T4 built (0005 applied to local only), T5 to T9 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -32,7 +32,7 @@ Status: APPROVED 2 Nov 2026; T1 to T3 built, T4 to T9 open. Tick a box only afte
 
 ## Phase B: database
 
-- [ ] **T4 Migration 0005 and its database tests**
+- [x] **T4 Migration 0005 and its database tests**
   - Acceptance: `publish_quote`, `accept_quote`, `create_quote_draft` (version under the inquiry lock) and the partial unique
     index exist; the transition guard allows only the spec's transitions (`ACCEPTED → PUBLISHED` now rejected); service-role
     only. Tests: publish supersedes the live quote; a second live quote is rejected; accept is idempotent; two simultaneous

@@ -154,6 +154,8 @@ describe("quote versions", () => {
 
   it("lets a DRAFT be edited freely, and requires a hash once it leaves DRAFT", async () => {
     const own = await createChain(db);
+    // Migration 0005 allows one live quote per inquiry, so retire version 1 before publishing version 2.
+    must(await db.from("quote_versions").update({ status: "SUPERSEDED" }).eq("id", own.quoteId));
     const draft = must(
       await db.from("quote_versions").insert({ inquiry_id: own.inquiryId, version: 2, lines: [], total_minor: 5 }).select("id").single(),
     );

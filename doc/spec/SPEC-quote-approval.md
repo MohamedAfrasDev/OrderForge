@@ -93,6 +93,13 @@ Rules of the contract:
 4. **Transition guard tightened.** Today `guard_quote_version_immutable` lets an `ACCEPTED` row move to any status, including back to `PUBLISHED`. The migration allows only `PUBLISHED → ACCEPTED | SUPERSEDED | EXPIRED | WITHDRAWN`, `ACCEPTED → SUPERSEDED`, and `DRAFT → PUBLISHED | WITHDRAWN`. This is a state-machine change, hence the explicit approval.
 5. **`next_quote_version(p_inquiry_id)`** inside `create_quote_draft`: version numbers assigned under the inquiry row lock, so two drafts cannot take the same number.
 
+Refinements found while building T4 (2 Nov; none changes a status, transition or condition code):
+- The table check `status = 'DRAFT' or quote_hash is not null` would have made `DRAFT → WITHDRAWN` impossible, because a draft has no hash. It is replaced by `status in ('DRAFT','WITHDRAWN') or quote_hash is not null`.
+- `PAYMENT_STARTED` is raised when the accepted quote's purchase has an attempt in any state **except** `CREATED`, `VOIDED`, `EXPIRED` or `FAILED`. A voided attempt therefore lets `payments` supersede after the void, as the brief's change-after-authorization flow needs.
+- The hash is computed from the stored draft row at publish time, not at draft time, because the version number is assigned by the database.
+- An accept racing a newer publish has two correct outcomes, both ending with exactly one live quote (the new one): accept loses with `SUPERSEDED`, or accept wins first and the publish then supersedes it and reports the invalidated purchase ids.
+- The existing foundation test that published a second quote on an inquiry already holding one was changed to retire version 1 first, because of the new one-live-quote index.
+
 Applying 0005 to the hosted Supabase project is a separate step and needs your explicit yes immediately before it happens.
 
 ## 5. Tech stack
