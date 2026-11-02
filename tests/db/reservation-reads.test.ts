@@ -4,9 +4,10 @@ import { createCustomerLink } from "@/lib/access/customer-link";
 import { authorizeCustomerLink, type VerifiedInquiryId } from "@/lib/access/inquiry-reads";
 import { listHoldsForMerchant, readHoldForCustomer } from "@/services/reservation/read";
 import { createMerchantUser, must, serviceClient, signedInClient } from "./helpers";
-import { T0, acceptedChain, addMinutes, call, purchaseFor, reserve, stockedChain } from "./reservation-helpers";
+import { T0, acceptedChain, addMinutes, call, purchaseFor, reserve, stockedChain, expectStockConsistentAtEnd } from "./reservation-helpers";
 
 const db = serviceClient();
+expectStockConsistentAtEnd(db);
 const SECRET = "db-test-secret-with-enough-length";
 
 const begin = (id: string, operation: string) => call(db, "begin_operation", { p_reservation_id: id, p_operation: operation, p_now: T0 });

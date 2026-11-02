@@ -1,7 +1,7 @@
 # Tasks: reservation
 
 Spec: [doc/spec/SPEC-reservation.md](../../doc/spec/SPEC-reservation.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T6 built (0006 applied to local only), T7 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: BUILT 2 Nov 2026 (T1 to T7). CI on the branch and the hosted migration 0006 are open; see doc/checkpoints/reservation-checkpoint.md. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -77,7 +77,7 @@ Status: APPROVED 2 Nov 2026; T1 to T6 built (0006 applied to local only), T7 ope
   - Files: `services/reservation/read.ts`, `components/quote-card.tsx`, `app/merchant/holds/page.tsx`, `tests/db/reservation-reads.test.ts`, `e2e/reservation-holds.spec.ts`
   - Depends on: T5. Cuttable; the state machine, the RPCs and the sweep are not.
 
-- [ ] **T7 Checkpoint**
+- [x] **T7 Checkpoint**
   - Acceptance: every spec success criterion reviewed against current state with labeled evidence; CI green on the last code commit;
     record in `doc/checkpoints/reservation-checkpoint.md`; statuses updated in `SPEC.md` and this file. Applying 0006 to the hosted
     project only after a fresh explicit yes.

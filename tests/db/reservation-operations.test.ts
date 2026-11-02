@@ -13,9 +13,11 @@ import {
   stockOf,
   stockedChain,
   unknownId,
+  expectStockConsistentAtEnd,
 } from "./reservation-helpers";
 
 const db = serviceClient();
+expectStockConsistentAtEnd(db);
 
 const begin = (id: string, operation: string, now = T0) => call(db, "begin_operation", { p_reservation_id: id, p_operation: operation, p_now: now });
 const settle = (id: string, outcome: string, now = T0, extra: Record<string, unknown> = {}) =>

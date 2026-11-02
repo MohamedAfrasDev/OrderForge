@@ -12,9 +12,11 @@ import {
   stockOf,
   stockedChain,
   unknownId,
+  expectStockConsistentAtEnd,
 } from "./reservation-helpers";
 
 const db = serviceClient();
+expectStockConsistentAtEnd(db);
 const ids = (p: Record<string, string>) => Object.values(p);
 
 describe("reserve_stock", () => {

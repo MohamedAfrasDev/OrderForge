@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { afterAll, expect } from "vitest";
 import { LIVE_STATES, stockInvariant, type ReservationState } from "@/domain/reservation";
 import { createChain, must, randomHash, unique, type Chain } from "./helpers";
 
@@ -47,6 +48,7 @@ export async function stockedChain(db: SupabaseClient, onHandBySku: Record<strin
       `product ${sku}`,
     );
     products[sku] = row.id as string;
+    trackProducts([row.id as string]);
     must(await db.from("stock").insert({ product_id: row.id, on_hand: onHand, reserved: 0 }), `stock ${sku}`);
   }
   return { chain, merchantId: chain.merchantId, products };
@@ -125,4 +127,25 @@ export async function acceptedPurchaseFor(db: SupabaseClient, merchantId: string
   const row = must(await db.from("purchases").select("quote_version_id").eq("id", purchaseId).single(), "purchase");
   await acceptQuoteOf(db, row.quote_version_id as string);
   return { purchaseId, quoteId: row.quote_version_id as string };
+}
+
+// ---- a per-file gate: stock must be consistent with reservations when the file ends ---------------------------------
+const createdProducts = new Set<string>();
+
+/** Registers products a test file created, so the end-of-file invariant check covers them. */
+export function trackProducts(ids: Iterable<string>): void {
+  for (const id of ids) createdProducts.add(id);
+}
+
+/**
+ * Call once at the top of a reservation test file. When the file finishes, the database's own `check_stock_invariants()`
+ * must report nothing for every product the file created: `reserved` equals the quantity on live reservations. A test
+ * that corrupts stock on purpose has to repair it, which keeps those tests honest.
+ */
+export function expectStockConsistentAtEnd(db: SupabaseClient): void {
+  afterAll(async () => {
+    if (createdProducts.size === 0) return;
+    const found = must(await db.rpc("check_stock_invariants", { p_product_ids: [...createdProducts] }), "check_stock_invariants");
+    expect(found, "stock is inconsistent with reservations at the end of this file").toEqual([]);
+  });
 }

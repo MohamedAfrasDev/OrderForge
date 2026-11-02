@@ -2,7 +2,7 @@
 
 Module id: `reservation` · Depends on: `foundation` (done), `quote-approval` (done) · Index: [../../SPEC.md](../../SPEC.md) · Brief: [../OrderForge Build Brief v1.1.md](../OrderForge%20Build%20Brief%20v1.1.md)
 
-Status: **APPROVED on 2 Nov 2026 with the defaults for all six open questions.** Task list approved; build in progress (see tasks/reservation/todo.md). Target window: 7–8 Nov 2026 (brief schedule; it can run in parallel with `ai-intake`). Decisions to confirm: **one all-or-nothing reserve call, an explicit "operation in flight" state that only payments can enter and leave, timers that can only release a plain hold, and a stock invariant that a test can check at any time.**
+Status: **BUILT on 2 Nov 2026** (approved the same day with the defaults for all six open questions). Review: [doc/checkpoints/reservation-checkpoint.md](../checkpoints/reservation-checkpoint.md): 10 of 11 criteria met locally, CI and the hosted migration open. Target window: 7–8 Nov 2026 (brief schedule; it can run in parallel with `ai-intake`). Decisions to confirm: **one all-or-nothing reserve call, an explicit "operation in flight" state that only payments can enter and leave, timers that can only release a plain hold, and a stock invariant that a test can check at any time.**
 
 ## 1. Objective
 
@@ -185,17 +185,17 @@ Brief test rows owned here: *concurrent reservations for the last units (allocat
 
 ## 11. Success criteria (testable)
 
-- [ ] Demo path A to H passes with exact quantities on real Postgres.
-- [ ] Parallel reservations for the last units never over-allocate; a failed reservation changes nothing; opposite-order multi-product reservations do not deadlock.
-- [ ] The transition table is complete in TypeScript and the database trigger rejects every other pair, including `COMMITTED` changes and any `RELEASED` exit except an expired re-hold.
-- [ ] A sweep never changes `PAYMENT_IN_FLIGHT`, `AWAITING_CONFIRMATION` or `REVIEW_REQUIRED` except stale in-flight to `REVIEW_REQUIRED`, and never releases stock for them; it races safely with `beginOperation`.
-- [ ] Repeated or concurrent `reserve`, `settle`, `release` and `resolve` change stock exactly once.
-- [ ] `reserveForPurchase` refuses a quote that is superseded, tampered or not accepted, and reserves the per-product sum from the snapshot (a product in two slots counts twice).
-- [ ] `check_stock_invariants()` is empty after every database test file and after the full demo path.
-- [ ] A superseded quote's `HELD` reservation is released; one in any other state goes to review.
-- [ ] RLS and customer-view tests pass: merchants read only their own holds; customers see only their own hold.
-- [ ] `domain/reservation` passes the purity test; typecheck, lint, unit, database and E2E tests green locally and in CI.
-- [ ] The customer sees the hold and its expiry on an accepted quote, and the merchant holds page works (both cuttable; the state machine, the RPCs and the sweep are not).
+- [x] Demo path A to H passes with exact quantities on real Postgres.
+- [x] Parallel reservations for the last units never over-allocate; a failed reservation changes nothing; opposite-order multi-product reservations do not deadlock.
+- [x] The transition table is complete in TypeScript and the database trigger rejects every other pair, including `COMMITTED` changes and any `RELEASED` exit except an expired re-hold.
+- [x] A sweep never changes `PAYMENT_IN_FLIGHT`, `AWAITING_CONFIRMATION` or `REVIEW_REQUIRED` except stale in-flight to `REVIEW_REQUIRED`, and never releases stock for them; it races safely with `beginOperation`.
+- [x] Repeated or concurrent `reserve`, `settle`, `release` and `resolve` change stock exactly once.
+- [x] `reserveForPurchase` refuses a quote that is superseded, tampered or not accepted, and reserves the per-product sum from the snapshot (a product in two slots counts twice).
+- [x] `check_stock_invariants()` is empty after every database test file and after the full demo path.
+- [x] A superseded quote's `HELD` reservation is released; one in any other state goes to review.
+- [x] RLS and customer-view tests pass: merchants read only their own holds; customers see only their own hold.
+- [ ] `domain/reservation` passes the purity test; typecheck, lint, unit, database and E2E tests green locally and in CI. (Local part met; CI open until the branch is pushed and green.)
+- [x] The customer sees the hold and its expiry on an accepted quote, and the merchant holds page works (both cuttable; the state machine, the RPCs and the sweep are not).
 
 ## 12. Task outline (becomes `tasks/reservation/` after approval)
 

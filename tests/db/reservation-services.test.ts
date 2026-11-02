@@ -14,9 +14,10 @@ import { sweepReservations } from "@/services/reservation/sweep";
 import { boxTemplate, products as fixtureProducts, stock as fixtureStock } from "../../supabase/seed/fixtures";
 import { anonClient, codeOf, must, serviceClient, SQLSTATE, unique } from "./helpers";
 import { newDraft, publish as rpcPublish, accept as rpcAccept } from "./quote-helpers";
-import { T0, addMinutes, call, discrepancies, reservationOf, stockOf, unknownId } from "./reservation-helpers";
+import { T0, addMinutes, call, discrepancies, reservationOf, stockOf, unknownId, expectStockConsistentAtEnd, trackProducts } from "./reservation-helpers";
 
 const db = serviceClient();
+expectStockConsistentAtEnd(db);
 const SECRET = "db-test-secret-with-enough-length";
 const ctx = { now: T0, correlationId: "corr-reservation-t5" };
 const system = { kind: "system" } as const;
@@ -49,6 +50,7 @@ async function freshMerchant(template: unknown = boxTemplate, extraRules: Array<
     ]),
     "rules",
   );
+  trackProducts(ids.values());
   return { merchantId, product: Object.fromEntries(fixtureProducts.map((p) => [p.sku, ids.get(p.id)!])) };
 }
 
