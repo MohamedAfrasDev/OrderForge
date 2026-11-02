@@ -1,6 +1,6 @@
-import { execSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
+import { readLocalSupabase } from "./tests/support/local-supabase";
 
 const port = 3100;
 // The local fake PayPal that e2e/global-setup.ts starts. The app under test talks to it, never to PayPal.
@@ -9,30 +9,31 @@ const FAKE_PAYPAL_PORT = 4011;
 // E2E must never touch a hosted Supabase project (the real .env may point at one), so the dev
 // server is started with the LOCAL stack's keys. Without a local stack it gets a dead URL and
 // the sign-in tests skip themselves.
-function localSupabase(): { url: string; anonKey: string; serviceKey: string } | null {
-  try {
-    const raw = execSync("supabase status -o json", {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-      timeout: 30_000,
-    });
-    const json = JSON.parse(raw.slice(raw.indexOf("{")));
-    return { url: json.API_URL, anonKey: json.ANON_KEY, serviceKey: json.SERVICE_ROLE_KEY };
-  } catch {
-    return null;
+// Detected once, in the main process; workers inherit the result through the environment instead of
+// asking the CLI again (several workers asking at once is slow and was a source of flakiness).
+let local: { url: string; anonKey: string; serviceKey: string } | null = null;
+if (process.env.E2E_LOCAL_SUPABASE === undefined) {
+  const found = readLocalSupabase();
+  if (found.ok) {
+    local = found;
+    process.env.E2E_LOCAL_SUPABASE = "1";
+    process.env.E2E_SUPABASE_URL = found.url;
+    process.env.E2E_SUPABASE_ANON_KEY = found.anonKey;
+    process.env.E2E_SUPABASE_SERVICE_KEY = found.serviceKey;
+  } else {
+    process.env.E2E_LOCAL_SUPABASE = "0";
+    console.warn(`\n[e2e] Local Supabase not available, so sign-in and database tests will be SKIPPED. ${found.reason}\n`);
   }
+} else if (process.env.E2E_LOCAL_SUPABASE === "1") {
+  local = {
+    url: process.env.E2E_SUPABASE_URL!,
+    anonKey: process.env.E2E_SUPABASE_ANON_KEY!,
+    serviceKey: process.env.E2E_SUPABASE_SERVICE_KEY!,
+  };
 }
-
-const local = localSupabase();
-process.env.E2E_LOCAL_SUPABASE = local ? "1" : "0";
-// Workers re-load this file; ??= keeps the value the main process generated.
 process.env.E2E_ACCESS_LINK_SECRET ??= randomBytes(32).toString("hex");
 process.env.E2E_CRON_SECRET ??= randomBytes(32).toString("hex");
 process.env.E2E_FAKE_PAYPAL_URL = `http://127.0.0.1:${FAKE_PAYPAL_PORT}`;
-if (local) {
-  process.env.E2E_SUPABASE_URL = local.url;
-  process.env.E2E_SUPABASE_SERVICE_KEY = local.serviceKey;
-}
 
 export default defineConfig({
   testDir: "./e2e",

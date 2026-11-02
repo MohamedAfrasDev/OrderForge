@@ -149,7 +149,7 @@ All mocked and replayed PayPal tests green. Review with the human, and tell the 
   - Files: `doc/evidence/foundation-real-sandbox.md`, `doc/spec/SPEC-foundation.md`
   - Depends on: T20.
 
-- [ ] **T22 README**
+- [x] **T22 README** (acceptance run from a clean clone on 2 Nov: README steps -> dev server healthy, seeded merchant signs in, 232 unit + 86 DB + 42 E2E, build, typecheck, lint all green; secret scan of 111 files clean)
   - Acceptance: README has account-creation walkthrough (Supabase, PayPal sandbox buyer and merchant, Vercel, webhook, Vault secrets), env variable names, migrate and seed commands, demo reset, cron description, sandbox buyer guidance and known limitations; all UI/README sandbox labels present; secret scan of the tree is clean.
   - Verify: a fresh clone follows the README up to a running `npm run dev` and a green `npm run test`.
   - Files: `README.md`

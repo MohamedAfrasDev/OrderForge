@@ -1,29 +1,15 @@
 // Helpers for database tests. They talk only to the LOCAL Supabase stack started with
 // `supabase start`; credentials come from `supabase status`, never from .env.
-import { execSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { readLocalSupabase } from "../support/local-supabase";
 
 type LocalStack = { url: string; anonKey: string; serviceKey: string };
 
-let stack: LocalStack | undefined;
-
 export function localStack(): LocalStack {
-  if (stack) return stack;
-  let raw: string;
-  try {
-    raw = execSync("supabase status -o json", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
-  } catch {
-    throw new Error("Local Supabase is not running. Start it with `supabase start` (Docker required).");
-  }
-  const json = JSON.parse(raw.slice(raw.indexOf("{")));
-  const url = String(json.API_URL);
-  const host = new URL(url).hostname;
-  if (host !== "127.0.0.1" && host !== "localhost") {
-    throw new Error(`Refusing to run database tests against non-local host ${host}`);
-  }
-  stack = { url, anonKey: json.ANON_KEY, serviceKey: json.SERVICE_ROLE_KEY };
-  return stack;
+  const found = readLocalSupabase();
+  if (!found.ok) throw new Error(found.reason);
+  return found;
 }
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
