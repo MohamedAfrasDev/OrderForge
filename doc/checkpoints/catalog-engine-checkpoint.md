@@ -8,7 +8,7 @@ Every verdict below was re-run on 2 Nov against current state. Evidence is label
 
 ## Verdict
 
-**9 of 9 criteria met.** One part of criterion 7 is still open until CI runs on the last commit (see Open items). The module is ready
+**9 of 9 criteria met.** CI is green on the last code commit (see criterion 7). The module is ready
 for `quote-approval` to build on.
 
 ## Criteria
@@ -21,7 +21,7 @@ for `quote-approval` to build on.
 | 4 | `Configuration` with an extra field is rejected | Met | `schemas.test.ts` rejects `unitPriceMinor`, `discount`, `total`, `totalMinor` and `amount` (strict schema). local |
 | 5 | Alternatives: single swap, all valid, bounded (<= 20), deterministic, order-independent | Met | Seeded properties over 300 catalogs: each alternative re-validates, differs in exactly one slot, count is bounded, order is by absolute price change, repeat is identical, and shuffling products, selection keys and stock keys changes nothing. A guard asserts the property is not vacuous (more than 100 alternatives offered). local |
 | 6 | Stock needed is summed per product across slots | Met | `validate-stock-budget.test.ts`: a product in two slots (quantity 1 and 2, 10 boxes) needs 30; 29 is blocked, 30 is valid. local |
-| 7 | Purity test, and typecheck, lint, unit, database and E2E green locally and in CI | Met locally; CI partly | Local: 0 type errors, 0 lint errors, 376 unit, 99 database, 44 E2E, production build ok. Purity test (`purity.test.ts`) fails on any import outside `lib/money`, `zod` or the module, and on clock, network, environment or random use. CI: all 8 checks green on `739eca3` (T1 to T8). T9 (`015cf93`) and this record are not yet pushed, so CI has not run on them. local, CI |
+| 7 | Purity test, and typecheck, lint, unit, database and E2E green locally and in CI | Met | Local: 0 type errors, 0 lint errors, 376 unit, 99 database, 44 E2E, production build ok. Purity test (`purity.test.ts`) fails on any import outside `lib/money`, `zod` or the module, and on clock, network, environment or random use. CI: all checks green on `739eca3` (T1 to T8) and on `1e9c814` (T9, T10 and this record), in the pull-request run. The push run of `1e9c814` failed once in its database job with "port 54322 already in use" while starting Supabase on the runner (an infrastructure collision with the parallel pull-request run, before any test ran), so it is not counted. local, CI |
 | 8 | `loadCatalogSnapshot` returns the seeded catalog and template from real Postgres and fails clearly on a bad template | Met | 13 database tests: seeded catalog and template, `available = on_hand - reserved`, no other merchant's rows, missing template, five kinds of malformed template, malformed lead-days and minimum rules, all raising `CatalogLoadError` naming the rule. local |
 | 9 | Read-only merchant catalog page | Met | `/merchant/catalog`: signed-out visitor redirected to login; signed-in view shows bottle $13.00 with 24 available, truffles flagged food, organizer 100, five template slots, lead time. No visible form or input. E2E, local |
 
@@ -55,7 +55,6 @@ same fixture) and the catalog page (hosted deploy follows a merge to `main`).
 
 | Item | Why it is open | What closes it |
 |---|---|---|
-| CI on `015cf93` and this record | Not pushed yet | Push, then confirm the checks are green. |
 | Branch | catalog-engine work sits on `spec-1-foundation` (PR 1) | Decide whether to merge PR 1 with it or split. |
 
 ## Next

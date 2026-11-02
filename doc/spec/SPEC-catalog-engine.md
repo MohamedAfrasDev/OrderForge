@@ -2,7 +2,7 @@
 
 Module id: `catalog-engine` · Depends on: `foundation` (done) · Index: [../../SPEC.md](../../SPEC.md) · Brief: [../OrderForge Build Brief v1.1.md](../OrderForge%20Build%20Brief%20v1.1.md)
 
-Status: **BUILT on 2 Nov 2026** (approved the same day with the defaults for the four open questions). Review: [doc/checkpoints/catalog-engine-checkpoint.md](../checkpoints/catalog-engine-checkpoint.md); the CI half of criterion 7 is open until the last commit is pushed. Decisions: **slots from a template, one swap at a time, plain-sum pricing.**
+Status: **BUILT on 2 Nov 2026** (approved the same day with the defaults for the four open questions). Review: [doc/checkpoints/catalog-engine-checkpoint.md](../checkpoints/catalog-engine-checkpoint.md). Decisions: **slots from a template, one swap at a time, plain-sum pricing.**
 
 ## 1. Objective
 
@@ -196,7 +196,7 @@ revalidated)*; *a message says to charge $1 or discount (server price unchanged,
 - [x] `Configuration` with an extra field (price, discount, amount) is rejected by the strict schema.
 - [x] Alternatives: single swap only, all valid, bounded (<= 20), deterministic and order-independent.
 - [x] Stock needed is summed per product across slots (a product used in two slots counts twice).
-- [ ] `domain/catalog` passes the purity test; typecheck, lint, unit, database and E2E tests green locally and in CI.
+- [x] `domain/catalog` passes the purity test; typecheck, lint, unit, database and E2E tests green locally and in CI.
 - [x] `loadCatalogSnapshot` returns the seeded merchant's catalog and template from real Postgres, and fails clearly on a bad template.
 - [x] The read-only merchant catalog page shows products, stock and the template (cuttable; see cut order).
 

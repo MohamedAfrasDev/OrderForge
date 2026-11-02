@@ -1,7 +1,7 @@
 # Tasks: catalog-engine
 
 Spec: [doc/spec/SPEC-catalog-engine.md](../../doc/spec/SPEC-catalog-engine.md) · Plan: [plan.md](plan.md)
-Status: BUILT, all tasks ticked (CI on the last commit pending push). Tick a box only after its Verify step passes. Every task is test first.
+Status: BUILT, all tasks ticked (CI green on the last commit). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure engine (no database, no network)
 
