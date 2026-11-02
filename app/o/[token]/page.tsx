@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { QuoteCard } from "@/components/quote-card";
 import { getCustomerMessages } from "@/lib/access/inquiry-reads";
 import { authorizeCustomerToken } from "@/lib/access/customer-session";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readCustomerQuote } from "@/services/quote/read";
+import { acceptQuoteAction } from "./actions";
 
 // The token is a credential: keep it out of search indexes and Referer headers.
 export const metadata: Metadata = {
@@ -32,7 +35,9 @@ async function OrderRoom({ params }: { params: PageProps<"/o/[token]">["params"]
   if (!access.ok) notFound();
 
   const { inquiry } = access;
-  const messages = await getCustomerMessages(createAdminClient(), inquiry.id);
+  const db = createAdminClient();
+  const messages = await getCustomerMessages(db, inquiry.id);
+  const quote = await readCustomerQuote(db, inquiry.id, new Date().toISOString());
 
   return (
     <>
@@ -43,6 +48,8 @@ async function OrderRoom({ params }: { params: PageProps<"/o/[token]">["params"]
           Status: <span className="font-medium">{inquiry.status}</span>
         </p>
       </header>
+
+      {quote ? <QuoteCard quote={quote} accept={acceptQuoteAction.bind(null, token)} /> : null}
 
       <section aria-label="Conversation" className="flex flex-col gap-3">
         {messages.length === 0 ? (
