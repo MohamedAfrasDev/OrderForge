@@ -1,7 +1,7 @@
 # Tasks: payments
 
 Spec: [doc/spec/SPEC-payments.md](../../doc/spec/SPEC-payments.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 built, T2 to T10 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 and T2 built (0007 applied to local only), T3 to T10 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -21,12 +21,12 @@ Status: APPROVED 2 Nov 2026; T1 built, T2 to T10 open. Tick a box only after its
 
 ## Phase B: database
 
-- [ ] **T2 Migration 0007 (part 1): columns, guard trigger, create, record and approve**
+- [x] **T2 Migration 0007 (part 1): columns, guard trigger, create, record and approve**
   - Acceptance: `payment_attempts` gains `approve_url` (https PayPal address only), `authorized_at`, `authorization_expires_at`,
     `state_changed_at`, `failure_code`, `exception_reason`. A guard trigger enforces the transition table, makes terminal states
     immutable, and keeps the existing `unknown_operation` rule. `payment_create_attempt` is idempotent for the same purchase and
     quote hash and refuses a second active attempt (`ATTEMPT_ACTIVE`); `payment_record_order` moves `CREATED` to `PROVIDER_CREATED`
-    and stores the order id and approval link; `payment_mark_approved` moves it to `APPROVED`. Service role only. Tests: every state
+    and stores the order id and approval link; `payment_mark_approved` moves it to `APPROVED`; `payment_fail` (added here for T5) ends a pre-authorization attempt that PayPal refused. Service role only. Tests: every state
     pair against the TypeScript table; terminal immutability; the unique ids and one-active-attempt constraints; a replayed record is
     a no-op; the anon role is denied.
   - Verify: `supabase migration up && npm run test:db -- tests/db/payments-attempts.test.ts tests/db/payments-guards.test.ts`

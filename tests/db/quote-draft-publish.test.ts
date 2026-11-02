@@ -8,7 +8,7 @@ import { createQuoteDraft, requestMerchantReview } from "@/services/quote/create
 import { publishQuote, withdrawQuote } from "@/services/quote/publish";
 import { loadCatalogSnapshot } from "@/services/catalog/load-snapshot";
 import { businessRules, merchant, MERCHANT_ID, products, stock } from "../../supabase/seed/fixtures";
-import { codeOf, must, serviceClient, unique } from "./helpers";
+import { attemptEvidence, codeOf, must, serviceClient, unique } from "./helpers";
 import { accept, NOW, statusOf } from "./quote-helpers";
 
 const db = serviceClient();
@@ -247,7 +247,7 @@ describe("publishQuote", () => {
     const p1 = await publishQuote(db, v1.quoteId, system, ctx);
     const hash = p1.ok ? p1.value.hash : "";
     const acc = await accept(db, v1.quoteId, hash);
-    must(await db.from("payment_attempts").insert({ purchase_id: acc.purchase_id, amount_minor: 108000, quote_hash: hash, state: "AUTHORIZED" }));
+    must(await db.from("payment_attempts").insert({ purchase_id: acc.purchase_id, amount_minor: 108000, quote_hash: hash, state: "AUTHORIZED", ...attemptEvidence("AUTHORIZED") }));
     const v2 = await mustDraft(inquiryId);
     expect(await publishQuote(db, v2.quoteId, system, ctx)).toMatchObject({ ok: false, code: "PAYMENT_STARTED" });
     expect(await statusOf(db, v1.quoteId)).toBe("ACCEPTED");

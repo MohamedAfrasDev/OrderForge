@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { codeOf, must, randomHash, serviceClient, SQLSTATE, anonClient } from "./helpers";
+import { attemptEvidence, codeOf, must, randomHash, serviceClient, SQLSTATE, anonClient } from "./helpers";
 import { accept, newDraft, newInquiry, NOW, publish, rpc, statusOf } from "./quote-helpers";
 
 const db = serviceClient();
@@ -106,6 +106,7 @@ describe("PAYMENT_STARTED", () => {
       quote_hash: hash,
       state,
       unknown_operation: state === "OUTCOME_UNKNOWN" ? "authorize" : null,
+      ...attemptEvidence(state),
     });
     expect(codeOf(attempt)).toBe("none");
     const v2 = await newDraft(db, inquiryId);
