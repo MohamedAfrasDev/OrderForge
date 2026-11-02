@@ -46,6 +46,7 @@ export type QuoteErrorCode =
   | "MERCHANT_ONLY"
   | "PAYMENT_STARTED"
   | "NOT_FOUND"
+  | "INVALID_INPUT"
   | "ILLEGAL_TRANSITION";
 
 export type QuoteResult<T> =

@@ -76,7 +76,7 @@ verifyApprovalBinding(approvalId): Result<{ snapshot }>            // for reserv
 readCustomerQuote(verifiedInquiryId): CustomerQuoteView | null     // PUBLISHED or ACCEPTED only
 ```
 
-Coded results (stable; other modules match on them): `CONFIGURATION_BLOCKED` (carries the catalog blockers), `NOT_DRAFT`, `NOT_PUBLISHED`, `SUPERSEDED`, `EXPIRED`, `WITHDRAWN`, `HASH_MISMATCH` (the customer's hash is not the stored one), `QUOTE_TAMPERED` (stored hash is not the recomputed one), `QUOTE_STALE` (reprice differs), `MERCHANT_REVIEW_REQUIRED`, `MERCHANT_ONLY`, `PAYMENT_STARTED`, `NOT_FOUND` (also returned for another customer's quote, so existence is not leaked), `ILLEGAL_TRANSITION`. A thrown error means a programmer bug or a malformed row.
+Coded results (stable; other modules match on them): `CONFIGURATION_BLOCKED` (carries the catalog blockers), `NOT_DRAFT`, `NOT_PUBLISHED`, `SUPERSEDED`, `EXPIRED`, `WITHDRAWN`, `HASH_MISMATCH` (the customer's hash is not the stored one), `QUOTE_TAMPERED` (stored hash is not the recomputed one), `QUOTE_STALE` (reprice differs), `MERCHANT_REVIEW_REQUIRED`, `MERCHANT_ONLY`, `PAYMENT_STARTED`, `NOT_FOUND` (also returned for another customer's quote, so existence is not leaked), `INVALID_INPUT` (strict schema failure, added in T5), `ILLEGAL_TRANSITION`. A thrown error means a programmer bug or a malformed row.
 
 Rules of the contract:
 - `createQuoteDraft` accepts a **strict** input schema: `inquiryId`, `configuration` (the strict catalog schema), `requirements`, `requirementVersionId`, `conditions`. Any other field, including an amount or discount, is rejected.

@@ -2,7 +2,7 @@
 export { canonicalJson } from "./canonical";
 export { gateForPublish } from "./gate";
 export type { PublishGate } from "./gate";
-export { CONDITION_CODES, conditionSchema, draftInputSchema } from "./schemas";
+export { CONDITION_CODES, conditionSchema, draftInputSchema, storedConditionsSchema, storedLinesSchema } from "./schemas";
 export type { DraftInput } from "./schemas";
 export { TERMS_SENTENCE, buildQuoteSnapshot, quoteHash, renderTerms } from "./snapshot";
 export type { SnapshotInput } from "./snapshot";

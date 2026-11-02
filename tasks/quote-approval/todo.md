@@ -1,7 +1,7 @@
 # Tasks: quote-approval
 
 Spec: [doc/spec/SPEC-quote-approval.md](../../doc/spec/SPEC-quote-approval.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T4 built (0005 applied to local only), T5 to T9 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T5 built (0005 applied to local only), T6 to T9 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -44,7 +44,7 @@ Status: APPROVED 2 Nov 2026; T1 to T4 built (0005 applied to local only), T5 to 
 
 ## Phase C: services
 
-- [ ] **T5 createQuoteDraft, requestMerchantReview, publishQuote, withdrawQuote**
+- [x] **T5 createQuoteDraft, requestMerchantReview, publishQuote, withdrawQuote**
   - Acceptance: a draft is created only from a configuration that validates (blockers returned, nothing stored otherwise); an
     unknown SKU or an input with an amount is rejected before any quote; prices come from `calculateQuote`; the gate holds a quote
     with an unresolved mandatory condition (inquiry `REVIEW_REQUIRED`); only a merchant actor publishes it, adding
