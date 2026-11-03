@@ -1,7 +1,7 @@
 # Tasks: ai-intake
 
 Spec: [doc/spec/SPEC-ai-intake.md](../../doc/spec/SPEC-ai-intake.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 and T2 built. Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T3 built. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic and the model port (no database; the client is tested against a local fake server)
 
@@ -31,7 +31,7 @@ Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 and T2 built
   - Files: `domain/intake/{questions,alternatives,prompts}.ts`, `domain/intake/index.ts`, `tests/intake/{questions,alternatives,prompts}.test.ts`
   - Depends on: T1.
 
-- [ ] **T3 Model port and the OpenRouter client**
+- [x] **T3 Model port and the OpenRouter client**
   - Acceptance: `ModelPort.complete({ kind, messages, schema, model })` returns a typed result or a typed failure (`PROVIDER_FAILURE`,
     `TIMEOUT`, `MALFORMED`). The OpenRouter client uses `fetch` only, a 20-second timeout, structured output (a JSON schema), the existing
     `OPENROUTER_API_KEY`, and optional `OPENROUTER_MODEL` (free) and `OPENROUTER_FALLBACK_MODEL` (low-cost paid) with documented defaults. It switches to
