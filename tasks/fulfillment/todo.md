@@ -1,7 +1,7 @@
 # Tasks: fulfillment
 
 Spec: [doc/spec/SPEC-fulfillment.md](../../doc/spec/SPEC-fulfillment.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 to T6 built, T7 checkpoint written (CI, hosted 0008 and the hosted check open) (0008 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; T1 to T7 done (checkpoint 3 Nov, 10 of 10; hosted checks done) (0008 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -85,7 +85,7 @@ Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 to T6 built, T
   - Files: `app/merchant/jobs/{page,actions}.tsx`, `components/job-status.tsx`, `app/o/[token]/page.tsx`, `e2e/fulfillment-merchant.spec.ts`, `e2e/fulfillment-customer.spec.ts`
   - Depends on: T5.
 
-- [ ] **T7 Checkpoint**
+- [x] **T7 Checkpoint**
   - Acceptance: every spec success criterion reviewed against current state with labeled evidence (mocked, local, CI, real-sandbox); CI green
     on the last code commit; record in `doc/checkpoints/fulfillment-checkpoint.md`; statuses updated in `SPEC.md` and this file. Applying 0008 to
     the hosted project only after a fresh explicit yes, with read-only checks before and after; then, after the deploy, the two orders already

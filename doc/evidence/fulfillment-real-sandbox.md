@@ -4,7 +4,8 @@ Label for everything in this file: **hosted** (the real Supabase project and the
 that were really paid through the PayPal sandbox on 3 Nov (see [payments-real-sandbox.md](payments-real-sandbox.md)); fulfillment itself
 sends nothing to PayPal. Nothing here is copied from the local or mocked results in the checkpoint.
 
-**Status: check 1 passed (3 Nov); check 2 (the customer and the merchant on the live site) is waiting for you.** Read from the hosted database, read-only, at about 06:57 UTC on 3 Nov. The hosted site ran PR 6 (merge commit `3e01097`) with migration 0008 applied.
+**Status: both checks done (3 Nov).** Check 1 was read at about 06:57 UTC and check 2 at about 14:27 UTC, both from the hosted
+database, read-only. The hosted site ran PR 6 (merge commit `3e01097`) with migration 0008 applied.
 
 ## Check 1: the reconcile run makes the missing jobs: PASSED
 
@@ -21,16 +22,27 @@ The scheduled run (Supabase pg_cron every 5 minutes, calling `/api/cron/reconcil
 | A second run | no new jobs | the later runs created none; still two jobs and two events |
 | `check_stock_invariants()` | empty array | empty array |
 
-## Check 2: the customer sees it, the merchant moves it
+## Check 2: the merchant moves the jobs on the live site: PASSED (database side)
 
-| Step | Expected | Observed |
+The merchant did the clicks on the live site on 3 Nov, between 14:25 and 14:26 UTC. What is recorded below comes from the database.
+What the customer page looked like on screen was not seen by me, so the customer-side wording is covered by the E2E tests, not by this file.
+
+| Step | Expected | Observed in the hosted database |
 |---|---|---|
-| Customer opens the order room of a paid order | "We are preparing your order" with a ready-by day | |
-| Merchant opens Jobs | the worksheet lists 30 of each box product | |
-| Start, ready, record pickup | each step shows; the customer's page follows | |
-| Database | job COLLECTED, four events, no duplicate | |
+| Merchant starts preparing (order ending `9f37`) | QUEUED to PREPARING, one event, one audit row | 14:25:19 UTC: event QUEUED to PREPARING by a merchant actor (`merchant:` plus the user id), audit `fulfillment.job_moved` |
+| Marks ready for pickup | PREPARING to READY_FOR_PICKUP | 14:25:51 event, 14:25:52 audit |
+| Records pickup | READY_FOR_PICKUP to COLLECTED | 14:26:12 event and audit; job status COLLECTED |
+| The same order's log | four events in order, no duplicate | QUEUED (system, 06:55:01), PREPARING, READY_FOR_PICKUP, COLLECTED: exactly four, each with the status it came from |
+| The other order (ending `aca9`) | one move, left where it was | QUEUED to PREPARING at 14:25:53, audit at 14:25:54; status PREPARING, two events |
+| One job per purchase | 2 jobs, 2 purchases | 2 jobs, 2 distinct purchases |
+| `check_stock_invariants()` | empty array | empty array |
 
-## Notes to record
+Every move names the same merchant user, was made through the merchant Jobs page (the audit rows carry the merchant actor, not the
+system), and followed the transition table: no step was skipped and nothing went backwards. An earlier read of the records, a few
+hours before these clicks, had found both jobs untouched at QUEUED with one event each.
 
-- Anything that differed from the local results.
-- Whether the scheduled reconcile ran by itself, and how soon after the deploy.
+## What this does not show
+
+- What the customer page looked like on screen during the moves (not seen by me).
+- A hold with a note, and a resume, on the live site (not tried).
+- A second reconcile run racing a move (the scheduled runs since the first one created no further jobs).
