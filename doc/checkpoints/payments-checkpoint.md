@@ -5,14 +5,11 @@ Date: 3 Nov 2026 · Module: `payments` · Reviewed against: [doc/spec/SPEC-payme
 
 Evidence is labeled **mocked** (the local fake PayPal), **local** (Docker Supabase on this machine), **real-sandbox** (the real PayPal
 sandbox), **hosted** (the real Supabase project) or **CI** (GitHub Actions). Everything below was run on 3 Nov against current state
-unless a row says otherwise. Nothing in this module has been run against real PayPal yet, and the branch has not been pushed, so there
-is no CI result.
+unless a row says otherwise. Nothing in this module has been run against real PayPal yet. CI is green on b782b10 (PR 4, 8 of 8 checks).
 
 ## Verdict
 
-**10 of 12 criteria met locally with mocked evidence. 2 are open and need you:** criterion 1 (the two real-sandbox runs) and the CI
-half of criterion 11 (the branch is not pushed). Migration 0007 is applied to the local database only; the hosted project is untouched
-(see Hosted migration). The module is **not** ready for `fulfillment` to rely on until the real-sandbox runs are recorded.
+**11 of 12 criteria met. 1 is open and needs you:** criterion 1 (the two real-sandbox runs). Migration 0007 is applied to the local database and, since 3 Nov, to the hosted project (see Hosted migration). The module is **not** ready for `fulfillment` to rely on until the real-sandbox runs are recorded.
 
 Local gates on `74117f4`: typecheck 0 errors, lint 0 problems, 698 unit, 1031 database, 70 E2E, production build ok.
 
@@ -30,7 +27,7 @@ Local gates on `74117f4`: typecheck 0 errors, lint 0 problems, 698 unit, 1031 da
 | 8 | Expired authorizations are handled and the honor-period warning shows | Met (application level) | `payments-reconcile` with an injected clock: before expiry nothing happens; after expiry PayPal is asked, the attempt becomes EXPIRED, the reservation is released as EXPIRED and stock returns to 100 available. The 3-day warning is in `payments-reads` and shown on the decisions page. **Labeled application-level: the sandbox was not observed to expire an authorization.** local |
 | 9 | A change after authorization voids the old authorization, requires a new quote, approval and attempt, and never reuses the authorization | Met | `payments-decide-service`: the superseded quote blocks capture (`CAPTURE_BLOCKED`, nothing sent, decision stays pending), `voidForChange` voids and releases with reason VOIDED, and a new checkout on the old purchase is refused as `QUOTE_NOT_ACCEPTED`. local + mocked |
 | 10 | Access tests pass: customers and merchants act only on their own purchases | Met | Customer: `PURCHASE_NOT_FOUND` for another customer's purchase, `NOT_FOUND` for another customer's order id, no state change (`payments-checkout`, `payments-customer` E2E). Merchant: another merchant's purchase is `NOT_FOUND` for `decide` and `voidForChange`; the decisions page and `listDecisionsForMerchant` show only their own; the page redirects visitors to login (`payments-decide-service`, `payments-reads`, `payments-merchant` E2E). local |
-| 11 | `domain/payments` passes the purity test; typecheck, lint, unit, database and E2E green locally and in CI | **Local met, CI open** | Local: figures above. `tests/payments/purity.test.ts` limits `domain/payments` imports to `domain/reservation`, `domain/quote`, `lib/money`, `zod` and itself, and bans clock, environment and `Math.random` reads. **CI: not run, the branch is not pushed.** |
+| 11 | `domain/payments` passes the purity test; typecheck, lint, unit, database and E2E green locally and in CI | **Met** | Local: figures above. `tests/payments/purity.test.ts` limits `domain/payments` imports to `domain/reservation`, `domain/quote`, `lib/money`, `zod` and itself, and bans clock, environment and `Math.random` reads. **CI: green on `b782b10` (PR 4), 8 of 8 checks.** |
 | 12 | The customer can pay and sees each status; the merchant can decide and sees what needs attention | Met, one gap | E2E (`payments-customer` 5, `payments-merchant` 5): pay, redirect to the approval link, return, "authorized, waiting for the merchant"; a second return is harmless; return before approving says so; another customer's order id gets the general message; the merchant must confirm the listed condition, accepts with a double click and one capture results; declines with a reason and the customer is told; isolation between merchants. **Gap: no E2E test shows a financial exception in the merchant's list**, because the fake PayPal cannot be steered from the test process. The ordering (exceptions first) is covered in `payments-reads`. mocked + local |
 
 Counts: payments unit tests 120 (`tests/payments`, `tests/payments-reconcile-handler.test.ts`), payments database tests 215
@@ -38,10 +35,23 @@ Counts: payments unit tests 120 (`tests/payments`, `tests/payments-reconcile-han
 
 ## Hosted migration
 
-**Not applied.** Migration `0007_payments.sql` exists only in this branch and in the local database. Applying it to the hosted project
-needs a fresh explicit yes immediately before, with the same read-only checks before and after as 0005 and 0006. The hosted project
-also does not yet have the code: the branch is unpushed, so the hosted reconcile route and webhook route still run the older code.
-Order matters when it happens: apply 0007, then merge and deploy (the new webhook route needs the `processed_at` column).
+Applied on 3 Nov after a fresh explicit yes, with `supabase db push --db-url` against the hosted project (ref `twkepbycivkmhrmurxwi`, the one in `.env`).
+A dry run first listed exactly one pending migration, `0007_payments.sql`. Checked read-only before and after, over the same connection:
+
+| | Before | After |
+|---|---|---|
+| Applied migrations | 0001 to 0006 | 0001 to 0007 |
+| Payment attempts, merchant decisions, purchases, reservations | 0, 0, 0, 0 (the migration precondition held) | 0, 0, 0, 0 (no data touched) |
+| Payment events | 25 (earlier spike and webhook rows) | 25 (unchanged) |
+| New attempt columns (`approve_url`, `authorized_at`, `authorization_expires_at`, `state_changed_at`, `failure_code`, `exception_reason`) | 0 of 6 | 6 of 6 |
+| `payment_events.processed_at` | absent | present |
+| Attempt transition guard trigger | absent | present |
+| Payment functions | none | 11: nine callable by `service_role` only (not `anon`, not `authenticated`), the two internal helpers (`payment_apply_outcome`, `payment_settle_reservation`) callable by nobody through the API |
+| `check_stock_invariants()` | not run | returns an empty array |
+
+The first push attempt was blocked by the permission check and nothing changed; it was retried after you allowed it. The hosted
+reconcile and webhook routes still run the older code until PR 4 is merged and deployed. The new code needs this migration, which
+is now in place, so merging is safe. Not run against hosted: the database tests, which clear application data (local only by design).
 
 ## Findings from this review
 
@@ -65,9 +75,8 @@ Order matters when it happens: apply 0007, then merge and deploy (the new webhoo
 
 ## Open items (need you)
 
-1. **Push and open the PR** so CI can run (criterion 11). Not done: you have not asked for it yet.
-2. **Hosted migration 0007**, then deploy, then the two **real-sandbox runs on the hosted site with you as the buyer**: pay then
-   accept, and pay then decline. Record them in [doc/evidence/payments-real-sandbox.md](../evidence/payments-real-sandbox.md),
-   labeled real-sandbox, separate from everything above.
-3. **`PAYPAL_PAYEE_MERCHANT_ID`**: if you give me the sandbox merchant id, it is set on Vercel too, so captures are checked against it.
+1. **Merge PR 4 and let it deploy**, then the two **real-sandbox runs on the hosted site with you as the buyer**: pay then accept, and
+   pay then decline. Record them in [doc/evidence/payments-real-sandbox.md](../evidence/payments-real-sandbox.md), labeled real-sandbox,
+   separate from everything above.
+2. **`PAYPAL_PAYEE_MERCHANT_ID`**: if you give me the sandbox merchant id, it is set on Vercel too, so captures are checked against it.
    Without it that check is skipped.

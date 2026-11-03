@@ -1,7 +1,7 @@
 # Tasks: payments
 
 Spec: [doc/spec/SPEC-payments.md](../../doc/spec/SPEC-payments.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T9 built (0007 applied to local only), T10 checkpoint written, waiting on push, hosted 0007 and the real-sandbox runs. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T9 built (0007 applied to local only), T10 checkpoint written, CI green, hosted 0007 applied, waiting on merge and the real-sandbox runs. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 

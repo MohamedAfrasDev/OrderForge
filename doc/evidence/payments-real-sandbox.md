@@ -3,7 +3,7 @@
 Label for everything in this file: **real-sandbox** (the real PayPal sandbox, driven on the hosted site by a person as the buyer).
 Nothing here may be copied from the mocked or local results in the checkpoint.
 
-**Status: not run yet.** Waiting for: migration 0007 applied to the hosted project, the branch deployed, and you as the sandbox buyer.
+**Status: not run yet.** Migration 0007 is applied to the hosted project (3 Nov). Waiting for: PR 4 merged and deployed, and you as the sandbox buyer.
 
 ## Run 1: pay, then the merchant accepts
 
