@@ -119,8 +119,9 @@ Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T9 built 
     failure), and writes a report with the number of scenarios, the method, which model answered each and every failure, with no accuracy, speed or
     time-saving figure. The free candidates are compared and the primary chosen; if none passes the structure and injection scenarios that is reported
     to you before any paid primary. The recorded outputs of one run become replayed fixtures for the CI tests. README note on how to read the report.
-  - Verify: `npm run test -- tests/intake/eval-scenarios.test.ts` (the scenarios are well formed and the replayed fixtures pass) and a documented manual `npm run eval:intake`
-  - Files: `eval/intake/{scenarios,run}.ts`, `eval/intake/README.md`, `tests/intake/eval-scenarios.test.ts`, `package.json`
+  - Verify: `npm run test -- tests/intake/eval-scenarios.test.ts` (the scenarios are well formed, the scorer and report behave) and `npm run test:db -- tests/db/intake-eval-replay.test.ts` (the scenarios run through the real pipeline with the stand-in, and the replayed fixtures pass; the replay needs a recording, so it runs after the manual run), and a documented manual `npm run eval:intake`
+  - Files: `eval/intake/{scenarios,score,harness,report,run}.ts`, `eval/intake/README.md`, `vitest.eval.config.ts`, `tests/intake/eval-scenarios.test.ts`, `tests/db/intake-eval-replay.test.ts`, `package.json` (the runner is a vitest entry so the `@/` aliases and the local database helpers work; it reads only the OpenRouter key from `.env`)
+  - Status: built and verified except the manual run and the recorded fixtures, which wait for a yes (the run spends the key).
   - Depends on: T9. Ask first before the manual run spends anything on your key (it is mostly free; a handful of paid fallback calls at most).
 
 - [ ] **T11 Checkpoint**

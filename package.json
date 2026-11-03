@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:db": "vitest run --config vitest.db.config.ts",
     "test:e2e": "playwright test",
+    "eval:intake": "vitest run --config vitest.eval.config.ts",
     "seed": "node --env-file=.env --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed.ts",
     "demo:reset": "node --env-file=.env --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/demo-reset.ts",
     "paypal:spike": "node --env-file=.env --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/paypal-spike.ts",
