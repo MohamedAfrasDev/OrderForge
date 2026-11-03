@@ -2,7 +2,7 @@
 
 Module id: `fulfillment` · Depends on: `payments` (built; PR 5 with its last fix is open) · Index: [../../SPEC.md](../../SPEC.md) · Brief: [../OrderForge Build Brief v1.1.md](../OrderForge%20Build%20Brief%20v1.1.md)
 
-Status: **APPROVED on 3 Nov 2026 with the defaults for all eight open questions.** Task list: [tasks/fulfillment/](../../tasks/fulfillment/todo.md), approved 3 Nov 2026. Target window: 8–9 Nov 2026 (brief schedule: "unique job" and "a real sandbox purchase reaches the preparation view"; the project is ahead of it). The 9 Nov tripwire applies. Decisions to confirm: **a job is created only for a purchase whose payment is a verified capture, by code in this module (payments never calls it), at most once per purchase by a database constraint; its worksheet is built from the accepted quote snapshot and never changes; the merchant moves the job through a fixed set of steps; the customer sees the status in plain words.**
+Status: **BUILT on 3 Nov 2026** (approved the same day with the defaults for all eight open questions; checkpoint 10 of 10). Task list: [tasks/fulfillment/](../../tasks/fulfillment/todo.md), approved 3 Nov 2026. Target window: 8–9 Nov 2026 (brief schedule: "unique job" and "a real sandbox purchase reaches the preparation view"; the project is ahead of it). The 9 Nov tripwire applies. Decisions to confirm: **a job is created only for a purchase whose payment is a verified capture, by code in this module (payments never calls it), at most once per purchase by a database constraint; its worksheet is built from the accepted quote snapshot and never changes; the merchant moves the job through a fixed set of steps; the customer sees the status in plain words.**
 
 ## 1. Objective
 
