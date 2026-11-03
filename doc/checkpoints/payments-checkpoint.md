@@ -9,7 +9,7 @@ unless a row says otherwise. Nothing in this module has been run against real Pa
 
 ## Verdict
 
-**11 of 12 criteria met. 1 is open and needs you:** criterion 1 (the two real-sandbox runs). Migration 0007 is applied to the local database and, since 3 Nov, to the hosted project (see Hosted migration). The module is **not** ready for `fulfillment` to rely on until the real-sandbox runs are recorded.
+**12 of 12 criteria met.** Criterion 1 was closed on 3 Nov by the two real-sandbox runs on the hosted site (recorded in [doc/evidence/payments-real-sandbox.md](../evidence/payments-real-sandbox.md)); they found one real bug (finding 6), fixed in the follow-up PR. Migration 0007 is applied to the local database and, since 3 Nov, to the hosted project (see Hosted migration). The module is ready for `fulfillment` to rely on once the follow-up PR with the race fix is merged.
 
 Local gates on `74117f4`: typecheck 0 errors, lint 0 problems, 698 unit, 1031 database, 70 E2E, production build ok.
 
@@ -17,7 +17,7 @@ Local gates on `74117f4`: typecheck 0 errors, lint 0 problems, 698 unit, 1031 da
 
 | # | Criterion (spec §11) | Verdict | Evidence |
 |---|---|---|---|
-| 1 | Demo path A to H passes against the fake PayPal with exact cents; the real-sandbox runs (pay then accept, pay then decline) are recorded separately | **Half met** | Mocked, met: A and B `payments-checkout` (order for 108000 cents USD from the snapshot, a later price change changes nothing, approval verified with PayPal, authorize sent once even with five simultaneous returns). C and D `payments-decide-service` (capture of exactly 1080.00 verified against PayPal's order record before CAPTURED, stock committed; decline voids and releases). E repeated accept captures once, five simultaneous accepts send one capture, accept racing decline sends one of capture or void. F `payments-reconcile` (capture answer lost resolves to CAPTURED with no second capture). G wrong amount, wrong currency and wrong status on authorize and capture are exceptions. H a superseded quote blocks capture, `voidForChange` voids and refuses once captured. **Real-sandbox: not run.** Needs you as the buyer, see Open items. mocked + local |
+| 1 | Demo path A to H passes against the fake PayPal with exact cents; the real-sandbox runs (pay then accept, pay then decline) are recorded separately | Met | Mocked, met: A and B `payments-checkout` (order for 108000 cents USD from the snapshot, a later price change changes nothing, approval verified with PayPal, authorize sent once even with five simultaneous returns). C and D `payments-decide-service` (capture of exactly 1080.00 verified against PayPal's order record before CAPTURED, stock committed; decline voids and releases). E repeated accept captures once, five simultaneous accepts send one capture, accept racing decline sends one of capture or void. F `payments-reconcile` (capture answer lost resolves to CAPTURED with no second capture). G wrong amount, wrong currency and wrong status on authorize and capture are exceptions. H a superseded quote blocks capture, `voidForChange` voids and refuses once captured. **Real-sandbox, met (3 Nov, hosted, you as the buyer):** two orders paid and accepted, each CAPTURED at 108000 cents USD with a capture id and committed stock; one paid and declined, VOIDED with stock released; 12 real webhooks verified and processed. Details and the finding in the evidence file. mocked + local + real-sandbox |
 | 2 | Transition table complete in TypeScript; the database trigger rejects every other pair; terminal states cannot change | Met | `tests/payments/state.test.ts` (every state, event and operation pair against a separately written table); `payments-guards` (15 tests) drives the trigger across the pairs and the immutable evidence columns. mocked-free: pure + local |
 | 3 | `payment_begin` is atomic with the reservation: when the reservation refuses, the attempt is unchanged and nothing is sent | Met | `payments-begin-settle` (42 tests): a refused begin leaves the attempt and reservation as they were, `HOLD_EXPIRED` ends the attempt; `payments-checkout` shows nothing reaches the fake PayPal on a refused begin (expired hold, insufficient stock). local + mocked |
 | 4 | Confirm racing decline has exactly one winner; a repeated accept captures once; a capture and a void never both begin | Met | `payments-decide` (database races, 22 tests) and `payments-decide-service` (service level, counted at the fake PayPal: one request per attempt and operation). local + mocked |
@@ -70,13 +70,12 @@ is now in place, so merging is safe. Not run against hosted: the database tests,
    in `.env.example`, unset by default; the customer return handler is a route (`/o/<link>/return`) rather than a page.
 5. **Not covered by any test:** the real PayPal approval page (a person is needed), real webhook delivery timing, and the browser
    redirect to the approval link beyond checking its address.
-6. **Local data:** `npm run seed` was not re-run after the database runs because `.env` points at the hosted project and the seed
+6. **Found on the real sandbox, fixed after the merge:** a webhook arriving 1.4 seconds after an authorize began put the attempt in doubt and settled it as "not done" while PayPal was still processing it, leaving an authorization PayPal knew about and we did not. `reconcileAttempt` now does nothing to an operation in flight for under 120 seconds, whoever calls it (3 regression tests in `payments-reconcile`). Not covered: an operation in doubt (not in flight) resolved as "not done" very soon after the timeout while PayPal is still processing; the threshold for that case is a decision for the spec owner.
+7. **Seed hazard:** seeding the hosted demo merchant with orders in the database zeroed reserved stock. Repaired on hosted (holds released, `on_hand` corrected, invariants empty); `npm run seed` now refuses once a purchase exists.
+8. **Local data:** `npm run seed` was not re-run after the database runs because `.env` points at the hosted project and the seed
    refuses a remote target. Local tests do not need the seed.
 
-## Open items (need you)
+## Open items
 
-1. **Merge PR 4 and let it deploy**, then the two **real-sandbox runs on the hosted site with you as the buyer**: pay then accept, and
-   pay then decline. Record them in [doc/evidence/payments-real-sandbox.md](../evidence/payments-real-sandbox.md), labeled real-sandbox,
-   separate from everything above.
-2. **`PAYPAL_PAYEE_MERCHANT_ID`**: if you give me the sandbox merchant id, it is set on Vercel too, so captures are checked against it.
-   Without it that check is skipped.
+1. **`PAYPAL_PAYEE_MERCHANT_ID`** is still unset on Vercel, so the payee check is skipped on hosted. Send the sandbox merchant id to enable it.
+2. Authorize, capture and void in doubt, financial exceptions and authorization expiry were not seen on the real sandbox; they are covered by mocked and application-level evidence only.

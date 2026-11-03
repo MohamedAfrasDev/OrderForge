@@ -22,8 +22,9 @@ type AttemptRow = {
   authorization_id: string | null;
   authorization_expires_at: string | null;
   unknown_operation: string | null;
+  state_changed_at: string;
 };
-const COLUMNS = "id, purchase_id, state, amount_minor, currency, paypal_order_id, authorization_id, authorization_expires_at, unknown_operation";
+const COLUMNS = "id, purchase_id, state, amount_minor, currency, paypal_order_id, authorization_id, authorization_expires_at, unknown_operation, state_changed_at";
 
 export type Reconciled = { state: string; changed: boolean };
 
@@ -50,6 +51,10 @@ export async function reconcileAttempt(db: SupabaseClient, deps: PaymentDeps, at
   };
 
   if ((IN_FLIGHT as readonly string[]).includes(attempt.state)) {
+    // An operation begun moments ago belongs to the code that is sending it, which settles it when PayPal answers. Putting it in
+    // doubt from here would make that settle fail and could record "not done" for a request PayPal is still processing (seen on
+    // the real sandbox: a webhook arrived 1.4 seconds after the authorize began). Only a stuck operation is reconciled.
+    if (Date.parse(ctx.now) - Date.parse(attempt.state_changed_at) < STUCK_AFTER_SECONDS * 1000) return done();
     // The answer never came back to us. Put it in doubt properly, then resolve it with PayPal's records.
     const op = attempt.state === "AUTHORIZE_IN_FLIGHT" ? "authorize" : attempt.state === "CAPTURE_IN_FLIGHT" ? "capture" : "void";
     const marked = await settlePayment(db, attemptId, "UNKNOWN", ctx.now, { note: `${op} outcome unknown: no answer recorded` });
