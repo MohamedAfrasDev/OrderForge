@@ -7,12 +7,17 @@ import { auditInsertFor, type ServiceContext } from "@/services/reservation/shar
 export type { ServiceContext };
 
 /** The part of the PayPal client payments uses. Tests hand in a client pointed at the local fake. */
-export type PayPalPort = Pick<PayPalClient, "createOrder" | "authorizeOrder" | "getOrder">;
+export type PayPalPort = Pick<PayPalClient, "createOrder" | "authorizeOrder" | "getOrder" | "captureAuthorization" | "voidAuthorization">;
 
 export type EvidenceLabel = "mocked" | "replayed" | "real-sandbox";
 
 /** What a payments service needs besides the database: PayPal, and how to label the evidence it stores. */
-export type PaymentDeps = { paypal: PayPalPort; evidence: EvidenceLabel };
+export type PaymentDeps = {
+  paypal: PayPalPort;
+  evidence: EvidenceLabel;
+  /** PAYPAL_PAYEE_MERCHANT_ID. When set, a capture must have been paid to this merchant. */
+  payeeMerchantId?: string;
+};
 
 export type PayOut = {
   ok: boolean;

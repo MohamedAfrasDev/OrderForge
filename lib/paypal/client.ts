@@ -91,6 +91,7 @@ const orderSchema = z.object({
   purchase_units: z
     .array(
       z.object({
+        payee: z.object({ merchant_id: z.string().optional() }).optional(),
         payments: z
           .object({
             authorizations: z
@@ -390,6 +391,7 @@ export function createPayPalClient(config: PayPalConfig) {
             status: r.data.status,
             authorizationId: payments?.authorizations?.[0]?.id,
             captureId: payments?.captures?.[0]?.id,
+            payeeMerchantId: r.data.purchase_units?.[0]?.payee?.merchant_id,
           };
         },
       });

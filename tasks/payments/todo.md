@@ -1,7 +1,7 @@
 # Tasks: payments
 
 Spec: [doc/spec/SPEC-payments.md](../../doc/spec/SPEC-payments.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T5 built (0007 applied to local only), T6 to T10 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T6 built (0007 applied to local only), T7 to T10 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -70,7 +70,7 @@ Status: APPROVED 2 Nov 2026; T1 to T5 built (0007 applied to local only), T6 to 
   - Files: `services/payments/checkout.ts`, `services/payments/settle.ts`, `lib/paypal/client.ts` (small additions for payee and linkage), `lib/paypal/types.ts`, `tests/db/payments-checkout.test.ts`
   - Depends on: T4.
 
-- [ ] **T6 Decision services: `decide`, `voidForChange` and the capture/void send step**
+- [x] **T6 Decision services: `decide`, `voidForChange` and the capture/void send step**
   - Acceptance: `decide` (merchant actor, own purchases only) runs the pre-capture checks (accepted decision, intact quote binding,
     hash and amount match, reservation awaiting, authorization not expired; `CAPTURE_BLOCKED` otherwise), begins the operation through
     `payment_decide`, sends capture or void with the stable request id, classifies the answer, verifies a capture (status, amount,

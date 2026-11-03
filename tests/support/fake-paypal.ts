@@ -34,6 +34,7 @@ export type FakePayPal = {
 };
 
 const FAKE_TOKEN = "fake-access-token";
+export const FAKE_PAYEE = "FAKEMERCHANT1";
 
 /** The only request fields the fake reads. */
 type RequestBody =
@@ -166,6 +167,7 @@ export async function startFakePayPal(options: { port?: number } = {}): Promise<
     status: o.status,
     purchase_units: [
       {
+        payee: { merchant_id: FAKE_PAYEE },
         payments: o.authorizationId
           ? {
               authorizations: [{ id: o.authorizationId, status: authorizations.get(o.authorizationId)!.status, amount: money(o.amount) }],
