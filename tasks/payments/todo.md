@@ -1,7 +1,7 @@
 # Tasks: payments
 
 Spec: [doc/spec/SPEC-payments.md](../../doc/spec/SPEC-payments.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T8 built (0007 applied to local only), T9 to T10 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T9 built (0007 applied to local only), T10 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -106,7 +106,7 @@ Status: APPROVED 2 Nov 2026; T1 to T8 built (0007 applied to local only), T9 to 
 
 ## Phase D: screens and review
 
-- [ ] **T9 Customer payment screens and the merchant decisions page**
+- [x] **T9 Customer payment screens and the merchant decisions page**
   - Acceptance: on an accepted quote with a hold the order room shows "Pay with PayPal" (a server action that verifies the customer's
     link and calls `startCheckout`, then sends them to the https approval link); the return handler calls `completeApproval` once
     (idempotent) and shows each status in plain words (authorized and waiting for the merchant, paid, declined and released, could not be completed, checking);

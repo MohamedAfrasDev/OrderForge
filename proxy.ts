@@ -37,7 +37,7 @@ export async function proxy(request: NextRequest) {
     if (limited) return limited;
     // Forged, expired and malformed links get a real 404 here, without touching the database.
     // Revocation and unknown inquiries need the database and are decided in the page.
-    if (!hasValidLinkSignature(path.slice("/o/".length))) {
+    if (!hasValidLinkSignature(path.slice("/o/".length).split("/")[0] ?? "")) {
       return NextResponse.rewrite(new URL("/_not-found", request.url), {
         status: 404,
         headers: { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" },

@@ -33,6 +33,9 @@ async function Dashboard() {
       <Link href="/merchant/holds" className="text-sm underline">
         Stock holds
       </Link>
+      <Link href="/merchant/decisions" className="text-sm underline">
+        Payment decisions
+      </Link>
       <form action={signOut}>
         <Button type="submit" variant="outline">
           Sign out
