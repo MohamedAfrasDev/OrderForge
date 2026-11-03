@@ -1,7 +1,7 @@
 # Tasks: payments
 
 Spec: [doc/spec/SPEC-payments.md](../../doc/spec/SPEC-payments.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T7 built (0007 applied to local only), T8 to T10 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T8 built (0007 applied to local only), T9 to T10 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -94,7 +94,7 @@ Status: APPROVED 2 Nov 2026; T1 to T7 built (0007 applied to local only), T8 to 
   - Files: `services/payments/reconcile.ts`, `lib/cron/reconcile-handler.ts`, `app/api/cron/reconcile/route.ts`, `tests/db/payments-reconcile.test.ts`, `tests/payments-reconcile-handler.test.ts`
   - Depends on: T6.
 
-- [ ] **T8 Webhooks: `applyWebhookEvent`**
+- [x] **T8 Webhooks: `applyWebhookEvent`**
   - Acceptance: after the existing route verifies and records an event, an injected `applyWebhookEvent` finds the attempt by the
     order or authorization id and reconciles it by querying PayPal; the payload never sets state. `payment_events.processed_at`
     distinguishes a processed duplicate (acknowledged, no second effect) from a stored but unprocessed event (processed on redelivery).

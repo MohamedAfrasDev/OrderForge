@@ -967,3 +967,13 @@ revoke all on function public.payment_expire(uuid, text, timestamptz) from publi
 grant execute on function public.payment_decide(uuid, uuid, text, jsonb, text, timestamptz) to service_role;
 grant execute on function public.payment_resolve_unknown(uuid, text, timestamptz, text, timestamptz, text, text, text, text, text, integer) to service_role;
 grant execute on function public.payment_expire(uuid, text, timestamptz) to service_role;
+
+-- ================================================================================================
+-- Part 4: webhooks are hints.
+-- ================================================================================================
+-- processed_at is set once the payments module has acted on a stored webhook event (found the attempt and reconciled it
+-- by asking PayPal). A redelivery of an event that is stored but not processed is processed then; a redelivery of a
+-- processed one is acknowledged with no second effect. Events recorded before this module existed stay unprocessed and
+-- are harmless: applying one only asks PayPal what the truth is.
+alter table public.payment_events add column processed_at timestamptz;
+create index payment_events_unprocessed_idx on public.payment_events (created_at) where processed_at is null and source = 'webhook';

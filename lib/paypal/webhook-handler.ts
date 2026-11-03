@@ -16,6 +16,11 @@ export type WebhookDeps = {
   verifySignature: (input: WebhookVerification) => Promise<PayPalResult<{ verified: boolean }>>;
   /** Inserts the event; "duplicate" when its provider event id was already stored. Throws on any other failure. */
   record: (row: PaymentEventRow) => Promise<"recorded" | "duplicate">;
+  /**
+   * Acts on a stored event (payments finds the attempt and reconciles it by asking PayPal). Called for a new event and
+   * for a redelivery, and must do nothing the second time once it has succeeded. A throw answers 500 so PayPal retries.
+   */
+  apply?: (providerEventId: string) => Promise<unknown>;
   /** What kind of evidence a stored event is. Production wiring uses "real-sandbox": PayPal itself vouched for it. */
   evidenceLabel: EvidenceLabel;
   maxBodyBytes?: number;
@@ -60,6 +65,14 @@ export async function handlePayPalWebhook(request: Request, deps: WebhookDeps): 
       evidence_label: deps.evidenceLabel,
       payload: event.summary,
     });
+    if (deps.apply) {
+      try {
+        await deps.apply(event.id);
+      } catch {
+        // Stored but not acted on: the event stays unprocessed, so the redelivery PayPal sends will act on it.
+        return reply({ error: "processing_failed" }, 500);
+      }
+    }
     return reply({ status: outcome }, 200);
   } catch {
     return reply({ error: "storage_failed" }, 500);
