@@ -1,7 +1,7 @@
 # Tasks: ai-intake
 
 Spec: [doc/spec/SPEC-ai-intake.md](../../doc/spec/SPEC-ai-intake.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T5 built (0009 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T6 built (0009 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic and the model port (no database; the client is tested against a local fake server)
 
@@ -63,7 +63,7 @@ Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T5 built 
   - Files: `services/intake/{start,edit,read,shared}.ts`, `tests/db/intake-start.test.ts`, `tests/db/intake-edit.test.ts`
   - Depends on: T4.
 
-- [ ] **T6 The turn pipeline: `runIntakeTurn` and the tool dispatcher**
+- [x] **T6 The turn pipeline: `runIntakeTurn` and the tool dispatcher**
   - Acceptance: one turn answers one customer message, once (the unique index; the loser returns `ALREADY_ANSWERED` with the winner's reply). The
     pipeline: extract (retry once, then handoff), merge into a new requirements version, `blockingFields`; if something blocks, ask (the fixed question,
     reworded by the model only if `acceptQuestion` passes) and move to `CLARIFYING`; otherwise validate the model's proposal with
