@@ -1,11 +1,11 @@
 # Tasks: fulfillment
 
 Spec: [doc/spec/SPEC-fulfillment.md](../../doc/spec/SPEC-fulfillment.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list awaiting approval; nothing built. Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 built. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
-- [ ] **T1 Types, job transition table, `buildWorksheet`, `customerStatusOf`, purity**
+- [x] **T1 Types, job transition table, `buildWorksheet`, `customerStatusOf`, purity**
   - Acceptance: `JobStatus`, the result codes and `Worksheet` exist. `transition` implements the spec's table: every pair is the listed
     target or `ILLEGAL_TRANSITION`; `COLLECTED` has no exit; `ON_HOLD` is reachable from `QUEUED`, `PREPARING` and `READY_FOR_PICKUP` and
     returns only to the status it left (given in the context); no step is skipped or reversed. `buildWorksheet(snapshot, facts)` is
