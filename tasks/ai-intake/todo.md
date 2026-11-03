@@ -1,11 +1,11 @@
 # Tasks: ai-intake
 
 Spec: [doc/spec/SPEC-ai-intake.md](../../doc/spec/SPEC-ai-intake.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list awaiting approval; nothing built. Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 built. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic and the model port (no database; the client is tested against a local fake server)
 
-- [ ] **T1 Requirements domain: types, `parseExtraction`, `mergeRequirements`, `blockingFields`, `toCatalogRequirements`, `inquiryTransition`, purity**
+- [x] **T1 Requirements domain: types, `parseExtraction`, `mergeRequirements`, `blockingFields`, `toCatalogRequirements`, `inquiryTransition`, purity**
   - Acceptance: `RequirementsDoc` holds `boxCount`, `noFood`, `logoRequired`, `maxPricePerBoxMinor`, `requestedPickupDate` and `preferences`,
     each `{ value, status, source }` with the four statuses. `parseExtraction` is strict: extra fields, unknown statuses, floats, non-positive
     quantities, budgets that are not whole minor units and non-calendar dates are rejected with named reasons. `mergeRequirements` writes a new

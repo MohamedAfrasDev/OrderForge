@@ -2,7 +2,7 @@
 
 Module id: `ai-intake` · Depends on: `catalog-engine` (done), `quote-approval` (done) · Index: [../../SPEC.md](../../SPEC.md) · Brief: [../OrderForge Build Brief v1.1.md](../OrderForge%20Build%20Brief%20v1.1.md)
 
-Status: **APPROVED on 3 Nov 2026 with the defaults for all eight open questions** (free primary model, low-cost paid fallback only). Task list: [tasks/ai-intake/](../../tasks/ai-intake/todo.md), awaiting approval. Target window: 4–8 Nov 2026 (the brief put intake on 5–6 Nov; the later modules are already built, so this is the last module). The 9 Nov tripwire applies. Decisions to confirm: **the model proposes and words things but never decides; code runs the conversation step by step, owns every requirement status that blocks a quote, validates and prices every configuration, and is the only thing that creates a quote draft; customer text is data, never instructions; a model outage keeps the inquiry and offers a retry or a merchant handoff, never an invented "ready".**
+Status: **APPROVED on 3 Nov 2026 with the defaults for all eight open questions** (free primary model, low-cost paid fallback only). Task list: [tasks/ai-intake/](../../tasks/ai-intake/todo.md), approved 3 Nov 2026. Target window: 4–8 Nov 2026 (the brief put intake on 5–6 Nov; the later modules are already built, so this is the last module). The 9 Nov tripwire applies. Decisions to confirm: **the model proposes and words things but never decides; code runs the conversation step by step, owns every requirement status that blocks a quote, validates and prices every configuration, and is the only thing that creates a quote draft; customer text is data, never instructions; a model outage keeps the inquiry and offers a retry or a merchant handoff, never an invented "ready".**
 
 ## 1. Objective
 
@@ -96,8 +96,8 @@ Inquiry transition table (enforced in TypeScript; the stored status is changed w
 | From | To | When |
 |---|---|---|
 | (none) | `NEW` | the first message is stored |
-| `NEW`, `CONFIGURING` | `CLARIFYING` | code finds a blocking field and asks |
-| `NEW`, `CLARIFYING` | `CONFIGURING` | nothing blocks any more |
+| `NEW`, `CLARIFYING`, `CONFIGURING` | `CLARIFYING` | code finds a blocking field and asks (while already clarifying this is the next question, a stay) |
+| `NEW`, `CLARIFYING`, `CONFIGURING` | `CONFIGURING` | nothing blocks any more (while already configuring this is a fresh proposal, a stay) |
 | `CONFIGURING` | `QUOTE_READY` | a quote the customer can accept is published |
 | any state before `QUOTE_READY` | `REVIEW_REQUIRED` | handoff: by the customer, by a failure, by a cap, or by the quote gate |
 | `QUOTE_READY` | `CONFIGURING` | the customer changes the request (a new quote version supersedes the old) |
