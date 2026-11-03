@@ -1,7 +1,7 @@
 # Tasks: fulfillment
 
 Spec: [doc/spec/SPEC-fulfillment.md](../../doc/spec/SPEC-fulfillment.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 to T3 built (0008 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 to T4 built (0008 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -47,7 +47,7 @@ Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 to T3 built (0
 
 ## Phase C: services and wiring (local fake PayPal only to produce paid purchases, evidence labeled mocked)
 
-- [ ] **T4 Services: `createJobForPurchase`, `createMissingJobs`, `moveJob`, the reads**
+- [x] **T4 Services: `createJobForPurchase`, `createMissingJobs`, `moveJob`, the reads**
   - Acceptance: `createJobForPurchase` loads the purchase, verifies the approval binding (`QUOTE_NOT_ACCEPTED` otherwise), reads the merchant's
     `production_lead_days` and `fulfilment` rules and the confirmed conditions, builds the worksheet from the snapshot only, and makes the
     one idempotent database call; the database decides `NOT_PAID`. `createMissingJobs` handles a bounded batch with per-purchase error
