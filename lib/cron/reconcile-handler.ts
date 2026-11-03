@@ -13,6 +13,8 @@ export type SweepSummary = {
 export type ReconcileDeps = {
   cronSecret: string;
   insertAudit: AuditInsert;
+  /** Payments reconciliation. Runs after the heartbeat and before the sweep; its failure never stops the sweep. */
+  reconcilePayments?: (context: { now: string; correlationId: string }) => Promise<unknown>;
   /** Runs after the heartbeat. The reservation module supplies it; omitted, a run is just the heartbeat. */
   sweepReservations?: (context: { now: string; correlationId: string }) => Promise<SweepSummary>;
   /** The clock, injectable for tests. */
@@ -66,13 +68,25 @@ export async function handleReconcile(request: Request, deps: ReconcileDeps): Pr
     return reply({ error: "heartbeat_failed" }, 500);
   }
 
-  if (deps.sweepReservations) {
+  const context = { now: (deps.now ?? (() => new Date().toISOString()))(), correlationId };
+  let failure: "payments_failed" | "sweep_failed" | null = null;
+
+  if (deps.reconcilePayments) {
     try {
-      await deps.sweepReservations({ now: (deps.now ?? (() => new Date().toISOString()))(), correlationId });
+      await deps.reconcilePayments(context);
     } catch {
-      // The heartbeat is already recorded. A failed sweep must be visible to the scheduler, and reveals nothing else.
-      return reply({ error: "sweep_failed" }, 500);
+      // Remembered, not returned yet: the sweep still runs, then the run fails visibly. The cause is never revealed.
+      failure = "payments_failed";
     }
   }
+  if (deps.sweepReservations) {
+    try {
+      await deps.sweepReservations(context);
+    } catch {
+      // The heartbeat is already recorded. A failed sweep must be visible to the scheduler, and reveals nothing else.
+      failure ??= "sweep_failed";
+    }
+  }
+  if (failure) return reply({ error: failure }, 500);
   return reply({ status: "ok" }, 200);
 }

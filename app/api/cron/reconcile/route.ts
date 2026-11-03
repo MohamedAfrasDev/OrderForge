@@ -1,6 +1,8 @@
 import { getServerEnv } from "@/lib/env";
 import { handleReconcile } from "@/lib/cron/reconcile-handler";
+import { createPaymentDeps } from "@/lib/payments/wiring";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { reconcilePayments } from "@/services/payments/reconcile";
 import { sweepReservations } from "@/services/reservation/sweep";
 
 export async function POST(request: Request) {
@@ -10,7 +12,8 @@ export async function POST(request: Request) {
       const { error } = await createAdminClient().from("audit_events").insert(row);
       if (error) throw new Error("audit insert failed");
     },
-    // Payments' reconciliation will run before this once it exists; the sweep never touches in-flight money.
+    // Payments first (it reads PayPal and settles what it can), then the sweep, which never touches money in flight.
+    reconcilePayments: (context) => reconcilePayments(createAdminClient(), createPaymentDeps(), { ...context, actor: "system:cron" }),
     sweepReservations: (context) => sweepReservations(createAdminClient(), context),
   });
 }

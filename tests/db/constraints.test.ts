@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  attemptEvidence,
   codeOf,
   createChain,
   must,
@@ -29,13 +30,15 @@ describe("payment attempts", () => {
 
   it.each(["authorization_id", "capture_id"] as const)("rejects a duplicate %s", async (column) => {
     const value = unique(column);
+    // An authorization id travels with its time (migration 0007), so the row is otherwise consistent.
+    const extra = column === "authorization_id" ? { authorized_at: "2026-11-03T10:00:00Z" } : {};
     const a = await createChain(db);
     const b = await createChain(db);
     must(await db.from("payment_attempts").insert({
-      purchase_id: a.purchaseId, amount_minor: 100, quote_hash: a.quoteHash, [column]: value,
+      purchase_id: a.purchaseId, amount_minor: 100, quote_hash: a.quoteHash, [column]: value, ...extra,
     }));
     const dup = await db.from("payment_attempts").insert({
-      purchase_id: b.purchaseId, amount_minor: 100, quote_hash: b.quoteHash, [column]: value,
+      purchase_id: b.purchaseId, amount_minor: 100, quote_hash: b.quoteHash, [column]: value, ...extra,
     });
     expect(codeOf(dup)).toBe(SQLSTATE.unique);
   });
@@ -51,10 +54,10 @@ describe("payment attempts", () => {
     "allows a new attempt once the previous one is %s",
     async (terminal) => {
       const own = await createChain(db);
-      const first = must(
-        await db.from("payment_attempts").insert({ purchase_id: own.purchaseId, amount_minor: 100, quote_hash: own.quoteHash }).select("id").single(),
+      // The attempt guard (migration 0007) forbids jumping a state, so the earlier attempt is written already finished.
+      must(
+        await db.from("payment_attempts").insert({ purchase_id: own.purchaseId, amount_minor: 100, quote_hash: own.quoteHash, state: terminal, ...attemptEvidence(terminal) }),
       );
-      must(await db.from("payment_attempts").update({ state: terminal }).eq("id", first.id));
       const next = await db.from("payment_attempts").insert({ purchase_id: own.purchaseId, amount_minor: 100, quote_hash: own.quoteHash });
       expect(codeOf(next)).toBe("none");
     },
@@ -62,10 +65,11 @@ describe("payment attempts", () => {
 
   it("blocks a new attempt while the previous one is OUTCOME_UNKNOWN", async () => {
     const own = await createChain(db);
-    const first = must(
-      await db.from("payment_attempts").insert({ purchase_id: own.purchaseId, amount_minor: 100, quote_hash: own.quoteHash }).select("id").single(),
+    must(
+      await db.from("payment_attempts").insert({
+        purchase_id: own.purchaseId, amount_minor: 100, quote_hash: own.quoteHash, state: "OUTCOME_UNKNOWN", unknown_operation: "capture", ...attemptEvidence("AUTHORIZED"),
+      }),
     );
-    must(await db.from("payment_attempts").update({ state: "OUTCOME_UNKNOWN", unknown_operation: "capture" }).eq("id", first.id));
     const next = await db.from("payment_attempts").insert({ purchase_id: own.purchaseId, amount_minor: 100, quote_hash: own.quoteHash });
     expect(codeOf(next)).toBe(SQLSTATE.unique);
   });

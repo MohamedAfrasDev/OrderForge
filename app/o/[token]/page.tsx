@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { PaymentStatus } from "@/components/payment-status";
 import { QuoteCard } from "@/components/quote-card";
 import { getCustomerMessages } from "@/lib/access/inquiry-reads";
 import { authorizeCustomerToken } from "@/lib/access/customer-session";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { paymentNoticeOf } from "@/services/payments/customer-messages";
+import { paymentStatusForCustomer } from "@/services/payments/read";
 import { readCustomerQuote } from "@/services/quote/read";
 import { readHoldForCustomer } from "@/services/reservation/read";
-import { acceptQuoteAction } from "./actions";
+import { acceptQuoteAction, payWithPayPalAction } from "./actions";
 
 // The token is a credential: keep it out of search indexes and Referer headers.
 export const metadata: Metadata = {
@@ -16,11 +19,11 @@ export const metadata: Metadata = {
   referrer: "no-referrer",
 };
 
-export default function OrderRoomPage({ params }: PageProps<"/o/[token]">) {
+export default function OrderRoomPage({ params, searchParams }: PageProps<"/o/[token]">) {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-12">
       <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
-        <OrderRoom params={params} />
+        <OrderRoom params={params} searchParams={searchParams} />
       </Suspense>
     </main>
   );
@@ -29,8 +32,9 @@ export default function OrderRoomPage({ params }: PageProps<"/o/[token]">) {
 const formatTime = (iso: string) => `${iso.slice(0, 16).replace("T", " ")} UTC`;
 
 // Reading route params is request-time data, so this streams inside <Suspense>.
-async function OrderRoom({ params }: { params: PageProps<"/o/[token]">["params"] }) {
+async function OrderRoom({ params, searchParams }: { params: PageProps<"/o/[token]">["params"]; searchParams: PageProps<"/o/[token]">["searchParams"] }) {
   const { token } = await params;
+  const notice = paymentNoticeOf((await searchParams).payment);
   const access = await authorizeCustomerToken(token);
   // Every failure looks the same: a link that does not work is just "not found".
   if (!access.ok) notFound();
@@ -41,6 +45,7 @@ async function OrderRoom({ params }: { params: PageProps<"/o/[token]">["params"]
   const now = new Date().toISOString();
   const quote = await readCustomerQuote(db, inquiry.id, now);
   const hold = quote?.status === "ACCEPTED" ? await readHoldForCustomer(db, inquiry.id, now) : null;
+  const payment = quote?.status === "ACCEPTED" ? await paymentStatusForCustomer(db, inquiry.id) : null;
 
   return (
     <>
@@ -53,6 +58,8 @@ async function OrderRoom({ params }: { params: PageProps<"/o/[token]">["params"]
       </header>
 
       {quote ? <QuoteCard quote={quote} hold={hold} accept={acceptQuoteAction.bind(null, token)} /> : null}
+
+      {payment ? <PaymentStatus view={payment} notice={notice} pay={payWithPayPalAction.bind(null, token)} /> : null}
 
       <section aria-label="Conversation" className="flex flex-col gap-3">
         {messages.length === 0 ? (

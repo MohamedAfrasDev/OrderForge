@@ -49,7 +49,8 @@ export type AuthorizedOrder = {
   authorizationId: string;
   authorizationStatus: string;
   amountMinor: Cents;
-  currency: "USD";
+  /** As PayPal reported it, not assumed to be USD: another currency is a financial exception for payments to flag. */
+  currency: string;
   expirationTime?: string;
 };
 
@@ -58,6 +59,8 @@ export type OrderDetails = {
   status: string;
   authorizationId?: string;
   captureId?: string;
+  /** The merchant the order pays, when PayPal reports it. */
+  payeeMerchantId?: string;
 };
 
 export type AuthorizationDetails = {

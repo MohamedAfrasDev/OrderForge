@@ -5,7 +5,7 @@ Source: `doc/OrderForge Build Brief v1.1.md` (content titled v1.2, dated 1 Nov 2
 Status: capability map approved 2026-11-01. Module specs live in `doc/spec/`. `foundation`: DONE (tasks T1 to T22; Checkpoint D passed on 2 Nov, 14 of 15 criteria met, the one unmet is sandbox authorization expiry, which cannot be observed before the deadline; record in `doc/checkpoints/`). Next module in build order: `catalog-engine` (spec first, as `AGENTS.md` requires). CI: GitHub Actions.
 `catalog-engine`: DONE (tasks T1 to T10; checkpoint 2 Nov, 9 of 9 criteria met, CI green on the last commit; record in `doc/checkpoints/catalog-engine-checkpoint.md`).
 `quote-approval`: BUILT (tasks T1 to T9; checkpoint 2 Nov, 11 of 11 criteria met, CI green on 5c2507c (PR 2); migration 0005 applied to hosted; record in `doc/checkpoints/quote-approval-checkpoint.md`).
-`reservation`: BUILT (tasks T1 to T7; checkpoint 2 Nov, 11 of 11 criteria met, CI green on 6609daa (PR 3); migration 0006 applied to hosted; record in `doc/checkpoints/reservation-checkpoint.md`). Next modules in build order: `ai-intake` and `payments` (spec first).
+`reservation`: BUILT (tasks T1 to T7; checkpoint 2 Nov, 11 of 11 criteria met, CI green on 6609daa (PR 3); migration 0006 applied to hosted; record in `doc/checkpoints/reservation-checkpoint.md`). Next modules in build order: `ai-intake` (spec first) and `payments` (spec APPROVED 2 Nov in `doc/spec/SPEC-payments.md`; tasks approved, T1 to T9 built; checkpoint written 3 Nov, 11 of 12 criteria met, CI green on b782b10 (PR 4), migration 0007 applied to hosted 3 Nov; open: the two real-sandbox runs; record in `doc/checkpoints/payments-checkpoint.md`).
 
 ## 1. Objective
 

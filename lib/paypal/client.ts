@@ -91,6 +91,7 @@ const orderSchema = z.object({
   purchase_units: z
     .array(
       z.object({
+        payee: z.object({ merchant_id: z.string().optional() }).optional(),
         payments: z
           .object({
             authorizations: z
@@ -295,14 +296,14 @@ export function createPayPalClient(config: PayPalConfig) {
           const auth = r.data.purchase_units?.[0]?.payments?.authorizations?.[0];
           if (!auth?.amount) return null;
           const amountMinor = toMinorUnits(auth.amount.value);
-          if (amountMinor === null || auth.amount.currency_code !== "USD") return null;
+          if (amountMinor === null) return null;
           return {
             orderId: r.data.id,
             orderStatus: r.data.status,
             authorizationId: auth.id,
             authorizationStatus: auth.status,
             amountMinor,
-            currency: "USD" as const,
+            currency: auth.amount.currency_code,
             expirationTime: auth.expiration_time,
           };
         },
@@ -390,6 +391,7 @@ export function createPayPalClient(config: PayPalConfig) {
             status: r.data.status,
             authorizationId: payments?.authorizations?.[0]?.id,
             captureId: payments?.captures?.[0]?.id,
+            payeeMerchantId: r.data.purchase_units?.[0]?.payee?.merchant_id,
           };
         },
       });

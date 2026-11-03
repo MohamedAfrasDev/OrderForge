@@ -125,3 +125,22 @@ export async function signedInClient(email: string, password: string): Promise<S
   if (error) throw new Error(`sign in: ${error.message}`);
   return client;
 }
+
+const NEEDS_ORDER = ["PROVIDER_CREATED", "APPROVED", "AUTHORIZE_IN_FLIGHT", "AUTHORIZED", "CAPTURE_IN_FLIGHT", "CAPTURED", "VOID_IN_FLIGHT", "VOIDED"];
+const NEEDS_AUTHORIZATION = ["AUTHORIZED", "CAPTURE_IN_FLIGHT", "CAPTURED", "VOID_IN_FLIGHT", "VOIDED"];
+
+/**
+ * The evidence columns a payment attempt row must carry to be in `state` (an order id once past CREATED, an authorization
+ * id once authorized, a capture id once captured, a reason for an exception). For tests that insert rows directly.
+ */
+export function attemptEvidence(state: string): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (NEEDS_ORDER.includes(state)) out.paypal_order_id = unique("ORDER");
+  if (NEEDS_AUTHORIZATION.includes(state)) {
+    out.authorization_id = unique("AUTH");
+    out.authorized_at = "2026-11-03T10:00:00Z";
+  }
+  if (state === "CAPTURED") out.capture_id = unique("CAP");
+  if (state === "EXCEPTION") out.exception_reason = "AMOUNT_MISMATCH";
+  return out;
+}
