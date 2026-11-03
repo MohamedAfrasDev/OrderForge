@@ -4,7 +4,7 @@ Label for everything in this file: **hosted** (the real Supabase project and the
 that were really paid through the PayPal sandbox on 3 Nov (see [payments-real-sandbox.md](payments-real-sandbox.md)); fulfillment itself
 sends nothing to PayPal. Nothing here is copied from the local or mocked results in the checkpoint.
 
-**Status: not run yet.** Waiting for: migration 0008 applied to the hosted project, PR 6 merged and deployed, and a reconcile run.
+**Status: not run yet.** Migration 0008 is applied to the hosted project (3 Nov). Waiting for: PR 6 merged and deployed, and a reconcile run.
 
 ## Check 1: the reconcile run makes the missing jobs
 

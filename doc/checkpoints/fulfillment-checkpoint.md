@@ -11,8 +11,8 @@ PayPal itself.
 ## Verdict
 
 **8 of 10 criteria met locally. 2 are open:** CI on PR 6 (criterion 9, just opened) and the hosted check (criterion 1's hosted half).
-Migration 0008 is applied to the local database only; the hosted project is untouched. The module is not ready to rely on in the
-hosted demo until 0008 is applied and deployed.
+Migration 0008 is applied to the local database and, since 3 Nov, to the hosted project (see Hosted migration). The module is not
+ready to rely on in the hosted demo until PR 6 is merged and deployed.
 
 Local gates on the reviewed code: typecheck 0 errors, lint 0 problems, 786 unit, 1111 database, 80 end-to-end tests.
 
@@ -36,10 +36,22 @@ fulfillment database tests 77 (`tests/db/fulfillment-*`), fulfillment E2E tests 
 
 ## Hosted migration
 
-**Not applied.** Migration `0008_fulfillment.sql` exists only in this branch and in the local database. Applying it to the hosted
-project needs a fresh explicit yes immediately before, with a dry run and the same read-only checks before and after as 0005 to 0007.
-Order matters: apply 0008, then merge and deploy, because the new accept action and reconcile run call its functions. The hosted
-database has no preparation rows (expected: nothing created them before), which is the migration's precondition.
+Applied on 3 Nov after a fresh explicit yes, with `supabase db push --db-url` against the hosted project (ref `twkepbycivkmhrmurxwi`, the one in `.env`).
+A dry run first listed exactly one pending migration, `0008_fulfillment.sql`. Checked read-only before and after, over the same connection:
+
+| | Before | After |
+|---|---|---|
+| Applied migrations | 0001 to 0007 | 0001 to 0008 |
+| Preparation jobs and events | 0 and 0 (the migration precondition held) | 0 and 0 (no data touched) |
+| Captured payment attempts, committed reservations | 2 and 2 (the two orders paid in the real-sandbox runs) | 2 and 2 |
+| New event columns (`from_status`, `actor`) | 0 of 2 | 2 of 2 |
+| Guard triggers (jobs transition, events append-only) | 0 of 2 | 2 of 2 |
+| Fulfillment functions | none | 3, callable by `service_role` only (not `anon`, not `authenticated`) |
+| `check_stock_invariants()` | not run | returns an empty array |
+
+The hosted site still runs the code from before this module until PR 6 is merged and deployed; that older code never calls the new
+functions, so nothing changes for users in between. After the deploy, the first reconcile run should create the two jobs (see Open items).
+Not run against hosted: the database tests, which clear application data (local only by design).
 
 ## Findings from this review
 
@@ -56,8 +68,8 @@ database has no preparation rows (expected: nothing created them before), which 
 
 ## Open items (need you)
 
-1. **Hosted migration 0008**, then merge and deploy.
+1. **Merge PR 6 and let it deploy** (0008 is already on hosted).
 2. **The hosted check** (recorded in [doc/evidence/fulfillment-real-sandbox.md](../evidence/fulfillment-real-sandbox.md), labeled
    hosted): after the deploy, the two orders already captured on the hosted site (`9f37` and `aca9`) should get their jobs from the
    reconcile run; you confirm one on its order room as the customer, and one is moved through to collected in the merchant's Jobs page.
-3. CI on PR 6.
+3. CI on PR 6 (running).
