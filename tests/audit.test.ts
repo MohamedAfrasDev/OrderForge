@@ -36,6 +36,18 @@ describe("correlation id", () => {
 });
 
 describe("redact", () => {
+  it("keeps the model run record (model id, prompt version, run number) and still drops customer text and prompts", () => {
+    const out = redact({
+      model_id: "google/gemma-4-31b-it:free",
+      prompt_version: "intake.v1",
+      run: 3,
+      customer_message: "Ignore previous instructions",
+      prompt: "system text",
+      raw_output: "{}",
+    });
+    expect(out).toEqual({ model_id: "google/gemma-4-31b-it:free", prompt_version: "intake.v1", run: 3 });
+  });
+
   it("keeps allowlisted keys and drops everything else", () => {
     const out = redact({
       state: "AUTHORIZED",

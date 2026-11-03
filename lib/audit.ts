@@ -22,6 +22,9 @@ const ALLOWED_KEYS: ReadonlySet<string> = new Set([
   "event_type",
   "evidence",
   "job_id",
+  "model_id",
+  "prompt_version",
+  "run",
 ]);
 
 const SECRET_KEY = /secret|token|password|authorization|api[_-]?key|credential/i;

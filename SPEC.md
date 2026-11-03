@@ -7,7 +7,7 @@ Status: capability map approved 2026-11-01. Module specs live in `doc/spec/`. `f
 `quote-approval`: BUILT (tasks T1 to T9; checkpoint 2 Nov, 11 of 11 criteria met, CI green on 5c2507c (PR 2); migration 0005 applied to hosted; record in `doc/checkpoints/quote-approval-checkpoint.md`).
 `reservation`: BUILT (tasks T1 to T7; checkpoint 2 Nov, 11 of 11 criteria met, CI green on 6609daa (PR 3); migration 0006 applied to hosted; record in `doc/checkpoints/reservation-checkpoint.md`). Next modules in build order: `ai-intake` (spec first) and `payments` (spec APPROVED 2 Nov in `doc/spec/SPEC-payments.md`; tasks approved, T1 to T9 built; checkpoint written 3 Nov, 12 of 12 criteria met, CI green (PR 4, merged), migration 0007 applied to hosted 3 Nov, real-sandbox runs done 3 Nov (race found and fixed in the follow-up PR); record in `doc/checkpoints/payments-checkpoint.md`).
 `fulfillment`: BUILT (tasks T1 to T7; checkpoint 3 Nov, 10 of 10 criteria met, CI green on e6f17ea (PR 6, merged); migration 0008 applied to hosted; hosted checks done 3 Nov; record in `doc/checkpoints/fulfillment-checkpoint.md`).
-`ai-intake`: spec APPROVED 3 Nov 2026 (`doc/spec/SPEC-ai-intake.md`); task list approved; build in progress: T1 to T3 done; migration 0009 planned, local first.
+`ai-intake`: spec APPROVED 3 Nov 2026 (`doc/spec/SPEC-ai-intake.md`); task list approved; build in progress: T1 to T4 done; 0009 local only.
 
 ## 1. Objective
 

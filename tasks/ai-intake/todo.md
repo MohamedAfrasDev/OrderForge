@@ -1,7 +1,7 @@
 # Tasks: ai-intake
 
 Spec: [doc/spec/SPEC-ai-intake.md](../../doc/spec/SPEC-ai-intake.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T3 built. Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T4 built (0009 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic and the model port (no database; the client is tested against a local fake server)
 
@@ -44,7 +44,7 @@ Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T3 built.
 
 ## Phase B: database, services and the pipeline (local Supabase; the fake model)
 
-- [ ] **T4 Migration 0009: `messages.reply_to` and the one-reply rule**
+- [x] **T4 Migration 0009: `messages.reply_to` and the one-reply rule**
   - Acceptance: `messages.reply_to` references `messages(id)`, is null except on `assistant` messages (a check), and a unique partial index makes
     a customer message have at most one assistant reply. `lib/audit.ts` allows `model_id`, `prompt_version` and `run`. Tests: a second assistant
     reply to the same message is rejected; two parallel inserts leave one; customer, merchant and system messages cannot carry `reply_to`; the
