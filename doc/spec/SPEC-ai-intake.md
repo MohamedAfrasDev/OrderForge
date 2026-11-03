@@ -2,7 +2,7 @@
 
 Module id: `ai-intake` · Depends on: `catalog-engine` (done), `quote-approval` (done) · Index: [../../SPEC.md](../../SPEC.md) · Brief: [../OrderForge Build Brief v1.1.md](../OrderForge%20Build%20Brief%20v1.1.md)
 
-Status: **DRAFT, awaiting approval.** Written 3 Nov 2026. Target window: 4–8 Nov 2026 (the brief put intake on 5–6 Nov; the later modules are already built, so this is the last module). The 9 Nov tripwire applies. Decisions to confirm: **the model proposes and words things but never decides; code runs the conversation step by step, owns every requirement status that blocks a quote, validates and prices every configuration, and is the only thing that creates a quote draft; customer text is data, never instructions; a model outage keeps the inquiry and offers a retry or a merchant handoff, never an invented "ready".**
+Status: **APPROVED on 3 Nov 2026 with the defaults for all eight open questions** (free primary model, low-cost paid fallback only). Task list: [tasks/ai-intake/](../../tasks/ai-intake/todo.md), awaiting approval. Target window: 4–8 Nov 2026 (the brief put intake on 5–6 Nov; the later modules are already built, so this is the last module). The 9 Nov tripwire applies. Decisions to confirm: **the model proposes and words things but never decides; code runs the conversation step by step, owns every requirement status that blocks a quote, validates and prices every configuration, and is the only thing that creates a quote draft; customer text is data, never instructions; a model outage keeps the inquiry and offers a retry or a merchant handoff, never an invented "ready".**
 
 ## 1. Objective
 
