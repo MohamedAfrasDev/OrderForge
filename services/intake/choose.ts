@@ -7,7 +7,7 @@ import { cents, format } from "@/lib/money";
 import { loadCatalogSnapshot } from "@/services/catalog/load-snapshot";
 import { createQuoteDraft, requestMerchantReview } from "@/services/quote/create-draft";
 import { publishQuote } from "@/services/quote/publish";
-import { appendRequirements, auditIntake, latestRequirements, loadInquiry, transitionInquiry, type ServiceContext } from "./shared";
+import { appendMessage, appendRequirements, auditIntake, latestRequirements, loadInquiry, transitionInquiry, type ServiceContext } from "./shared";
 
 const ACTOR = "system:intake";
 const KEY = /^(proposal|alt-\d{1,2})$/;
@@ -122,14 +122,7 @@ async function release(db: SupabaseClient, inquiryId: string): Promise<void> {
   await appendRequirements(db, inquiryId, (now) => ({ ...(now as NonNullable<typeof now>).stored, proposal: null }), null);
 }
 
-/** A message after the last one of the conversation, so it always reads in order. */
-async function note(db: SupabaseClient, inquiryId: string, role: "assistant" | "system", body: string, ctx: ServiceContext): Promise<void> {
-  const last = await db.from("messages").select("created_at").eq("inquiry_id", inquiryId).order("created_at", { ascending: false }).limit(1).maybeSingle();
-  if (last.error) throw new Error(`load last message: ${last.error.message}`);
-  const after = last.data ? Date.parse(last.data.created_at as string) + 1 : 0;
-  const stored = await db.from("messages").insert({ inquiry_id: inquiryId, role, body, created_at: new Date(Math.max(Date.parse(ctx.now), after)).toISOString() });
-  if (stored.error) throw new Error(`store message: ${stored.error.message}`);
-}
+const note = appendMessage;
 
 export type HandOffReason = "customer_request" | "failure";
 

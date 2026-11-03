@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { FIELD_NAMES, type FieldName, type FieldStatus, type Proposal } from "@/domain/intake";
+import { FIELD_NAMES, storedRequirementsSchema, type FieldName, type FieldStatus, type Proposal, type StoredRequirements } from "@/domain/intake";
 import type { VerifiedInquiryId } from "@/lib/access/inquiry-reads";
 import { CatalogLoadError, loadCatalogSnapshot } from "@/services/catalog/load-snapshot";
 import { latestRequirements, loadInquiry } from "./shared";
@@ -46,14 +46,18 @@ export async function requirementsForCustomer(db: SupabaseClient, inquiryId: Ver
   return {
     version: latest.version,
     inquiryStatus: inquiry.status,
-    fields: FIELD_NAMES.map((name) => {
-      const f = latest.stored.fields[name];
-      return { name, label: LABELS[name], value: f.value, status: f.status, source: f.source === null ? null : f.source === "customer_edit" ? "edit" : "message" };
-    }),
+    fields: fieldsOf(latest.stored),
     question: latest.stored.question?.text ?? null,
     proposal: latest.stored.proposal,
     productNames: await productNames(db, inquiry.merchantId),
   };
+}
+
+function fieldsOf(stored: StoredRequirements): CustomerSpecField[] {
+  return FIELD_NAMES.map((name) => {
+    const f = stored.fields[name];
+    return { name, label: LABELS[name], value: f.value, status: f.status, source: f.source === null ? null : f.source === "customer_edit" ? "edit" : "message" };
+  });
 }
 
 /** A merchant whose catalog cannot be read gets no names, not a broken page: the screen then says "an item". */
@@ -73,4 +77,51 @@ export async function unansweredMessageId(db: SupabaseClient, inquiryId: Verifie
   const data = (rows.data ?? []) as Array<{ id: string; role: string; reply_to: string | null }>;
   const answered = new Set(data.filter((m) => m.reply_to !== null).map((m) => m.reply_to));
   return data.find((m) => m.role === "customer" && !answered.has(m.id))?.id ?? null;
+}
+
+export type MerchantInquiryMessage = { id: string; role: string; body: string; createdAt: string };
+
+/** One handed-over inquiry as the merchant reads it: the whole conversation and the latest specification, in the customer's own terms. */
+export type MerchantInquiry = {
+  inquiryId: string;
+  handedOverAt: string;
+  messages: MerchantInquiryMessage[];
+  fields: CustomerSpecField[];
+  question: string | null;
+};
+
+/**
+ * The merchant's inquiries waiting for them (`REVIEW_REQUIRED`), the most recently handed over first. Pass the merchant's own
+ * session client: row level security then shows only their inquiries, even if another merchant's id were asked for.
+ */
+export async function listInquiriesForMerchant(db: SupabaseClient, merchantId: string, limit = 50): Promise<MerchantInquiry[]> {
+  const inquiries = await db.from("inquiries").select("id, updated_at").eq("merchant_id", merchantId).eq("status", "REVIEW_REQUIRED").order("updated_at", { ascending: false }).order("id", { ascending: false }).limit(limit);
+  if (inquiries.error) throw new Error(`list inquiries: ${inquiries.error.message}`);
+  const rows = (inquiries.data ?? []) as Array<{ id: string; updated_at: string }>;
+  if (rows.length === 0) return [];
+  const ids = rows.map((r) => r.id);
+
+  const messages = await db.from("messages").select("id, inquiry_id, role, body, created_at").in("inquiry_id", ids).order("created_at", { ascending: true }).order("id", { ascending: true });
+  if (messages.error) throw new Error(`list messages: ${messages.error.message}`);
+  const versions = await db.from("requirement_versions").select("inquiry_id, version, requirements").in("inquiry_id", ids).order("version", { ascending: false });
+  if (versions.error) throw new Error(`list requirements: ${versions.error.message}`);
+
+  const latest = new Map<string, StoredRequirements>();
+  for (const v of (versions.data ?? []) as Array<{ inquiry_id: string; requirements: unknown }>) {
+    if (latest.has(v.inquiry_id)) continue;
+    const parsed = storedRequirementsSchema.safeParse(v.requirements);
+    if (parsed.success) latest.set(v.inquiry_id, parsed.data);
+  }
+  const all = (messages.data ?? []) as Array<{ id: string; inquiry_id: string; role: string; body: string; created_at: string }>;
+
+  return rows.map((r) => {
+    const stored = latest.get(r.id);
+    return {
+      inquiryId: r.id,
+      handedOverAt: r.updated_at,
+      messages: all.filter((m) => m.inquiry_id === r.id).map((m) => ({ id: m.id, role: m.role, body: m.body, createdAt: m.created_at })),
+      fields: stored ? fieldsOf(stored) : [],
+      question: stored?.question?.text ?? null,
+    };
+  });
 }

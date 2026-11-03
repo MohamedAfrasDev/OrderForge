@@ -66,7 +66,16 @@ export async function transitionInquiry(
   return { ok: true, status: next, changed: true };
 }
 
-export type LatestRequirements = { id: string; version: number; stored: StoredRequirements };
+/** Stores a message after the last one of the conversation, so it always reads in order. */
+export async function appendMessage(db: SupabaseClient, inquiryId: string, role: "assistant" | "system" | "merchant", body: string, ctx: ServiceContext): Promise<void> {
+  const last = await db.from("messages").select("created_at").eq("inquiry_id", inquiryId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (last.error) throw new Error(`load last message: ${last.error.message}`);
+  const after = last.data ? Date.parse(last.data.created_at as string) + 1 : 0;
+  const stored = await db.from("messages").insert({ inquiry_id: inquiryId, role, body, created_at: new Date(Math.max(Date.parse(ctx.now), after)).toISOString() });
+  if (stored.error) throw new Error(`store message: ${stored.error.message}`);
+}
+
+export type LatestRequirements= { id: string; version: number; stored: StoredRequirements };
 
 export async function latestRequirements(db: SupabaseClient, inquiryId: string): Promise<LatestRequirements | null> {
   const found = await db.from("requirement_versions").select("id, version, requirements").eq("inquiry_id", inquiryId).order("version", { ascending: false }).limit(1).maybeSingle();

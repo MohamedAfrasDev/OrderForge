@@ -1,7 +1,7 @@
 # Tasks: ai-intake
 
 Spec: [doc/spec/SPEC-ai-intake.md](../../doc/spec/SPEC-ai-intake.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T8 built (0009 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T9 built (0009 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic and the model port (no database; the client is tested against a local fake server)
 
@@ -101,7 +101,7 @@ Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T8 built 
   - Files: `app/store/[slug]/{page,actions,start-form}.tsx`, `app/o/[token]/{page,intake-actions,intake-panels}.tsx`, `e2e/intake-customer.spec.ts`
   - Depends on: T7.
 
-- [ ] **T9 Merchant inquiries page and reply**
+- [x] **T9 Merchant inquiries page and reply**
   - Acceptance: `/merchant/inquiries` (linked from the merchant home) lists the merchant's inquiries in `REVIEW_REQUIRED` with the conversation and
     the specification, newest first, and a reply box that stores a `merchant` message; another merchant sees nothing; a visitor with no session goes to
     login. Reads run under the merchant's own session. E2E covers a handed-over inquiry, a reply and isolation.
