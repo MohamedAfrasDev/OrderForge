@@ -1,7 +1,7 @@
 # Tasks: ai-intake
 
 Spec: [doc/spec/SPEC-ai-intake.md](../../doc/spec/SPEC-ai-intake.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T4 built (0009 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T5 built (0009 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic and the model port (no database; the client is tested against a local fake server)
 
@@ -53,7 +53,7 @@ Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T4 built 
   - Files: `supabase/migrations/0009_intake.sql`, `lib/audit.ts`, `tests/db/intake-messages.test.ts`, `tests/audit.test.ts`
   - Depends on: T3. Ask first before applying anywhere but local.
 
-- [ ] **T5 Services: `startInquiry`, `postCustomerMessage`, `editRequirements`, the reads**
+- [x] **T5 Services: `startInquiry`, `postCustomerMessage`, `editRequirements`, the reads**
   - Acceptance: `startInquiry` (by merchant slug) creates the inquiry in `NEW`, stores the first customer message (at most 4,000 characters) and returns a
     signed customer link; an unknown slug is refused. `postCustomerMessage` stores one message (a double submit stores one), refuses past 40 messages
     or 4,000 characters, and does not call the model. `editRequirements` writes a new requirements version in which the customer's edits outrank

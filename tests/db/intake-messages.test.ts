@@ -88,6 +88,13 @@ describe("messages.reply_to: one assistant reply per customer message", () => {
     expect((await db.from("messages").select("id").eq("inquiry_id", i)).data).toHaveLength(0);
   });
 
+  it("intake_post_message is not callable by the anon role", async () => {
+    const i = await inquiry();
+    const denied = await anonClient().rpc("intake_post_message", { p_inquiry_id: i, p_body: "x", p_now: "2026-11-04T10:00:00Z", p_max_messages: 40, p_window_seconds: 30 });
+    expect(denied.error?.code).toBe(SQLSTATE.denied);
+    expect((await db.from("messages").select("id").eq("inquiry_id", i)).data).toHaveLength(0);
+  });
+
   it("is not writable by the anon role", async () => {
     const i = await inquiry();
     const q = await customerMessage(i);

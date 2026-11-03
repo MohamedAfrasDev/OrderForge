@@ -37,3 +37,54 @@ $$;
 create trigger messages_guard_reply
   before insert on public.messages
   for each row execute function public.guard_message_reply();
+
+-- intake_post_message ------------------------------------------------------------------------------
+-- Stores one more customer message, atomically. The inquiry row is locked first, so two submits at the same instant are
+-- handled one after the other: the cap on messages and the double-submit check (an identical customer message right after the
+-- last message of the inquiry, within the window, is the same message) see a consistent state, and exactly one message is
+-- stored. Anything else about the turn (the model, the state) is the caller's business.
+create or replace function public.intake_post_message(
+  p_inquiry_id     uuid,
+  p_body           text,
+  p_now            timestamptz,
+  p_max_messages   integer,
+  p_window_seconds integer
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_status  text;
+  v_count   integer;
+  v_last    public.messages%rowtype;
+  v_id      uuid;
+begin
+  if p_inquiry_id is null or p_now is null or p_body is null or btrim(p_body) = '' or length(p_body) > 10000
+     or p_max_messages is null or p_max_messages < 1 or p_window_seconds is null or p_window_seconds < 0 then
+    return jsonb_build_object('ok', false, 'code', 'INVALID_INPUT');
+  end if;
+
+  select status into v_status from public.inquiries where id = p_inquiry_id for update;
+  if not found then
+    return jsonb_build_object('ok', false, 'code', 'INQUIRY_NOT_FOUND');
+  end if;
+
+  select count(*) into v_count from public.messages where inquiry_id = p_inquiry_id;
+  if v_count >= p_max_messages then
+    return jsonb_build_object('ok', false, 'code', 'LIMIT_REACHED', 'status', v_status);
+  end if;
+
+  select * into v_last from public.messages where inquiry_id = p_inquiry_id order by created_at desc, id desc limit 1;
+  if found and v_last.role = 'customer' and v_last.body = p_body and v_last.created_at >= p_now - make_interval(secs => p_window_seconds) then
+    return jsonb_build_object('ok', true, 'duplicate', true, 'message_id', v_last.id);
+  end if;
+
+  insert into public.messages (inquiry_id, role, body, created_at) values (p_inquiry_id, 'customer', p_body, p_now) returning id into v_id;
+  return jsonb_build_object('ok', true, 'duplicate', false, 'message_id', v_id);
+end;
+$$;
+
+revoke all on function public.intake_post_message(uuid, text, timestamptz, integer, integer) from public, anon, authenticated;
+grant execute on function public.intake_post_message(uuid, text, timestamptz, integer, integer) to service_role;

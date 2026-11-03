@@ -8,6 +8,8 @@ export { acceptExplanation, acceptQuestion, askSchema, fallbackQuestion } from "
 export type { ParsedExtraction } from "./extraction";
 export { blockingFields, confirmedBoxCount, emptyRequirements, mergeRequirements, toCatalogRequirements } from "./requirements";
 export { inquiryTransition } from "./state";
+export { STORED_REQUIREMENTS_TAG, emptyStored, storedRequirementsSchema } from "./stored";
+export type { OpenQuestion, Proposal, ProposalAlternative, StoredRequirements } from "./stored";
 export { BLOCKING_FIELDS, FIELD_NAMES, FIELD_STATUSES, INQUIRY_STATUSES } from "./types";
 export type {
   BlockingField,
