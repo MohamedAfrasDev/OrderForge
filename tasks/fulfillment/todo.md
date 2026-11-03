@@ -1,7 +1,7 @@
 # Tasks: fulfillment
 
 Spec: [doc/spec/SPEC-fulfillment.md](../../doc/spec/SPEC-fulfillment.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 to T5 built (0008 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 to T6 built (0008 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -73,7 +73,7 @@ Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 to T5 built (0
 
 ## Phase D: screens and review
 
-- [ ] **T6 Screens: merchant jobs and the customer status line**
+- [x] **T6 Screens: merchant jobs and the customer status line**
   - Acceptance: `/merchant/jobs` (linked from the merchant home) lists the merchant's jobs, with the worksheet (lines, totals to pick,
     conditions, ready-by, pickup) and the events, and a move form: start, finish, record pickup, hold with a note, resume; buttons disable
     while a request runs and the server refuses repeats. The order room shows the customer's coarse status and ready-by date once a job
