@@ -130,3 +130,111 @@ $$;
 
 revoke all on function public.fulfillment_create_job(uuid, jsonb, timestamptz) from public, anon, authenticated;
 grant execute on function public.fulfillment_create_job(uuid, jsonb, timestamptz) to service_role;
+
+-- ================================================================================================
+-- Part 2: moving a job, and finding paid purchases that still lack one.
+-- ================================================================================================
+
+-- 4. fulfillment_move_job ---------------------------------------------------------------------------
+-- The merchant moves a job one step. Lock order: the purchase (checked to belong to the merchant, else NOT_FOUND), then the
+-- job. A request for the status the job is already in changes nothing and says already = true, so a double click moves it
+-- once. A hold needs a note; a resume goes back only to the status the hold started from (read from the latest hold event).
+-- Every real move writes its event in the same transaction, with who moved it and from which status.
+create or replace function public.fulfillment_move_job(
+  p_job_id      uuid,
+  p_merchant_id uuid,
+  p_to          text,
+  p_note        text,
+  p_actor       text,
+  p_now         timestamptz
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_purchase_id uuid;
+  v_job         public.preparation_jobs%rowtype;
+  v_note        text := nullif(btrim(coalesce(p_note, '')), '');
+  v_held_from   text;
+  v_allowed     boolean;
+begin
+  if p_now is null or p_job_id is null or p_merchant_id is null
+     or p_to is null or p_to not in ('QUEUED', 'PREPARING', 'READY_FOR_PICKUP', 'COLLECTED', 'ON_HOLD')
+     or p_actor is null or length(p_actor) not between 1 and 200
+     or (v_note is not null and length(v_note) > 500) then
+    return jsonb_build_object('ok', false, 'code', 'INVALID_INPUT');
+  end if;
+
+  select purchase_id into v_purchase_id from public.preparation_jobs where id = p_job_id;
+  if v_purchase_id is null then
+    return jsonb_build_object('ok', false, 'code', 'NOT_FOUND');
+  end if;
+  perform 1 from public.purchases where id = v_purchase_id and merchant_id = p_merchant_id for update;
+  if not found then
+    return jsonb_build_object('ok', false, 'code', 'NOT_FOUND');
+  end if;
+  select * into v_job from public.preparation_jobs where id = p_job_id for update;
+
+  if v_job.status = p_to then
+    return jsonb_build_object('ok', true, 'already', true, 'job_id', v_job.id, 'status', v_job.status);
+  end if;
+
+  if v_job.status = 'ON_HOLD' then
+    select from_status into v_held_from from public.preparation_events
+     where job_id = v_job.id and status = 'ON_HOLD'
+     order by created_at desc, ctid desc
+     limit 1;
+  end if;
+
+  v_allowed := case v_job.status
+    when 'QUEUED' then p_to in ('PREPARING', 'ON_HOLD')
+    when 'PREPARING' then p_to in ('READY_FOR_PICKUP', 'ON_HOLD')
+    when 'READY_FOR_PICKUP' then p_to in ('COLLECTED', 'ON_HOLD')
+    when 'ON_HOLD' then v_held_from is not null and p_to = v_held_from
+    else false end;
+  if not v_allowed then
+    return jsonb_build_object('ok', false, 'code', 'ILLEGAL_TRANSITION', 'status', v_job.status);
+  end if;
+
+  if p_to = 'ON_HOLD' and v_note is null then
+    return jsonb_build_object('ok', false, 'code', 'NOTE_REQUIRED');
+  end if;
+
+  update public.preparation_jobs set status = p_to where id = v_job.id;
+  insert into public.preparation_events (job_id, status, from_status, actor, note, created_at)
+  values (v_job.id, p_to, v_job.status, p_actor, v_note, p_now);
+
+  return jsonb_build_object('ok', true, 'already', false, 'job_id', v_job.id, 'status', p_to, 'from', v_job.status);
+end;
+$$;
+
+-- 5. fulfillment_paid_purchases_without_job ---------------------------------------------------------
+-- Paid purchases (an attempt CAPTURED and the reservation COMMITTED) that have no job yet, the oldest payment first, for the
+-- scheduled reconcile run. An out-of-range limit is a bug in the caller and raises.
+create or replace function public.fulfillment_paid_purchases_without_job(p_limit integer)
+returns table (purchase_id uuid, paid_at timestamptz)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if p_limit is null or p_limit < 1 or p_limit > 200 then
+    raise exception 'fulfillment_paid_purchases_without_job: the limit must be from 1 to 200';
+  end if;
+  return query
+    select p.id, a.state_changed_at
+      from public.purchases p
+      join public.payment_attempts a on a.purchase_id = p.id and a.state = 'CAPTURED'
+      join public.reservations r on r.purchase_id = p.id and r.state = 'COMMITTED'
+     where not exists (select 1 from public.preparation_jobs j where j.purchase_id = p.id)
+     order by a.state_changed_at, p.created_at, p.id
+     limit p_limit;
+end;
+$$;
+
+revoke all on function public.fulfillment_move_job(uuid, uuid, text, text, text, timestamptz) from public, anon, authenticated;
+revoke all on function public.fulfillment_paid_purchases_without_job(integer) from public, anon, authenticated;
+grant execute on function public.fulfillment_move_job(uuid, uuid, text, text, text, timestamptz) to service_role;
+grant execute on function public.fulfillment_paid_purchases_without_job(integer) to service_role;

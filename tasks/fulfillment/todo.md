@@ -1,7 +1,7 @@
 # Tasks: fulfillment
 
 Spec: [doc/spec/SPEC-fulfillment.md](../../doc/spec/SPEC-fulfillment.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 and T2 built (0008 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 to T3 built (0008 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -33,7 +33,7 @@ Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 and T2 built (
   - Files: `supabase/migrations/0008_fulfillment.sql`, `tests/db/fulfillment-create.test.ts`, `tests/db/fulfillment-guards.test.ts`, `tests/db/fulfillment-helpers.ts`
   - Depends on: T1. Ask first before applying anywhere but local.
 
-- [ ] **T3 `fulfillment_move_job` and `fulfillment_paid_purchases_without_job`**
+- [x] **T3 `fulfillment_move_job` and `fulfillment_paid_purchases_without_job`**
   - Acceptance: `fulfillment_move_job(job, merchant, to, note, now)` locks the job, returns `NOT_FOUND` for another merchant's job, applies
     the table, requires a note for a hold (`NOTE_REQUIRED`), resumes to the status recorded in the last non-hold event, treats a request
     for the current status as a no-op (`already`), and writes the event with the actor and the previous status in the same transaction.
