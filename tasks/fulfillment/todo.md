@@ -1,7 +1,7 @@
 # Tasks: fulfillment
 
 Spec: [doc/spec/SPEC-fulfillment.md](../../doc/spec/SPEC-fulfillment.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 built. Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 and T2 built (0008 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -20,7 +20,7 @@ Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 built. Tick a 
 
 ## Phase B: migration 0008 on local Supabase (real Postgres, no network)
 
-- [ ] **T2 Migration 0008 part 1: event columns, guard triggers, `fulfillment_create_job`**
+- [x] **T2 Migration 0008 part 1: event columns, guard triggers, `fulfillment_create_job`**
   - Acceptance: `preparation_events` gains `from_status` and `actor` (checked). A guard trigger on `preparation_jobs` allows only the
     spec's moves, never changes `worksheet` or `purchase_id`, and never changes a `COLLECTED` job; a trigger on `preparation_events` refuses
     update and delete. `fulfillment_create_job(purchase, worksheet, now)` (service role only, `set search_path = ''`) locks the purchase,
