@@ -15,6 +15,8 @@ export type ReconcileDeps = {
   insertAudit: AuditInsert;
   /** Payments reconciliation. Runs after the heartbeat and before the sweep; its failure never stops the sweep. */
   reconcilePayments?: (context: { now: string; correlationId: string }) => Promise<unknown>;
+  /** Creates the job of every paid purchase that lacks one. Runs after payments and before the sweep; its failure never stops the sweep. */
+  createMissingJobs?: (context: { now: string; correlationId: string }) => Promise<unknown>;
   /** Runs after the heartbeat. The reservation module supplies it; omitted, a run is just the heartbeat. */
   sweepReservations?: (context: { now: string; correlationId: string }) => Promise<SweepSummary>;
   /** The clock, injectable for tests. */
@@ -69,7 +71,7 @@ export async function handleReconcile(request: Request, deps: ReconcileDeps): Pr
   }
 
   const context = { now: (deps.now ?? (() => new Date().toISOString()))(), correlationId };
-  let failure: "payments_failed" | "sweep_failed" | null = null;
+  let failure: "payments_failed" | "jobs_failed" | "sweep_failed" | null = null;
 
   if (deps.reconcilePayments) {
     try {
@@ -77,6 +79,13 @@ export async function handleReconcile(request: Request, deps: ReconcileDeps): Pr
     } catch {
       // Remembered, not returned yet: the sweep still runs, then the run fails visibly. The cause is never revealed.
       failure = "payments_failed";
+    }
+  }
+  if (deps.createMissingJobs) {
+    try {
+      await deps.createMissingJobs(context);
+    } catch {
+      failure ??= "jobs_failed";
     }
   }
   if (deps.sweepReservations) {

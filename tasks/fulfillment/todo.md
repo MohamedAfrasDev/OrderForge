@@ -1,7 +1,7 @@
 # Tasks: fulfillment
 
 Spec: [doc/spec/SPEC-fulfillment.md](../../doc/spec/SPEC-fulfillment.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 to T4 built (0008 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 to T5 built (0008 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -61,7 +61,7 @@ Status: spec APPROVED 3 Nov 2026; task list awaiting approval; T1 to T4 built (0
   - Files: `services/fulfillment/{create,move,read,shared}.ts`, `lib/audit.ts`, `tests/db/fulfillment-services.test.ts`, `tests/db/fulfillment-reads.test.ts`
   - Depends on: T3.
 
-- [ ] **T5 Wiring: the accept action and the reconcile route**
+- [x] **T5 Wiring: the accept action and the reconcile route**
   - Acceptance: after the merchant's accept action gets `CAPTURED` from `decide`, it asks for the job; a failure there is logged and never
     fails the accept. `handleReconcile` gains a `createMissingJobs` dependency that runs after payments and before the sweep; its failure
     never stops the sweep and then fails the run visibly (`jobs_failed`), as payments does; the route wires it. Tests: handler ordering

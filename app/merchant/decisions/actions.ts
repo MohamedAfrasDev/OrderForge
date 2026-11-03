@@ -5,6 +5,7 @@ import { requireMerchant } from "@/lib/access/require-merchant";
 import { newCorrelationId } from "@/lib/correlation";
 import { createPaymentDeps } from "@/lib/payments/wiring";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createJobForPurchase } from "@/services/fulfillment/create";
 import { decide } from "@/services/payments/decide";
 import { decisionFailureMessage } from "@/services/payments/customer-messages";
 
@@ -28,15 +29,27 @@ async function run(formData: FormData, decision: "accepted" | "declined"): Promi
   if (!UUID.test(purchaseId)) return { status: "error", message: decisionFailureMessage("NOT_FOUND") };
 
   const confirmed = formData.getAll("confirm").filter((v): v is string => typeof v === "string" && CONDITION_CODE.test(v));
+  const db = createAdminClient();
+  const context = { now: new Date().toISOString(), correlationId: newCorrelationId() };
   const result = await decide(
-    createAdminClient(),
+    db,
     createPaymentDeps(),
     { kind: "merchant", userId: user.id, merchantId: merchant.id },
     purchaseId,
     decision,
     decision === "accepted" ? { confirmedConditions: confirmed } : { reason: field(formData, "reason").trim() },
-    { now: new Date().toISOString(), correlationId: newCorrelationId() },
+    context,
   );
+
+  // The money is taken: the order becomes a job. A failure here never fails the accept, because the scheduled reconcile run
+  // creates the job of every paid purchase that has none.
+  if (result.ok && decision === "accepted") {
+    try {
+      await createJobForPurchase(db, purchaseId, { ...context, actor: `merchant:${user.id}` });
+    } catch {
+      // Left for the reconcile run.
+    }
+  }
   refresh();
   if (result.ok) {
     return { status: "done", message: decision === "accepted" ? "Accepted. The payment was taken." : "Declined. The customer's authorization was cancelled and the stock released." };
