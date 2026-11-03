@@ -307,3 +307,42 @@ describe("idle and expired attempts", () => {
     expect(await desk(r)).toEqual({ on_hand: 100, reserved: 0 });
   });
 });
+
+describe("an operation started moments ago is left to the code that is sending it (found on the real sandbox)", () => {
+  it("reconcileAttempt does nothing to an operation in flight for less than 120 seconds: no state change, no PayPal request", async () => {
+    const r = await approved();
+    must(await db.rpc("payment_mark_approved", { p_attempt_id: r.attemptId, p_now: T0 }));
+    expect((await beginPayment(db, r.attemptId, "authorize", T0)).ok).toBe(true);
+    const before = fake.requests.length;
+
+    const young = await reconcileAttempt(db, deps(), r.attemptId, { ...ctx, now: new Date(Date.parse(T0) + 1_500).toISOString() });
+    expect(young).toEqual({ ok: true, value: { state: "AUTHORIZE_IN_FLIGHT", changed: false } });
+    expect(fake.requests.length).toBe(before);
+    expect((await reservationOf(r.purchaseId))!.state).toBe("PAYMENT_IN_FLIGHT");
+
+    // The sender can still settle it afterwards: nothing was put in doubt underneath it.
+    const sent = await completeApproval(db, deps(), r.who, r.orderId, { ...ctx, now: new Date(Date.parse(T0) + 2_000).toISOString() });
+    expect(sent).toMatchObject({ ok: false, code: "ATTEMPT_ACTIVE" });
+    expect((await attemptOf(r.purchaseId)).state).toBe("AUTHORIZE_IN_FLIGHT");
+  });
+
+  it("the same operation is reconciled once it has been stuck for 120 seconds", async () => {
+    const r = await approved();
+    must(await db.rpc("payment_mark_approved", { p_attempt_id: r.attemptId, p_now: T0 }));
+    await beginPayment(db, r.attemptId, "authorize", T0);
+    const old = await reconcileAttempt(db, deps(), r.attemptId, { ...ctx, now: new Date(Date.parse(T0) + 120_000).toISOString() });
+    expect(old).toEqual({ ok: true, value: { state: "APPROVED", changed: true } });
+  });
+
+  it("a webhook for an order whose authorize is in flight leaves the sender free to settle it as AUTHORIZED", async () => {
+    const r = await approved();
+    must(await db.rpc("payment_mark_approved", { p_attempt_id: r.attemptId, p_now: T0 }));
+    await beginPayment(db, r.attemptId, "authorize", T0);
+    const eventId = `WH-${randomUUID()}`;
+    must(await db.from("payment_events").insert({ provider_event_id: eventId, event_type: "CHECKOUT.ORDER.APPROVED", source: "webhook", evidence_label: "mocked", payload: { resource_type: "checkout-order", resource_id: r.orderId, order_id: r.orderId } }));
+    const { applyWebhookEvent } = await import("@/services/payments/webhook");
+    // The webhook arrives 1.4 seconds after the begin, as on the real sandbox.
+    await applyWebhookEvent(db, deps(), eventId, { ...ctx, now: new Date(Date.parse(T0) + 1_400).toISOString() });
+    expect((await attemptOf(r.purchaseId)).state).toBe("AUTHORIZE_IN_FLIGHT");
+  });
+});

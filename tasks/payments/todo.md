@@ -1,7 +1,7 @@
 # Tasks: payments
 
 Spec: [doc/spec/SPEC-payments.md](../../doc/spec/SPEC-payments.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T9 built (0007 applied to local only), T10 checkpoint written, CI green, hosted 0007 applied, waiting on merge and the real-sandbox runs. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T9 built (0007 applied to local only), T10 done (real-sandbox runs 3 Nov). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -118,7 +118,7 @@ Status: APPROVED 2 Nov 2026; T1 to T9 built (0007 applied to local only), T10 ch
   - Files: `services/payments/read.ts`, `app/o/[token]/` (actions and return handling), `components/payment-status.tsx`, `app/merchant/decisions/page.tsx`, `e2e/payments-customer.spec.ts`, `e2e/payments-merchant.spec.ts`
   - Depends on: T8.
 
-- [ ] **T10 Checkpoint**
+- [x] **T10 Checkpoint**
   - Acceptance: every spec success criterion reviewed against current state with labeled evidence (mocked, replayed, real-sandbox, CI);
     CI green on the last code commit; the two real-sandbox runs on the hosted site recorded separately (pay then accept; pay then decline) with
     you as the buyer; record in `doc/checkpoints/payments-checkpoint.md`; statuses updated in `SPEC.md` and this file. Applying 0007 to
