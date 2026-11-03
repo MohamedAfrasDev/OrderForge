@@ -1,7 +1,7 @@
 # Tasks: payments
 
 Spec: [doc/spec/SPEC-payments.md](../../doc/spec/SPEC-payments.md) · Plan: [plan.md](plan.md)
-Status: APPROVED 2 Nov 2026; T1 to T6 built (0007 applied to local only), T7 to T10 open. Tick a box only after its Verify step passes. Every task is test first.
+Status: APPROVED 2 Nov 2026; T1 to T7 built (0007 applied to local only), T8 to T10 open. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic (no database, no network)
 
@@ -81,7 +81,7 @@ Status: APPROVED 2 Nov 2026; T1 to T6 built (0007 applied to local only), T7 to 
   - Files: `services/payments/decide.ts`, `services/payments/settle.ts` (extend), `tests/db/payments-decide-service.test.ts`
   - Depends on: T5.
 
-- [ ] **T7 Reconciliation: `reconcileAttempt`, `reconcilePayments`, expiry, route wiring**
+- [x] **T7 Reconciliation: `reconcileAttempt`, `reconcilePayments`, expiry, route wiring**
   - Acceptance: `reconcileAttempt` queries PayPal and resolves per the spec's table; it is the only exit from `OUTCOME_UNKNOWN` and never
     retries before asking. `reconcilePayments` handles, in a bounded batch (20) with per-attempt error isolation, attempts in flight
     for 120 seconds or more, unknown outcomes, `CREATED` without an order, idle `PROVIDER_CREATED` and `APPROVED` past the hold, and

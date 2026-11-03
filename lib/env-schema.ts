@@ -31,6 +31,8 @@ const serverSchema = z.object({
   CRON_SECRET: secret,
   // Optional: point the PayPal spike at a local fake server (see lib/paypal/client.ts for what is accepted).
   PAYPAL_SPIKE_BASE_URL: z.preprocess((v) => (v === "" ? undefined : v), z.url().optional()),
+  // Optional: when set, a capture must have been paid to this PayPal merchant id (payments module).
+  PAYPAL_PAYEE_MERCHANT_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().regex(/^[A-Za-z0-9]{1,32}$/).optional()),
 });
 
 const clientSchema = z.object(clientShape);

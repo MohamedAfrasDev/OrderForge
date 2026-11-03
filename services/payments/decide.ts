@@ -4,7 +4,7 @@ import { cents } from "@/lib/money";
 import type { MerchantActor } from "@/services/quote/shared";
 import { verifyApprovalBinding } from "@/services/quote/verify-binding";
 import { auditStep, callPay, failureCodeOf, recordEvent, refusalCode, type PaymentDeps, type ServiceContext } from "./shared";
-import { settlePayment } from "./settle";
+import { beginPayment, settlePayment } from "./settle";
 
 export type Decision = { decision: "accepted" | "declined"; state: string };
 
@@ -261,4 +261,30 @@ export async function voidForChange(
   }
   const result = await decide(db, deps, actor, purchaseId, "declined", { reason }, ctx, "VOIDED");
   return result.ok ? { ok: true, value: { state: result.value.state } } : result;
+}
+
+/**
+ * Completes a recorded decision whose operation did not happen: reconciliation found the capture (or void) was never
+ * done, so the attempt is AUTHORIZED again with an accepted (or declined) decision. Begins the operation again and sends
+ * it with the same stable request id, so PayPal can never perform it twice.
+ */
+export async function resumeDecision(db: SupabaseClient, deps: PaymentDeps, attemptId: string, ctx: ServiceContext): Promise<PaymentResult<Decision>> {
+  const found = await db.from("payment_attempts").select("id, state, purchase_id, authorization_id").eq("id", attemptId).maybeSingle();
+  if (found.error) throw new Error(`load attempt: ${found.error.message}`);
+  if (!found.data) return { ok: false, code: "NOT_FOUND" };
+  if (found.data.state !== "AUTHORIZED") return { ok: false, code: "ILLEGAL_TRANSITION", cause: found.data.state as string };
+  const dec = await db.from("merchant_decisions").select("decision, authorization_id").eq("purchase_id", found.data.purchase_id).maybeSingle();
+  if (dec.error) throw new Error(`load decision: ${dec.error.message}`);
+  if (!dec.data || dec.data.decision === "pending") return { ok: false, code: "ILLEGAL_TRANSITION", cause: "no decision to carry out" };
+  if (dec.data.authorization_id !== found.data.authorization_id) return { ok: false, code: "CAPTURE_BLOCKED", cause: "the decision is for another authorization" };
+
+  const operation = dec.data.decision === "accepted" ? "capture" : "void";
+  const begun = await beginPayment(db, attemptId, operation, ctx.now);
+  if (!begun.ok) return { ok: false, code: refusalCode(begun, "ILLEGAL_TRANSITION"), ...(typeof begun.cause === "string" ? { cause: begun.cause } : {}) };
+  const actor = ctx.actor ?? "system:cron";
+  await auditStep(db, ctx, actor, "payment.operation_resumed", attemptId, { from: "AUTHORIZED", operation });
+  const authorizationId = found.data.authorization_id as string;
+  return operation === "capture"
+    ? sendCapture(db, deps, attemptId, authorizationId, actor, ctx)
+    : sendVoid(db, deps, attemptId, authorizationId, actor, ctx, "DECLINED");
 }

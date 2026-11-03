@@ -7,7 +7,7 @@ import { auditInsertFor, type ServiceContext } from "@/services/reservation/shar
 export type { ServiceContext };
 
 /** The part of the PayPal client payments uses. Tests hand in a client pointed at the local fake. */
-export type PayPalPort = Pick<PayPalClient, "createOrder" | "authorizeOrder" | "getOrder" | "captureAuthorization" | "voidAuthorization">;
+export type PayPalPort = Pick<PayPalClient, "createOrder" | "authorizeOrder" | "getOrder" | "captureAuthorization" | "voidAuthorization" | "getAuthorization" | "getCapture">;
 
 export type EvidenceLabel = "mocked" | "replayed" | "real-sandbox";
 
