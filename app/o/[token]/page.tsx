@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { JobStatus } from "@/components/job-status";
 import { PaymentStatus } from "@/components/payment-status";
 import { QuoteCard } from "@/components/quote-card";
 import { getCustomerMessages } from "@/lib/access/inquiry-reads";
 import { authorizeCustomerToken } from "@/lib/access/customer-session";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { jobStatusForCustomer } from "@/services/fulfillment/read";
 import { paymentNoticeOf } from "@/services/payments/customer-messages";
 import { paymentStatusForCustomer } from "@/services/payments/read";
 import { readCustomerQuote } from "@/services/quote/read";
@@ -46,6 +48,7 @@ async function OrderRoom({ params, searchParams }: { params: PageProps<"/o/[toke
   const quote = await readCustomerQuote(db, inquiry.id, now);
   const hold = quote?.status === "ACCEPTED" ? await readHoldForCustomer(db, inquiry.id, now) : null;
   const payment = quote?.status === "ACCEPTED" ? await paymentStatusForCustomer(db, inquiry.id) : null;
+  const job = quote?.status === "ACCEPTED" ? await jobStatusForCustomer(db, inquiry.id) : null;
 
   return (
     <>
@@ -60,6 +63,8 @@ async function OrderRoom({ params, searchParams }: { params: PageProps<"/o/[toke
       {quote ? <QuoteCard quote={quote} hold={hold} accept={acceptQuoteAction.bind(null, token)} /> : null}
 
       {payment ? <PaymentStatus view={payment} notice={notice} pay={payWithPayPalAction.bind(null, token)} /> : null}
+
+      {job ? <JobStatus view={job} /> : null}
 
       <section aria-label="Conversation" className="flex flex-col gap-3">
         {messages.length === 0 ? (
