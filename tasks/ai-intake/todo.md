@@ -1,7 +1,7 @@
 # Tasks: ai-intake
 
 Spec: [doc/spec/SPEC-ai-intake.md](../../doc/spec/SPEC-ai-intake.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T6 built (0009 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T7 built (0009 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic and the model port (no database; the client is tested against a local fake server)
 
@@ -77,7 +77,7 @@ Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T6 built 
   - Files: `services/intake/turn.ts`, `tests/db/intake-turn.test.ts`, `tests/db/intake-injection.test.ts`, `tests/db/intake-outage.test.ts`, `tests/db/intake-fixtures.ts`
   - Depends on: T5.
 
-- [ ] **T7 `chooseConfiguration` and `handOffToMerchant`**
+- [x] **T7 `chooseConfiguration` and `handOffToMerchant`**
   - Acceptance: `chooseConfiguration` takes a proposal key (never an amount), revalidates against live stock (`PROPOSAL_STALE` if it no longer holds),
     calls `createQuoteDraft` and applies the quote gate: a quote with no mandatory unresolved condition is published for the customer
     (`QUOTE_READY`); otherwise `requestMerchantReview` (`REVIEW_REQUIRED`). The total is exactly the catalog engine's (30 boxes at $36 is $1,080.00;

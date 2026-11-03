@@ -79,7 +79,7 @@ describe("postCustomerMessage", () => {
 
   it("stores the message as the customer's and does not touch the state or call anything else", async () => {
     const { inquiryId, who } = await started();
-    const out = await postCustomerMessage(db, who, "make it 30 boxes", ctx);
+    const out = await postCustomerMessage(db, who, "make it 30 boxes", after);
     expect(out).toMatchObject({ ok: true, value: { duplicate: false } });
     const messages = await messagesOf(db, inquiryId);
     expect(messages.map((x) => [x.role, x.body])).toEqual([

@@ -24,6 +24,8 @@ export type Proposal = {
   /** Code's price for the selections when VALID. */
   priced: { perBoxMinor: number; totalMinor: number; boxCount: number } | null;
   alternatives: ProposalAlternative[];
+  /** The key the customer picked ("proposal" or an alternative's key). Set once; it claims the proposal so a double click makes one quote. */
+  chosen?: string | null;
 };
 
 /** The one question the agent is waiting on, if any. */
@@ -61,6 +63,7 @@ const proposalSchema = z.strictObject({
   blockers: z.array(z.string().max(60)).max(50),
   priced: z.strictObject({ perBoxMinor: z.number().int(), totalMinor: z.number().int(), boxCount: z.number().int() }).nullable(),
   alternatives: z.array(alternativeSchema).max(20),
+  chosen: z.string().max(40).nullable().optional(),
 });
 
 /** Reads a stored document back, strictly: an unknown key, tag or status is refused rather than guessed at. */
