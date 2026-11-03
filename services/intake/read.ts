@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { FIELD_NAMES, type FieldName, type FieldStatus, type Proposal } from "@/domain/intake";
 import type { VerifiedInquiryId } from "@/lib/access/inquiry-reads";
+import { CatalogLoadError, loadCatalogSnapshot } from "@/services/catalog/load-snapshot";
 import { latestRequirements, loadInquiry } from "./shared";
 
 const LABELS: Record<FieldName, string> = {
@@ -31,6 +32,8 @@ export type CustomerSpecView = {
   fields: CustomerSpecField[];
   question: string | null;
   proposal: Proposal | null;
+  /** Names for the SKUs the proposal mentions, so the screen never shows a code. */
+  productNames: Record<string, string>;
 };
 
 /** The latest version of the verified inquiry's specification, or null until something has been recorded. */
@@ -49,5 +52,25 @@ export async function requirementsForCustomer(db: SupabaseClient, inquiryId: Ver
     }),
     question: latest.stored.question?.text ?? null,
     proposal: latest.stored.proposal,
+    productNames: await productNames(db, inquiry.merchantId),
   };
+}
+
+/** A merchant whose catalog cannot be read gets no names, not a broken page: the screen then says "an item". */
+async function productNames(db: SupabaseClient, merchantId: string): Promise<Record<string, string>> {
+  try {
+    return Object.fromEntries((await loadCatalogSnapshot(db, merchantId)).catalog.products.map((p) => [p.sku, p.name]));
+  } catch (error) {
+    if (error instanceof CatalogLoadError) return {};
+    throw error;
+  }
+}
+
+/** The newest customer message nobody has answered yet (the assistant failed, or has not run): what "Try again" re-runs. */
+export async function unansweredMessageId(db: SupabaseClient, inquiryId: VerifiedInquiryId): Promise<string | null> {
+  const rows = await db.from("messages").select("id, role, reply_to").eq("inquiry_id", inquiryId).in("role", ["customer", "assistant"]).order("created_at", { ascending: false }).order("id", { ascending: false });
+  if (rows.error) throw new Error(`load messages: ${rows.error.message}`);
+  const data = (rows.data ?? []) as Array<{ id: string; role: string; reply_to: string | null }>;
+  const answered = new Set(data.filter((m) => m.reply_to !== null).map((m) => m.reply_to));
+  return data.find((m) => m.role === "customer" && !answered.has(m.id))?.id ?? null;
 }

@@ -35,6 +35,8 @@ const serverSchema = z.object({
   // asked only after a provider failure. Unset means the defaults in lib/ai/openrouter.ts.
   OPENROUTER_MODEL: z.preprocess((v) => (v === "" ? undefined : v), z.string().regex(/^[A-Za-z0-9._/:~-]{1,100}$/).optional()),
   OPENROUTER_FALLBACK_MODEL: z.preprocess((v) => (v === "" ? undefined : v), z.string().regex(/^[A-Za-z0-9._/:~-]{1,100}$/).optional()),
+  // Optional: "local-demo" swaps the intake model for a rule-based stand-in. Refused unless the database is local and the app is not on Vercel.
+  INTAKE_MODEL: z.preprocess((v) => (v === "" ? undefined : v), z.literal("local-demo").optional()),
   // Optional: when set, a capture must have been paid to this PayPal merchant id (payments module).
   PAYPAL_PAYEE_MERCHANT_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().regex(/^[A-Za-z0-9]{1,32}$/).optional()),
 });

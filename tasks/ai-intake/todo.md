@@ -1,7 +1,7 @@
 # Tasks: ai-intake
 
 Spec: [doc/spec/SPEC-ai-intake.md](../../doc/spec/SPEC-ai-intake.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T7 built (0009 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T8 built (0009 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic and the model port (no database; the client is tested against a local fake server)
 
@@ -90,7 +90,7 @@ Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T7 built 
 
 ## Phase C: screens (local Supabase; the fake model)
 
-- [ ] **T8 Customer screens: the store form and the order room**
+- [x] **T8 Customer screens: the store form and the order room**
   - Acceptance: the store page has a form (message up to 4,000 characters) that starts an inquiry and lands in the order room; the order room shows the
     conversation, a message composer, the visible specification (each field with its status and source, editable), the agent's open question, the
     proposals with code-computed prices and the explanations, a "Use this one" action per proposal, and, after a failure, "Try again" and "Ask the merchant
