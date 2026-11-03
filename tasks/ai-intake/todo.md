@@ -1,7 +1,7 @@
 # Tasks: ai-intake
 
 Spec: [doc/spec/SPEC-ai-intake.md](../../doc/spec/SPEC-ai-intake.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 built. Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 and T2 built. Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic and the model port (no database; the client is tested against a local fake server)
 
@@ -18,7 +18,7 @@ Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 built. Tick 
   - Files: `domain/intake/{types,extraction,requirements,state,index}.ts`, `tests/intake/{extraction,requirements,state,purity}.test.ts`
   - Depends on: none (catalog-engine and quote-approval are built).
 
-- [ ] **T2 Questions, ranking and prompts: `fallbackQuestion`, `acceptQuestion`, `acceptExplanation`, `rankAlternatives`, `buildPrompt`**
+- [x] **T2 Questions, ranking and prompts: `fallbackQuestion`, `acceptQuestion`, `acceptExplanation`, `rankAlternatives`, `buildPrompt`**
   - Acceptance: `fallbackQuestion` has fixed wording for every blocking field. `acceptQuestion` accepts only one sentence of at most 300
     characters ending in a question mark with no price, SKU or stock figure and no markup; otherwise null. `acceptExplanation` accepts text only if
     every currency amount in it is one code produced (passed in); otherwise null. `rankAlternatives` keeps only the entries of code's list, in the
