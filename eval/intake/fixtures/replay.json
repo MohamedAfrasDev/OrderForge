@@ -1,0 +1,1809 @@
+{
+  "recordedAt": "2026-11-04",
+  "model": "nvidia/nemotron-3.5-super-vl:free",
+  "promptVersion": "intake.v1",
+  "scenarios": {
+    "missing-quantity": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "preferences": {
+                "value": [
+                  "notebooks"
+                ],
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "ask",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "question": "How many boxes do you need?"
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": [
+                "notebooks"
+              ],
+              "status": "confirmed"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "CLARIFYING",
+          "outcome": "ASKED",
+          "askedField": "boxCount",
+          "reply": "How many boxes do you need?"
+        }
+      }
+    ],
+    "price-question-only": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {}
+          },
+          {
+            "kind": "ask",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "question": "What quantity of boxes would you prefer?"
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "CLARIFYING",
+          "outcome": "ASKED",
+          "askedField": "boxCount",
+          "reply": "What quantity of boxes would you prefer?"
+        }
+      }
+    ],
+    "quantity-answered-later": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "ask",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "question": "How many would you like?"
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "CLARIFYING",
+          "outcome": "ASKED",
+          "askedField": "boxCount",
+          "reply": "How many would you like?"
+        }
+      },
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 40,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          },
+          {
+            "kind": "rank",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "ranking": [
+                {
+                  "index": 0,
+                  "explanation": "A desk organizer is a practical, non-food gift that fits the confirmed 40-box order."
+                }
+              ]
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 40,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "BLOCKED",
+            "blockers": [
+              "INSUFFICIENT_STOCK"
+            ],
+            "priced": null,
+            "alternatives": [
+              {
+                "key": "alt-0",
+                "slotId": "gift",
+                "fromSku": "BOTTLE-STEEL",
+                "toSku": "ORGANIZER-DESK",
+                "perBoxMinor": 3600,
+                "totalMinor": 144000,
+                "explanation": "A desk organizer is a practical, non-food gift that fits the confirmed 40-box order."
+              }
+            ]
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "The box I first chose cannot be made as asked (not enough of one product is in stock). These options do work:\n1. Replace Steel water bottle with Desk organizer: $36.00 per box, $1,440.00 in total. A desk organizer is a practical, non-food gift that fits the confirmed 40-box order."
+        }
+      }
+    ],
+    "missing-budget": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "logoRequired": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "preferences": {
+                "value": [
+                  "notebooks"
+                ],
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": [
+                "notebooks"
+              ],
+              "status": "confirmed"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 70000,
+              "boxCount": 20
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $700.00 for 20 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      }
+    ],
+    "budget-two-ways": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "MALFORMED",
+            "detail": "the model's answer was not usable"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "NEW",
+          "outcome": "FAILED",
+          "code": "MODEL_OUTPUT_INVALID",
+          "reply": null
+        }
+      }
+    ],
+    "ambiguous-packaging": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "preferences": {
+                "value": [
+                  "premium packaging"
+                ],
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": [
+                "premium packaging"
+              ],
+              "status": "confirmed"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 70000,
+              "boxCount": 20
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $700.00 for 20 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      }
+    ],
+    "food-exclusion": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 70000,
+              "boxCount": 20
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $700.00 for 20 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      }
+    ],
+    "food-wanted": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": false,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": false,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 70000,
+              "boxCount": 20
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $700.00 for 20 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      }
+    ],
+    "unsupported-date": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "requestedPickupDate": {
+                "value": "2026-11-05",
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": "2026-11-05",
+              "status": "confirmed"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "BLOCKED",
+            "blockers": [
+              "UNSUPPORTED_DATE"
+            ],
+            "priced": null,
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "I could not find a box that fits all of your requirements (the pickup date is too early). You can change a requirement, or ask the merchant to take over."
+        }
+      }
+    ],
+    "date-given-plainly": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "requestedPickupDate": {
+                "value": "2026-12-15",
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": "2026-12-15",
+              "status": "confirmed"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 70000,
+              "boxCount": 20
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $700.00 for 20 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      }
+    ],
+    "quantity-breaks-stock": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "preferences": {
+                "value": [
+                  "steel water bottle"
+                ],
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": [
+                "steel water bottle"
+              ],
+              "status": "confirmed"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 70000,
+              "boxCount": 20
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $700.00 for 20 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      },
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 30,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          },
+          {
+            "kind": "rank",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "ranking": [
+                {
+                  "index": 0,
+                  "explanation": "It provides a non-food desk organizer at $36.00 per box, totaling $1080.00 for 30 boxes."
+                }
+              ]
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 30,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": [
+                "steel water bottle"
+              ],
+              "status": "confirmed"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "BLOCKED",
+            "blockers": [
+              "INSUFFICIENT_STOCK"
+            ],
+            "priced": null,
+            "alternatives": [
+              {
+                "key": "alt-0",
+                "slotId": "gift",
+                "fromSku": "BOTTLE-STEEL",
+                "toSku": "ORGANIZER-DESK",
+                "perBoxMinor": 3600,
+                "totalMinor": 108000,
+                "explanation": "It provides a non-food desk organizer at $36.00 per box, totaling $1080.00 for 30 boxes."
+              }
+            ]
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "The box I first chose cannot be made as asked (not enough of one product is in stock). These options do work:\n1. Replace Steel water bottle with Desk organizer: $36.00 per box, $1,080.00 in total. It provides a non-food desk organizer at $36.00 per box, totaling $1080.00 for 30 boxes."
+        }
+      }
+    ],
+    "over-budget": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "maxPricePerBoxMinor": {
+                "value": 2000,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": 2000,
+              "status": "confirmed"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "BLOCKED",
+            "blockers": [
+              "OVER_BUDGET"
+            ],
+            "priced": null,
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "I could not find a box that fits all of your requirements (it is over your budget). You can change a requirement, or ask the merchant to take over."
+        }
+      }
+    ],
+    "not-sold": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "preferences": {
+                "value": [
+                  "leather wallet"
+                ],
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": [
+                "leather wallet"
+              ],
+              "status": "confirmed"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 70000,
+              "boxCount": 20
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $700.00 for 20 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      }
+    ],
+    "hostile-price": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 70000,
+              "boxCount": 20
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $700.00 for 20 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      }
+    ],
+    "hostile-system-text": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 10,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 10,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 35000,
+              "boxCount": 10
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $350.00 for 10 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      }
+    ],
+    "very-long-message": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 25,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          },
+          {
+            "kind": "rank",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "ranking": [
+                {
+                  "index": 0,
+                  "explanation": "It replaces a steel bottle with a desk organizer, keeping all 25 boxes food-free as required."
+                }
+              ]
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 25,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "BLOCKED",
+            "blockers": [
+              "INSUFFICIENT_STOCK"
+            ],
+            "priced": null,
+            "alternatives": [
+              {
+                "key": "alt-0",
+                "slotId": "gift",
+                "fromSku": "BOTTLE-STEEL",
+                "toSku": "ORGANIZER-DESK",
+                "perBoxMinor": 3600,
+                "totalMinor": 90000,
+                "explanation": "It replaces a steel bottle with a desk organizer, keeping all 25 boxes food-free as required."
+              }
+            ]
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "The box I first chose cannot be made as asked (not enough of one product is in stock). These options do work:\n1. Replace Steel water bottle with Desk organizer: $36.00 per box, $900.00 in total. It replaces a steel bottle with a desk organizer, keeping all 25 boxes food-free as required."
+        }
+      }
+    ],
+    "second-language": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "logoRequired": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "maxPricePerBoxMinor": {
+                "value": 4000,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "maxPricePerBoxMinor": {
+              "value": 4000,
+              "status": "confirmed"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 70000,
+              "boxCount": 20
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $700.00 for 20 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      }
+    ],
+    "correction-mid-conversation": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 70000,
+              "boxCount": 20
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $700.00 for 20 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      },
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 35,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          },
+          {
+            "kind": "rank",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "ranking": [
+                {
+                  "index": 0,
+                  "explanation": "It swaps in a non-food desk organizer for all 35 boxes at $36.00 per box, totaling $1260.00."
+                }
+              ]
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 35,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "BLOCKED",
+            "blockers": [
+              "INSUFFICIENT_STOCK"
+            ],
+            "priced": null,
+            "alternatives": [
+              {
+                "key": "alt-0",
+                "slotId": "gift",
+                "fromSku": "BOTTLE-STEEL",
+                "toSku": "ORGANIZER-DESK",
+                "perBoxMinor": 3600,
+                "totalMinor": 126000,
+                "explanation": "It swaps in a non-food desk organizer for all 35 boxes at $36.00 per box, totaling $1260.00."
+              }
+            ]
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "The box I first chose cannot be made as asked (not enough of one product is in stock). These options do work:\n1. Replace Steel water bottle with Desk organizer: $36.00 per box, $1,260.00 in total. It swaps in a non-food desk organizer for all 35 boxes at $36.00 per box, totaling $1260.00."
+        }
+      }
+    ],
+    "all-requirements-at-once": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "logoRequired": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "maxPricePerBoxMinor": {
+                "value": 4000,
+                "status": "confirmed"
+              },
+              "preferences": {
+                "value": [
+                  "notebooks"
+                ],
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "maxPricePerBoxMinor": {
+              "value": 4000,
+              "status": "confirmed"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": [
+                "notebooks"
+              ],
+              "status": "confirmed"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 70000,
+              "boxCount": 20
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $700.00 for 20 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      }
+    ]
+  }
+}

@@ -3,8 +3,12 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getPublicMerchant } from "@/lib/access/inquiry-reads";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { startInquiryAction } from "./actions";
+import { StartForm } from "./start-form";
 
 export const metadata: Metadata = { title: "Custom order · OrderForge" };
+// The first turn runs the assistant inside the request.
+export const maxDuration = 60;
 
 export default function StorePage({ params }: PageProps<"/store/[slug]">) {
   return (
@@ -26,8 +30,8 @@ async function Storefront({ params }: { params: PageProps<"/store/[slug]">["para
       <h1 className="text-3xl font-semibold tracking-tight">{merchant.name}</h1>
       <p className="max-w-md text-muted-foreground">
         Describe the custom order you have in mind and we will turn it into an exact, priced proposal.
-        Order requests open here once the intake agent is added.
       </p>
+      <StartForm action={startInquiryAction.bind(null, merchant.slug)} />
     </>
   );
 }

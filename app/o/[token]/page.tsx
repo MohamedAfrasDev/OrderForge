@@ -11,8 +11,10 @@ import { jobStatusForCustomer } from "@/services/fulfillment/read";
 import { paymentNoticeOf } from "@/services/payments/customer-messages";
 import { paymentStatusForCustomer } from "@/services/payments/read";
 import { readCustomerQuote } from "@/services/quote/read";
+import { requirementsForCustomer, unansweredMessageId } from "@/services/intake/read";
 import { readHoldForCustomer } from "@/services/reservation/read";
 import { acceptQuoteAction, payWithPayPalAction } from "./actions";
+import { IntakePanels } from "./intake-panels";
 
 // The token is a credential: keep it out of search indexes and Referer headers.
 export const metadata: Metadata = {
@@ -20,6 +22,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };
+// A message runs the assistant inside the request.
+export const maxDuration = 60;
 
 export default function OrderRoomPage({ params, searchParams }: PageProps<"/o/[token]">) {
   return (
@@ -49,6 +53,8 @@ async function OrderRoom({ params, searchParams }: { params: PageProps<"/o/[toke
   const hold = quote?.status === "ACCEPTED" ? await readHoldForCustomer(db, inquiry.id, now) : null;
   const payment = quote?.status === "ACCEPTED" ? await paymentStatusForCustomer(db, inquiry.id) : null;
   const job = quote?.status === "ACCEPTED" ? await jobStatusForCustomer(db, inquiry.id) : null;
+  // Once a quote is accepted the conversation is about paying and collecting, not about what to order.
+  const intake = quote?.status === "ACCEPTED" ? null : { spec: await requirementsForCustomer(db, inquiry.id), unanswered: (await unansweredMessageId(db, inquiry.id)) !== null };
 
   return (
     <>
@@ -80,6 +86,8 @@ async function OrderRoom({ params, searchParams }: { params: PageProps<"/o/[toke
           ))
         )}
       </section>
+
+      {intake ? <IntakePanels token={token} spec={intake.spec} status={inquiry.status} unanswered={intake.unanswered} /> : null}
 
       <p className="text-xs text-muted-foreground">
         This page is private to anyone who has the link. Keep the link to yourself.

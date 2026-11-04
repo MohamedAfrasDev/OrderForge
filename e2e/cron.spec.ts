@@ -36,7 +36,11 @@ test.describe("reconcile route", () => {
         auth: { persistSession: false, autoRefreshToken: false },
       });
       const { data } = await db.from("audit_events").select("action, actor, data").eq("correlation_id", correlationId);
-      expect(data).toEqual([{ action: "reconcile.heartbeat", actor: "system:cron", data: { status: "ok" } }]);
+      // The run may also record what the sweep and the payments and jobs steps did (for example releasing a hold that expired
+      // since an earlier test), so the heartbeat is asserted exactly once and every other row must still be the cron's own.
+      const rows = data ?? [];
+      expect(rows.filter((r) => r.action === "reconcile.heartbeat")).toEqual([{ action: "reconcile.heartbeat", actor: "system:cron", data: { status: "ok" } }]);
+      expect(rows.every((r) => r.actor === "system:cron")).toBe(true);
     });
   });
 });
