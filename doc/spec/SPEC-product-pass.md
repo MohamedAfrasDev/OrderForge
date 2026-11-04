@@ -2,7 +2,7 @@
 
 Module id: `product-pass` · Depends on: `ai-intake` (built; PR 8 open, to be merged first) and every module before it · Index: [../../SPEC.md](../../SPEC.md) · Brief: [../OrderForge Build Brief v1.1.md](../OrderForge%20Build%20Brief%20v1.1.md)
 
-Status: **DRAFT 3, 4 Nov 2026, awaiting your approval.** Draft 2 plus your three changes of 4 Nov: (1) the shop can **add and edit products**, (2) **email notifications** are in, (3) **AG Grid** is the library for the shop's data grids. Those three are real new behaviour, a new migration, new environment variables and a new dependency, so this module is now much larger than a screen pass (see section 11, the schedule and the cut order). Money, stock rules, quote rules, payments, jobs and the intake pipeline still do not change.
+Status: **DRAFT 4, 4 Nov 2026, awaiting your approval.** Email provider chosen by you: **Resend**. Draft 2 plus your changes of 4 Nov: (1) the shop can **add and edit products**, (2) **email notifications** are in, (3) **AG Grid** is the library for the shop's data grids. Those three are real new behaviour, a new migration, new environment variables and a new dependency, so this module is now much larger than a screen pass (see section 11, the schedule and the cut order). Money, stock rules, quote rules, payments, jobs and the intake pipeline still do not change.
 
 ## 1. Objective
 
@@ -72,7 +72,7 @@ Why: every stage is built and tested alone, but nothing has run as one flow, and
 8. **Build a quote** (service `buildQuoteForInquiry`, page `/merchant/inquiries/[id]/quote`): the shop must own the inquiry and it must be `REVIEW_REQUIRED`; `createQuoteDraft` validates and prices; `publishQuote` publishes (it sets the inquiry to `QUOTE_READY`); the two notes map to the existing `ARTWORK_ACCEPTANCE` and `PRODUCTION_SLOT_CONFIRMATION` conditions with fixed text; no typed price, no free-text condition.
 9. **The shop edits the catalog (your change to open question 6).** Editable: name (1 to 120 characters), category (1 to 64), price (whole cents, 0 to 10,000,000), food flag, active, stock on hand (whole number, 0 to 1,000,000). **Not editable:** the SKU after creation (templates and quotes refer to it). **No delete:** a product is deactivated, so history stays intact. Rules enforced in a service (`catalog` write services, strict schemas, merchant ownership checked on the server for every call): stock on hand cannot go below what is being held (the database already enforces `reserved <= on_hand`; the refusal is translated into plain words); the last active product of a slot cannot be deactivated (no box could be made); a product is added with at least one slot of the box template it may go in, written to the `box_template` rule as the **last** step of adding (so a partial failure leaves an unsellable product, never a template pointing at a missing SKU). Changing a price or deactivating a product affects only quotes made afterwards: published and accepted quotes are snapshots. Each change is audited with the product id and the names of the fields changed, never the values of other people's data.
 10. **Email is in (your change to open question 4).**
-    - *Provider.* Sent through a small `EmailPort` with a real implementation that calls the provider's HTTP API with `fetch` (no email SDK), and a fake that records messages. **The provider and sender need your choice** (open question 4): the default is Resend, which needs an API key and a verified sender; until a domain is verified its test sender can deliver only to the account owner's address, so for a demo the customer's address must be that one. Gmail SMTP (needs the `nodemailer` dependency and an app password) can send to any address and is the alternative.
+    - *Provider: Resend (your choice, 4 Nov).* Sent through a small `EmailPort`. The real implementation calls Resend's HTTP API (`POST https://api.resend.com/emails`) with `fetch`: no email SDK, no new dependency. It refuses any host but `api.resend.com`, so the key can only go there, and it passes the notification's id as the idempotency key so a retry after a crash cannot send twice (supported by Resend; confirmed when built). A fake port records messages for every test. **Until a domain is verified, Resend's test sender (`onboarding@resend.dev`) can deliver only to the Resend account owner's own address,** so for the demo any customer address that must receive mail has to be that one; sending to anyone else needs a verified domain, which is outside this module. Which address your Resend account uses is needed before the first real send (open question 4).
     - *New data (migration 0010, local first, hosted only after a fresh yes).* `inquiries.customer_email` (nullable text, lowercased, at most 254 characters, validated), and a `notifications` table (id, inquiry id, recipient kind `customer` or `shop`, kind, dedupe key unique, status `PENDING` / `SENT` / `FAILED` / `SKIPPED`, attempts, timestamps). The table stores no message text and no recipient address for the shop (resolved at send time from the shop owner's login).
     - *Triggers.* Derived from database state, not hooked inside the payments or fulfillment services (they do not change): a new step in the existing scheduled run enqueues the events whose state is true and not yet queued, using the dedupe key (for example `quote_ready:<quote id>`, `decision:<purchase id>`, `ready:<job id>`, `handed_over:<inquiry id>`, `awaiting_ok:<purchase id>`), then drains the queue; the actions that cause an event also drain immediately, best effort, so most emails go out within seconds.
     - *Limits and safety.* Email is optional on the store form with a plain line on what it is used for; at most 8 emails per inquiry; a failing send is retried up to 3 times by the scheduled run, then marked `FAILED`, and never blocks, rolls back or changes any order step; emails are fixed templates (plain text with a minimal HTML twin) filled with system data only (product names, amounts, dates, the customer's link), never customer free text or model output; the subject and body say it is a sandbox demo; the customer's address is not written to logs, audit rows or the model prompt.
@@ -119,7 +119,7 @@ supabase/migrations/0010_notifications.sql
 e2e/journey.spec.ts  e2e/shop-quote.spec.ts  e2e/shop-catalog.spec.ts  e2e/notifications.spec.ts  (and the existing merchant specs, selectors updated)
 ```
 
-New environment variables (all optional; sending is off without them): `EMAIL_PROVIDER` (`resend` or `smtp`), `EMAIL_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`. New dependencies: `ag-grid-community`, `ag-grid-react` (and `nodemailer` only if you choose SMTP).
+New environment variables (all optional; sending is off without them): `RESEND_API_KEY`, `EMAIL_FROM` (the verified sender, or `onboarding@resend.dev` for the demo), `EMAIL_REPLY_TO`. New dependencies: `ag-grid-community`, `ag-grid-react`. Nothing else.
 
 ## 6. Code style and testing
 
@@ -132,7 +132,7 @@ TypeScript strict, Tailwind and the existing shadcn button, the repo's patterns 
 ## 7. Boundaries
 
 - **Always:** keep wording in the pure modules; keep every page and email truthful about the sandbox and about what PayPal does; keep customer links, addresses and the provider key out of logs and the repo; keep catalog writes behind server-side ownership checks and strict schemas.
-- **Ask first:** sending a real email (each new recipient kind, and the first real send), applying 0010 to the hosted database, setting the email variables on Vercel, any provider other than the one you choose, letting the shop enter a quote price, using an AG Grid Enterprise feature.
+- **Ask first:** sending a real email (each new recipient kind, and the first real send), applying 0010 to the hosted database, setting the email variables on Vercel, any provider other than Resend, letting the shop enter a quote price, using an AG Grid Enterprise feature.
 - **Never:** change money, stock rules, quote rules, payment, job or intake behaviour; put customer free text, model output or a secret in an email or a log; send a real email from a test or CI; show a raw state name, id or SKU to a customer; let a catalog edit change a published or accepted quote; promise a response time the shop has not set; add a claim about speed, savings or accuracy; turn the stand-in model on for a hosted site.
 
 ## 8. Success criteria (testable)
@@ -163,18 +163,18 @@ TypeScript strict, Tailwind and the existing shadcn button, the repo's patterns 
 7. Build a quote (`quoteBuilderView`, `buildQuoteForInquiry`, page, tests).
 8. The catalog: `domain/catalog-edit`, `addProduct` and `editProduct`, the editable grid and the add form, tests (no migration).
 9. Email core: migration 0010 locally, `domain/notifications`, the outbox, `enqueueNotifications` and `drainNotifications`, the fake provider, the cron step, the optional email field on the store form, tests (mocked).
-10. Email provider: the `fetch` implementation for the chosen provider, the variables, a guard that nothing sends without configuration; the first real send only after a fresh yes.
+10. Email provider: the Resend `fetch` implementation (host-locked, idempotency key), the variables, a guard that nothing sends without configuration; the first real send only after a fresh yes.
 11. The other shop grids (Orders to confirm, Jobs, Stock holds, Quote review) with detail areas, and the existing merchant E2E specs updated.
 12. Cuttable: the printable pick list and the three reply phrases.
 13. The chained E2E runs and the 390 px checks.
 14. Checkpoint: criteria against evidence, CI, then (after merge, deploy and fresh yeses) hosted 0010, the Vercel variables, the hosted run, recorded separately.
 
-## 10. Open questions (defaults apply if you say "approve defaults", except question 4)
+## 10. Open questions (defaults apply if you say "approve defaults")
 
 1. **Merge PR 8 first** and build this on a branch from `main`? Default: yes.
 2. **Demo store link** on the home page from a code constant (`demo-gift-boxes`), shown only when that store exists? Default: yes.
 3. **Keep this page** as copy plus `mailto:` plus the emailed link when an address was given? Default: yes.
-4. **Email notifications: which provider and sender?** Needs your choice. Resend (default, no new dependency, needs an API key and a verified sender; delivers only to your own address until a domain is verified) or Gmail SMTP (adds `nodemailer`, needs an app password, delivers to any address). And the events listed in step K, with the customer's email optional on the store form: default yes.
+4. **Email notifications:** Resend, decided. Still to confirm: the events listed in step K with the customer's email optional on the store form (default: yes), and, before the first real send, the address your Resend account uses (the only address its test sender can reach) and the sender address to use. Not needed to approve this spec.
 5. **AG Grid scope:** the shop's data lists and the catalog as grids, the customer pages and forms not; Community edition only; a spike first. Default: yes.
 6. **Product editing:** add and edit a product (name, category, price, food, active, stock), SKU fixed after creation, no delete (deactivate instead), a new product must be assigned to a slot, and catalog edits never change existing quotes. Default: yes.
 7. **The shop's quote builder** limited to a quantity, a product per slot and the two fixed notes, the system pricing it. Default: yes.
