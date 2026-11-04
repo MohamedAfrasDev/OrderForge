@@ -2,15 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireMerchant } from "@/lib/access/require-merchant";
-import { format } from "@/lib/money";
 import { createSessionClient } from "@/lib/supabase/server";
 import { CatalogLoadError, loadCatalogSnapshot } from "@/services/catalog/load-snapshot";
+import { CatalogGrid, type ProductRow } from "./catalog-grid";
 
 export const metadata: Metadata = { title: "Catalog · OrderForge" };
 
 export default function MerchantCatalogPage() {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-12">
+    <main className="mx-auto flex w-full min-w-0 max-w-5xl flex-1 flex-col gap-8 px-6 py-12">
       <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
         <Catalog />
       </Suspense>
@@ -42,6 +42,23 @@ async function Catalog() {
   const { catalog, stock } = snapshot;
   const nameOf = new Map(catalog.products.map((p) => [p.sku, p.name]));
 
+  // On hand and held come from the stock rows (the merchant's own, under row level security); available is on hand minus held.
+  const stockRows = await db.from("stock").select("product_id, on_hand, reserved").in("product_id", catalog.products.map((p) => p.id));
+  if (stockRows.error) throw new Error(`load stock: ${stockRows.error.message}`);
+  const held = new Map((stockRows.data ?? []).map((s) => [s.product_id as string, { onHand: s.on_hand as number, held: s.reserved as number }]));
+  const rows: ProductRow[] = catalog.products.map((p) => ({
+    id: p.id,
+    sku: p.sku,
+    name: p.name,
+    category: p.category,
+    priceMinor: p.unitPriceMinor,
+    isFood: p.isFood,
+    active: p.active,
+    onHand: held.get(p.id)?.onHand ?? 0,
+    held: held.get(p.id)?.held ?? 0,
+    available: stock[p.id] ?? 0,
+  }));
+
   return (
     <>
       <PageHeader name={merchant.name} />
@@ -50,35 +67,7 @@ async function Catalog() {
         <h2 id="products-heading" className="text-lg font-semibold">
           Products
         </h2>
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-muted text-muted-foreground">
-              <tr>
-                <th scope="col" className="px-3 py-2 font-medium">SKU</th>
-                <th scope="col" className="px-3 py-2 font-medium">Name</th>
-                <th scope="col" className="px-3 py-2 font-medium">Category</th>
-                <th scope="col" className="px-3 py-2 font-medium">Price</th>
-                <th scope="col" className="px-3 py-2 font-medium">Food</th>
-                <th scope="col" className="px-3 py-2 text-right font-medium">Available</th>
-              </tr>
-            </thead>
-            <tbody>
-              {catalog.products.map((p) => (
-                <tr key={p.id} className="border-t border-border">
-                  <td className="px-3 py-2 font-mono text-xs">{p.sku}</td>
-                  <td className="px-3 py-2">
-                    {p.name}
-                    {!p.active && <span className="ml-2 text-xs text-muted-foreground">(inactive)</span>}
-                  </td>
-                  <td className="px-3 py-2">{p.category}</td>
-                  <td className="px-3 py-2">{format(p.unitPriceMinor)}</td>
-                  <td className="px-3 py-2">{p.isFood ? "Food" : ""}</td>
-                  <td className="px-3 py-2 text-right">{stock[p.id] ?? 0}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <CatalogGrid rows={rows} />
       </section>
 
       <section aria-labelledby="template-heading" className="flex flex-col gap-3">

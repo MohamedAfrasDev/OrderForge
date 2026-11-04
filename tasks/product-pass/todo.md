@@ -1,11 +1,11 @@
 # Tasks: product-pass
 
 Spec: [doc/spec/SPEC-product-pass.md](../../doc/spec/SPEC-product-pass.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend chosen as the email provider); task list awaiting approval; nothing built. Tick a box only after its Verify step passes. Every task is test first. Existing end-to-end specs for the shop pages are updated by changing selectors, never by removing or weakening a check.
+Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend chosen as the email provider); task list APPROVED 4 Nov 2026; T0 built. Tick a box only after its Verify step passes. Every task is test first. Existing end-to-end specs for the shop pages are updated by changing selectors, never by removing or weakening a check.
 
 ## Phase A: prove the grid
 
-- [ ] **T0 AG Grid spike on a real page: the catalog as a read-only grid**
+- [x] **T0 AG Grid spike on a real page: the catalog as a read-only grid**
   - Acceptance: `ag-grid-community` and `ag-grid-react` (Community only, no licence key) installed at exact versions at least two weeks old, recorded in the
     plan. `components/data-grid.tsx` wraps the grid: registers only the modules used, builds its theme from the app's own colour variables for light and
     dark, sets an accessible label, takes plain rows and column definitions as props, and is a client component imported only by shop pages (the build
@@ -14,6 +14,7 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
     sideways (the grid scrolls inside itself). `npm run build` succeeds.
   - Verify: `npm run build && npm run test:e2e -- e2e/catalog-page.spec.ts`
   - Files: `package.json`, `package-lock.json`, `components/data-grid.tsx`, `app/merchant/catalog/page.tsx`, `e2e/catalog-page.spec.ts`
+  - Done 4 Nov 2026: `ag-grid-community` and `ag-grid-react` pinned at 36.2.0 (released 16 Sep; 36.3.0 came out the same day and was not used; npm reports no advisory for either). Registered modules: ClientSideRowModel, QuickFilter, TextFilter, NumberFilter, ColumnAutoSize, CellStyle (plus Validation in development only); sorting and keyboard movement are built in. The grid adds one chunk of about 250 KB gzipped, loaded by shop pages only (a test loads `/` and a store page and finds no AG Grid code). Boolean type guessing is switched off so a column shows its formatter's text. The catalog page now also shows On hand and Held. Five checks in `e2e/catalog-page.spec.ts` pass three runs in a row.
   - Depends on: none.
 
 ## Phase B: the customer's experience
