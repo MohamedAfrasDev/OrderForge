@@ -12,7 +12,7 @@ import { SCENARIOS } from "./scenarios";
 
 const FREE_CANDIDATES = ["google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free", "nvidia/nemotron-3.5-super-vl:free"];
 
-const list = (value: string | undefined, fallback: string[]) => (value ? value.split(",").map((s) => s.trim()).filter(Boolean) : fallback);
+const list = (value: string | undefined, fallback: string[]) => (value === "none" ? [] : value ? value.split(",").map((s) => s.trim()).filter(Boolean) : fallback);
 
 /** Only the OpenRouter key is read from .env (the file also holds the hosted database's keys, which this run must never use). */
 function openRouterKey(): string {

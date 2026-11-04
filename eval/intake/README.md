@@ -26,7 +26,7 @@ npm run eval:intake
 
 | Variable | Meaning | Default |
 |---|---|---|
-| `EVAL_MODELS` | Comma-separated free (`:free`) candidates, run one after another, **each on its own with no paid fallback** | the three free candidates in the spec |
+| `EVAL_MODELS` | `none` to skip the free models, or comma-separated free (`:free`) candidates, run one after another, **each on its own with no paid fallback** | the three free candidates in the spec |
 | `EVAL_PAID` | Comma-separated paid models to run too, each alone and labeled paid (this spends money: cents) | none |
 | `EVAL_ONLY` | Comma-separated scenario ids, for a quick trial | all |
 | `EVAL_PACE_MS` | Gap between requests, so the free tier's rate limit does not decide the result | `3000` |
