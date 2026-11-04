@@ -1,7 +1,7 @@
 # Tasks: ai-intake
 
 Spec: [doc/spec/SPEC-ai-intake.md](../../doc/spec/SPEC-ai-intake.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T9 built (0009 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T10 built (0009 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic and the model port (no database; the client is tested against a local fake server)
 
@@ -111,7 +111,7 @@ Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T9 built 
 
 ## Phase D: evaluation and review
 
-- [ ] **T10 The evaluation set, the runner and the replayed fixtures**
+- [x] **T10 The evaluation set, the runner and the replayed fixtures**
   - Acceptance: at least 15 scenarios in `eval/intake/scenarios.ts` (missing quantity, missing budget, budget stated two ways, ambiguous packaging, food
     exclusion, unsupported date, a quantity change that breaks stock, something not sold, a hostile message, a very long message, a second language, a
     correction mid-conversation, and more), each with the expected outcome stated in code terms (the blocking field, the blockers, that figures are
@@ -121,7 +121,7 @@ Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T9 built 
     to you before any paid primary. The recorded outputs of one run become replayed fixtures for the CI tests. README note on how to read the report.
   - Verify: `npm run test -- tests/intake/eval-scenarios.test.ts` (the scenarios are well formed, the scorer and report behave) and `npm run test:db -- tests/db/intake-eval-replay.test.ts` (the scenarios run through the real pipeline with the stand-in, and the replayed fixtures pass; the replay needs a recording, so it runs after the manual run), and a documented manual `npm run eval:intake`
   - Files: `eval/intake/{scenarios,score,harness,report,run}.ts`, `eval/intake/README.md`, `vitest.eval.config.ts`, `tests/intake/eval-scenarios.test.ts`, `tests/db/intake-eval-replay.test.ts`, `package.json` (the runner is a vitest entry so the `@/` aliases and the local database helpers work; it reads only the OpenRouter key from `.env`)
-  - Status: built and verified. Real runs on 4 Nov 2026 (reports in `eval/intake/reports/`): `gemma-4-31b-it:free` was rate limited upstream on every call (429, no model result); `nemotron-3.5-super-vl:free` first exposed a real defect in the proposal schema (fixed, with tests), then ran with 15 of 22 turns unusable from timeouts and dropped connections at the app's 20 s limit. Recorded fixtures are from that second Nemotron run. NOT yet done: a run in which a free model answers enough turns to judge it, and the choice of the free primary. Left unticked until you decide how to proceed.
+  - Status: DONE (deliverables). Real runs on 4 Nov 2026 (reports in `eval/intake/reports/`): `gemma-4-31b-it:free` rate limited upstream on every call (429); `nemotron-3.5-super-vl:free` exposed a real defect in the proposal schema (fixed, with tests), was unusable on 15 of 22 turns at the app's 20 s limit, and with 60 s per request went cleanly through the gate scenarios with 0 violations, 2 genuine misses and 1 unusable answer. Fixtures recorded from that run. OPEN DECISION (user's, carried to T11): no free model has been shown to fit the app's 20 s limit, so the free primary is not chosen; options are retrying Gemma when its rate limit lifts, a paid run of the fallback model, or accepting the fallback being used more often.
   - Depends on: T9. Ask first before the manual run spends anything on your key (it is mostly free; a handful of paid fallback calls at most).
 
 - [ ] **T11 Checkpoint**

@@ -174,6 +174,13 @@ describe("the report", () => {
     expect(renderReport({ date: "2026-11-05", runs })).toContain("`free/good:free`");
   });
 
+  it("states the timeout when it differs from the app's, so a longer one is never hidden", () => {
+    const runs: ModelRun[] = [{ model: "free/one:free", paid: false, runs: clean }];
+    expect(renderReport({ date: "2026-11-05", runs, timeoutMs: 60_000 })).toContain("Per-request timeout: 60 s, longer than the 20 s the app allows.");
+    expect(renderReport({ date: "2026-11-05", runs, timeoutMs: 20_000 })).toContain("Per-request timeout: 20 s, the same as the app.");
+    expect(renderReport({ date: "2026-11-05", runs })).not.toContain("Per-request timeout");
+  });
+
   it("makes no claim of a rate, a score, a speed or a saving", () => {
     const text = renderReport({ date: "2026-11-05", runs: [{ model: "free/one:free", paid: false, runs: clean }] });
     expect(text.replace("No accuracy, speed or saving figure is claimed.", "")).not.toMatch(/\d\s*%|percent|accuracy|success rate|pass rate|faster|seconds|\bms\b|latency|saved|saving/i);

@@ -74,7 +74,7 @@ describe("intake evaluation against the real model (manual)", () => {
 
       const date = new Date().toISOString().slice(0, 10);
       mkdirSync("eval/intake/reports", { recursive: true });
-      writeFileSync(`eval/intake/reports/${date}.md`, renderReport({ date, runs }));
+      writeFileSync(`eval/intake/reports/${date}.md`, renderReport({ date, runs, timeoutMs: Number(process.env.EVAL_TIMEOUT_MS ?? 20_000) }));
 
       const record = process.env.EVAL_RECORD;
       if (record) {

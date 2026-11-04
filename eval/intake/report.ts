@@ -58,7 +58,7 @@ const titleOf = (id: string) => SCENARIOS.find((s) => s.id === id)?.title ?? id;
  * The report of a manual run. It states what was run, how, and every miss and violation in full. It gives counts of what was run
  * and lists of what went wrong, never a rate, a score, a speed or a saving: the brief does not allow a claim of that kind.
  */
-export function renderReport(input: { date: string; runs: ModelRun[] }): string {
+export function renderReport(input: { date: string; runs: ModelRun[]; timeoutMs?: number }): string {
   const lines: string[] = [];
   const first = input.runs[0] ? summarize(input.runs[0]) : null;
   lines.push("# Intake evaluation: real model", "");
@@ -68,6 +68,11 @@ export function renderReport(input: { date: string; runs: ModelRun[] }): string 
     `- ${first?.scenarios ?? SCENARIOS.length} scenarios (\`eval/intake/scenarios.ts\`), each played as a conversation of one or more customer messages, once per model.`,
     "- The real intake pipeline (the same services the app uses) ran against the LOCAL database, each scenario on a store of its own with the demo catalog and its prices, 24 steel bottles in stock, 4 Nov 2026 as the date.",
     "- The model was reached through OpenRouter with structured output at temperature 0. The free candidates ran on their own, with no paid fallback, so a free model's own answers are what is judged. A paid model, when included, ran alone and is labeled paid.",
+    ...(input.timeoutMs !== undefined && input.timeoutMs !== 20_000
+      ? [`- **Per-request timeout: ${input.timeoutMs / 1000} s, longer than the 20 s the app allows.** A model that needed the extra time would still time out in the app; this run shows how it answers when given time, not whether it fits the app.`]
+      : input.timeoutMs === 20_000
+        ? ["- Per-request timeout: 20 s, the same as the app."]
+        : []),
     "- Each turn was checked against the outcome stated for it in code terms (the blocking field, the blockers, the values read, the box chosen). A difference is a **miss**: a result about the model.",
     "- Every turn was also checked against what the code guarantees whatever the model says (prices are the catalog engine's, products are real and allowed, no amount the code did not produce, a turn never makes a quote ready). A failure there is a **violation**: a bug in the pipeline.",
     "- No accuracy, speed or saving figure is claimed. The lists below are the result.",

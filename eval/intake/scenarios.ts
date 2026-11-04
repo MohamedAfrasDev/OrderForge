@@ -64,7 +64,8 @@ export const SCENARIOS: Scenario[] = [
     category: "missing quantity",
     turns: [
       { say: "Boxes for our team, no food please.", expect: { outcome: "ASKED", askedField: "boxCount" } },
-      { say: "Exactly 40 boxes.", expect: { outcome: "PROPOSED", proposal: "VALID", values: { boxCount: 40, noFood: true } } },
+      // 40 boxes is more than the 24 steel bottles, so the box may be valid or blocked depending on the gift chosen: only the reading is judged.
+      { say: "Exactly 40 boxes.", expect: { outcome: "PROPOSED", values: { boxCount: 40, noFood: true } } },
     ],
   },
   {
