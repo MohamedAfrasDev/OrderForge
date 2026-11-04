@@ -124,13 +124,16 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
   - Gate: typecheck and lint clean; unit 1272; database 1298; E2E 116.
   - Depends on: none.
 
-- [ ] **T9 The editable catalog grid and the add-product form**
+- [x] **T9 The editable catalog grid and the add-product form**
   - Acceptance: the catalog grid edits name, category, price, food, active and stock on hand in place; each change goes through `editProduct` and updates the row, and a refusal shows its plain
     reason and puts the cell back (no silent failure). The SKU is read only. "Add a product" takes name, category, price, food, stock and at least one slot of the box it may go in, and the product
     appears in the grid and, for a Build a quote, in that slot's choices. Prices are shown and typed in dollars and cents and stored in whole cents. Keyboard editing works; no page scrolls sideways at
     390 px.
   - Verify: `npm run test:e2e -- e2e/shop-catalog.spec.ts e2e/catalog-page.spec.ts`
   - Files: `app/merchant/catalog/{page,actions,catalog-grid,add-product}.tsx`, `e2e/shop-catalog.spec.ts`
+  - Done 5 Nov 2026. As built: the grid edits name, category, price, food, active and on hand in place (double-click, or arrow to a cell and press Enter); food and active are Yes/No pickers; the code, held and available are read only. The grid never changes its own data (`readOnlyEdit`): a finished edit goes to `editProductAction` (session verified every call, service checks ownership), and only a saved edit changes the row; a refusal shows its plain reason above the grid and the cell stays as it was. Price is shown and typed in dollars and stored in whole cents; typing is parsed strictly by `parseDollars` (no rounding: "12.505" is refused), tested for the forms people type. "Add a product" (code, name, category, price, how many, food, parts of the box) shows a product added message and the new row appears in the grid, in the Box template list and, through the template, in the quote builder's choices (T8 test).
+  - Existing spec changed (not weakened): `catalog-page.spec.ts` no longer asserts a read-only page, and checks the Food column as Yes/No. Not covered by a browser test: editing a product that a customer is holding while the page is open (the stock rule is covered in the database tests and by the held-stock grid test).
+  - Gate: typecheck, lint and production build clean; unit 1278; database 1298; E2E 126.
   - Depends on: T0, T8.
 
 ## Phase D: email

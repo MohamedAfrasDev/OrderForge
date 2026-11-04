@@ -8,6 +8,8 @@ import {
   NumberFilterModule,
   QuickFilterModule,
   RowStyleModule,
+  SelectEditorModule,
+  TextEditorModule,
   TextFilterModule,
   ValidationModule,
   themeQuartz,
@@ -27,9 +29,13 @@ ModuleRegistry.registerModules([
   ColumnAutoSizeModule,
   CellStyleModule,
   RowStyleModule,
+  TextEditorModule,
+  SelectEditorModule,
   // Names a module a grid needs but this list lacks. Development only.
   ...(process.env.NODE_ENV === "production" ? [] : [ValidationModule]),
 ]);
+
+const NO_PATCHES: Record<string, never> = {};
 
 // The grid takes its colours from the app's own variables, so it follows the light and dark modes without a second palette.
 const theme = themeQuartz.withParams({
@@ -65,18 +71,29 @@ export type DataGridProps<T extends { id: string }> = {
   details?: Record<string, ReactNode>;
   /** The accessible name of the detail area, given the selected row. */
   detailLabel?: (row: T) => string;
+  /**
+   * Makes the columns marked `editable` editable in place. The grid never changes its own data: a finished edit is handed to this function,
+   * which saves it on the server. When it answers `ok`, the row shows the new values it returns; when it refuses, the row stays as it was and
+   * the reason is shown above the grid. The value is what was typed (a string), or null if the cell was cleared.
+   */
+  onEdit?: (edit: { row: T; field: string; value: unknown }) => Promise<{ ok: true; patch: Partial<T> } | { ok: false; message: string }>;
 };
 
 /**
  * A data grid for the shop's lists: sortable columns, an optional search box, keyboard movement, and a theme from the app's colours.
  * Plain data in, nothing fetched here. The grid scrolls inside itself, so a narrow screen never makes the page scroll sideways.
  */
-export function DataGrid<T extends { id: string }>({ label, rows, columns, searchLabel, emptyText, details, detailLabel }: DataGridProps<T>) {
+export function DataGrid<T extends { id: string }>({ label, rows, columns, searchLabel, emptyText, details, detailLabel, onEdit }: DataGridProps<T>) {
   const [search, setSearch] = useState("");
   const [chosen, setChosen] = useState<string | null>(null);
+  // What the server confirmed for edited rows, shown until fresh rows arrive from the page.
+  const [saved, setSaved] = useState<{ source: T[]; patches: Record<string, Partial<T>> }>({ source: rows, patches: {} });
+  const [editMessage, setEditMessage] = useState<string | null>(null);
+  const patches = saved.source === rows ? saved.patches : NO_PATCHES;
+  const shown = useMemo(() => (Object.keys(patches).length === 0 ? rows : rows.map((r) => (patches[r.id] ? { ...r, ...patches[r.id] } : r))), [rows, patches]);
   // The chosen row if it still exists, else the first row: a refresh that removes a row never leaves the detail area blank.
-  const selectedId = details ? (rows.some((r) => r.id === chosen) ? chosen : (rows[0]?.id ?? null)) : null;
-  const selectedRow = rows.find((r) => r.id === selectedId);
+  const selectedId = details ? (shown.some((r) => r.id === chosen) ? chosen : (shown[0]?.id ?? null)) : null;
+  const selectedRow = shown.find((r) => r.id === selectedId);
   const wrapper = useRef<HTMLDivElement>(null);
   const defaultColDef = useMemo<ColDef<T>>(
     // No type guessing: a boolean is shown as the text the column's formatter gives, not as a checkbox.
@@ -109,16 +126,34 @@ export function DataGrid<T extends { id: string }>({ label, rows, columns, searc
           className="w-full max-w-xs rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm"
         />
       ) : null}
+      {editMessage ? (
+        <p role="alert" data-testid="grid-edit-message" className="rounded-lg border border-destructive p-2 text-sm text-destructive">
+          {editMessage}
+        </p>
+      ) : null}
       <div ref={wrapper} className="min-w-0 overflow-hidden">
         <AgGridReact<T>
           theme={theme}
-          rowData={rows}
+          rowData={shown}
           columnDefs={columns}
           defaultColDef={defaultColDef}
           getRowId={(params: GetRowIdParams<T>) => params.data.id}
           quickFilterText={search}
           domLayout="autoHeight"
           animateRows={false}
+          readOnlyEdit={onEdit ? true : undefined}
+          onCellEditRequest={
+            onEdit
+              ? async (event) => {
+                  const field = event.colDef.field;
+                  if (!field || !event.data) return;
+                  setEditMessage(null);
+                  const result = await onEdit({ row: event.data, field, value: event.newValue });
+                  if (!result.ok) return setEditMessage(result.message);
+                  setSaved((now) => ({ source: rows, patches: { ...(now.source === rows ? now.patches : {}), [event.data!.id]: { ...(now.source === rows ? now.patches[event.data!.id] : {}), ...result.patch } } }));
+                }
+              : undefined
+          }
           getRowStyle={
             details
               ? (params) => ({ cursor: "pointer", ...(params.data?.id === selectedId ? { backgroundColor: "var(--accent)" } : {}) })

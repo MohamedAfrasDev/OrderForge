@@ -54,7 +54,7 @@ test.describe("catalog page (local Supabase)", () => {
     if (rule.error) throw new Error(`rules: ${rule.error.message}`);
   });
 
-  test("lists products with price, food flag and available stock, and shows the box template, read-only", async ({ page }) => {
+  test("lists products with price, food flag and available stock, and shows the box template", async ({ page }) => {
     await page.goto("/merchant/login");
     await page.getByLabel("Email").fill(process.env.E2E_MERCHANT_EMAIL!);
     await page.getByLabel("Password").fill(process.env.E2E_MERCHANT_PASSWORD!);
@@ -72,11 +72,11 @@ test.describe("catalog page (local Supabase)", () => {
     await expect(bottle).toContainText("Steel water bottle");
     await expect(bottle).toContainText("$13.00");
     await expect(bottle.getByRole("gridcell").last()).toHaveText("24"); // available = on hand minus held
-    await expect(bottle).not.toContainText("Food");
+    await expect(bottle.locator('[col-id="isFood"]')).toHaveText("No");
 
     const truffles = grid.getByRole("row", { name: /TRUFFLES-BOX/ });
     await expect(truffles).toContainText("$8.00");
-    await expect(truffles).toContainText("Food");
+    await expect(truffles.locator('[col-id="isFood"]')).toHaveText("Yes");
     await expect(grid.getByRole("row", { name: /ORGANIZER-DESK/ }).getByRole("gridcell").last()).toHaveText("100");
     // on hand and held are shown too (nothing is held in this fixture)
     await expect(bottle.getByRole("gridcell", { name: "24" })).toHaveCount(2);
@@ -88,11 +88,7 @@ test.describe("catalog page (local Supabase)", () => {
     await expect(template.getByRole("listitem").filter({ hasText: "Branded card" })).toContainText("Logo");
     await expect(page.getByText("Production lead time: 7 days")).toBeVisible();
 
-    // Read-only: no cell can be edited, and the only field on the page is the search box above the grid. (Only visible elements: Next keeps the previous route, here the login form, hidden in the DOM.)
-    await expect(page.locator("main textarea:visible, main select:visible, main form:visible")).toHaveCount(0);
-    await expect(page.locator("main input:visible")).toHaveCount(1);
     await expect(page.getByRole("searchbox", { name: "Search products" })).toBeVisible();
-    await expect(grid.locator(".ag-cell-inline-editing")).toHaveCount(0);
   });
 
   test("sorts by price, filters with the search box, and moves with the keyboard", async ({ page }) => {
