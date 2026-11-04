@@ -40,8 +40,10 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
 
   /** Each test has its own client address, so the per-address limits are never shared between tests. */
   async function asNewVisitor(page: Page) {
-    const n = Math.floor(Math.random() * 250) + 1;
-    await page.context().setExtraHTTPHeaders({ "x-forwarded-for": `198.51.100.${n}, 203.0.113.${n}` });
+    // A range no other spec uses (access.spec exhausts 198.51.100.77, .78 and .88 on purpose).
+    const a = Math.floor(Math.random() * 250) + 1;
+    const b = Math.floor(Math.random() * 250) + 1;
+    await page.context().setExtraHTTPHeaders({ "x-forwarded-for": `100.64.${a}.${b}` });
   }
 
   async function start(page: Page, slug: string, message: string) {

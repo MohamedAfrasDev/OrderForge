@@ -194,16 +194,16 @@ Brief test rows owned here: *model proposes an unknown product ID*; *no-food con
 
 ## 11. Success criteria (testable)
 
-- [ ] Demo path A to H passes with exact figures (30 boxes at $36 is $1,080.00; 24 bottles in stock), labeled replayed and mocked; the real-model evaluation of at least 15 scenarios is run and reported separately with its method and every failure.
-- [ ] No model output can set a price, a discount, a quantity, stock, a blocking status or a state: strict schemas reject extra fields; an injection test set leaves every figure unchanged (database and unit tests).
-- [ ] Every configuration shown and every draft created passed `validateConfiguration` in the same step; a proposal with an unknown product, a food item under a no-food rule, or an over-budget or out-of-stock configuration is rejected before display.
-- [ ] Code decides what blocks: `blockingFields` is pure and tested over every status combination; one question per turn, always available as a fixed fallback, accepted from the model only after its check.
-- [ ] A customer message gets exactly one assistant reply under races and retries (database unique index test); a double submit stores one message.
-- [ ] A provider failure, a timeout and two malformed answers each keep the inquiry and messages, offer retry or handoff, and never show a ready state; the fallback model is used only for provider failures.
-- [ ] The caps (messages, clarification turns, model runs, message length) hand over or refuse as specified.
-- [ ] Access tests pass: customers and merchants act only on their own inquiries.
-- [ ] `domain/intake` passes the purity test; typecheck, lint, unit, database and E2E tests green locally and in CI; payment and access tests stay green (the 9 Nov tripwire).
-- [ ] The customer can describe a request, see and edit the specification, and reach a quote they can accept (the logo check, richer wording and the merchant reply box are cuttable; the guards, the handoff and the one-reply rule are not).
+- [x] Demo path A to H passes with exact figures (30 boxes at $36 is $1,080.00; 24 bottles in stock), labeled replayed and mocked; the real-model evaluation of at least 15 scenarios is run and reported separately with its method and every failure.
+- [x] No model output can set a price, a discount, a quantity, stock, a blocking status or a state: strict schemas reject extra fields; an injection test set leaves every figure unchanged (database and unit tests).
+- [x] Every configuration shown and every draft created passed `validateConfiguration` in the same step; a proposal with an unknown product, a food item under a no-food rule, or an over-budget or out-of-stock configuration is rejected before display.
+- [x] Code decides what blocks: `blockingFields` is pure and tested over every status combination; one question per turn, always available as a fixed fallback, accepted from the model only after its check.
+- [x] A customer message gets exactly one assistant reply under races and retries (database unique index test); a double submit stores one message.
+- [x] A provider failure, a timeout and two malformed answers each keep the inquiry and messages, offer retry or handoff, and never show a ready state; the fallback model is used only for provider failures.
+- [x] The caps (messages, clarification turns, model runs, message length) hand over or refuse as specified.
+- [x] Access tests pass: customers and merchants act only on their own inquiries.
+- [x] `domain/intake` passes the purity test; typecheck, lint, unit, database and E2E tests green locally and in CI; payment and access tests stay green (the 9 Nov tripwire).
+- [x] The customer can describe a request, see and edit the specification, and reach a quote they can accept (the logo check, richer wording and the merchant reply box are cuttable; the guards, the handoff and the one-reply rule are not).
 
 ## 12. Task outline (becomes `tasks/ai-intake/` after approval)
 
