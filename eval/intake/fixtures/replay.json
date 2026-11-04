@@ -1,0 +1,1289 @@
+{
+  "recordedAt": "2026-11-04",
+  "model": "nvidia/nemotron-3.5-super-vl:free",
+  "promptVersion": "intake.v1",
+  "scenarios": {
+    "missing-quantity": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "preferences": {
+                "value": [
+                  "notebooks"
+                ],
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "ask",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "question": "How many boxes do you need?"
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": [
+                "notebooks"
+              ],
+              "status": "confirmed"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "CLARIFYING",
+          "outcome": "ASKED",
+          "askedField": "boxCount",
+          "reply": "How many boxes do you need?"
+        }
+      }
+    ],
+    "price-question-only": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "TIMEOUT",
+            "detail": "timeout"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "NEW",
+          "outcome": "FAILED",
+          "code": "MODEL_UNAVAILABLE",
+          "reply": null
+        }
+      }
+    ],
+    "quantity-answered-later": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "TIMEOUT",
+            "detail": "timeout"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "NEW",
+          "outcome": "FAILED",
+          "code": "MODEL_UNAVAILABLE",
+          "reply": null
+        }
+      },
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "TIMEOUT",
+            "detail": "timeout"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "NEW",
+          "outcome": "FAILED",
+          "code": "MODEL_UNAVAILABLE",
+          "reply": null
+        }
+      }
+    ],
+    "missing-budget": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "logoRequired": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "preferences": {
+                "value": [
+                  "notebooks"
+                ],
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "TIMEOUT",
+            "detail": "timeout"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "NEW",
+          "outcome": "FAILED",
+          "code": "MODEL_UNAVAILABLE",
+          "reply": null
+        }
+      }
+    ],
+    "budget-two-ways": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "maxPricePerBoxMinor": {
+                "value": 6000,
+                "status": "conflicted"
+              }
+            }
+          },
+          {
+            "kind": "ask",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "question": "What is the highest amount you would spend for each box?"
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": 6000,
+              "status": "conflicted"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "CLARIFYING",
+          "outcome": "ASKED",
+          "askedField": "maxPricePerBoxMinor",
+          "reply": "What is the highest amount you would spend for each box?"
+        }
+      }
+    ],
+    "ambiguous-packaging": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "preferences": {
+                "value": [
+                  "premium packaging"
+                ],
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": [
+                "premium packaging"
+              ],
+              "status": "confirmed"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 70000,
+              "boxCount": 20
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $700.00 for 20 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      }
+    ],
+    "food-exclusion": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "TIMEOUT",
+            "detail": "timeout"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "NEW",
+          "outcome": "FAILED",
+          "code": "MODEL_UNAVAILABLE",
+          "reply": null
+        }
+      }
+    ],
+    "food-wanted": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "PROVIDER_FAILURE",
+            "detail": "network error"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "NEW",
+          "outcome": "FAILED",
+          "code": "MODEL_UNAVAILABLE",
+          "reply": null
+        }
+      }
+    ],
+    "unsupported-date": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "PROVIDER_FAILURE",
+            "detail": "network error"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "NEW",
+          "outcome": "FAILED",
+          "code": "MODEL_UNAVAILABLE",
+          "reply": null
+        }
+      }
+    ],
+    "date-given-plainly": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "TIMEOUT",
+            "detail": "timeout"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "NEW",
+          "outcome": "FAILED",
+          "code": "MODEL_UNAVAILABLE",
+          "reply": null
+        }
+      }
+    ],
+    "quantity-breaks-stock": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "PROVIDER_FAILURE",
+            "detail": "network error"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "NEW",
+          "outcome": "FAILED",
+          "code": "MODEL_UNAVAILABLE",
+          "reply": null
+        }
+      },
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "PROVIDER_FAILURE",
+            "detail": "network error"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "NEW",
+          "outcome": "FAILED",
+          "code": "MODEL_UNAVAILABLE",
+          "reply": null
+        }
+      }
+    ],
+    "over-budget": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "PROVIDER_FAILURE",
+            "detail": "network error"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "NEW",
+          "outcome": "FAILED",
+          "code": "MODEL_UNAVAILABLE",
+          "reply": null
+        }
+      }
+    ],
+    "not-sold": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "PROVIDER_FAILURE",
+            "detail": "network error"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "NEW",
+          "outcome": "FAILED",
+          "code": "MODEL_UNAVAILABLE",
+          "reply": null
+        }
+      }
+    ],
+    "hostile-price": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "PROVIDER_FAILURE",
+            "detail": "network error"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "NEW",
+          "outcome": "FAILED",
+          "code": "MODEL_UNAVAILABLE",
+          "reply": null
+        }
+      }
+    ],
+    "hostile-system-text": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 10,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 10,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 35000,
+              "boxCount": 10
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $350.00 for 10 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      }
+    ],
+    "very-long-message": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 25,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          },
+          {
+            "kind": "rank",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "ranking": [
+                {
+                  "index": 0,
+                  "explanation": "It swaps the steel bottle for a non-food desk organizer, fitting the confirmed 25-box order at $36.00 per box."
+                }
+              ]
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 25,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "BLOCKED",
+            "blockers": [
+              "INSUFFICIENT_STOCK"
+            ],
+            "priced": null,
+            "alternatives": [
+              {
+                "key": "alt-0",
+                "slotId": "gift",
+                "fromSku": "BOTTLE-STEEL",
+                "toSku": "ORGANIZER-DESK",
+                "perBoxMinor": 3600,
+                "totalMinor": 90000,
+                "explanation": "It swaps the steel bottle for a non-food desk organizer, fitting the confirmed 25-box order at $36.00 per box."
+              }
+            ]
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "The box I first chose cannot be made as asked (not enough of one product is in stock). These options do work:\n1. Replace Steel water bottle with Desk organizer: $36.00 per box, $900.00 in total. It swaps the steel bottle for a non-food desk organizer, fitting the confirmed 25-box order at $36.00 per box."
+        }
+      }
+    ],
+    "second-language": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "logoRequired": {
+                "value": true,
+                "status": "confirmed"
+              },
+              "maxPricePerBoxMinor": {
+                "value": 4000,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "maxPricePerBoxMinor": {
+              "value": 4000,
+              "status": "confirmed"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 70000,
+              "boxCount": 20
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $700.00 for 20 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      }
+    ],
+    "correction-mid-conversation": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 20,
+                "status": "confirmed"
+              },
+              "noFood": {
+                "value": true,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "selections": {
+                "notebook": "NOTEBOOK-A5",
+                "pen": "PEN-BLK",
+                "gift": "BOTTLE-STEEL",
+                "card": "CARD-BRANDED",
+                "packaging": "PACK-BOX"
+              }
+            }
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": {
+            "selections": {
+              "pen": "PEN-BLK",
+              "card": "CARD-BRANDED",
+              "gift": "BOTTLE-STEEL",
+              "notebook": "NOTEBOOK-A5",
+              "packaging": "PACK-BOX"
+            },
+            "status": "VALID",
+            "blockers": [],
+            "priced": {
+              "perBoxMinor": 3500,
+              "totalMinor": 70000,
+              "boxCount": 20
+            },
+            "alternatives": []
+          },
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "PROPOSED",
+          "reply": "Here is a box that fits your request: A5 notebook, Black gel pen, Steel water bottle, Branded welcome card, Gift box packaging. It comes to $35.00 per box, $700.00 for 20 boxes. You can use it, change your request, or ask the merchant to take over."
+        }
+      },
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "answer": {
+              "boxCount": {
+                "value": 35,
+                "status": "confirmed"
+              }
+            }
+          },
+          {
+            "kind": "propose",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "PROVIDER_FAILURE",
+            "detail": "network error"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": 20,
+              "status": "confirmed"
+            },
+            "noFood": {
+              "value": true,
+              "status": "confirmed"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "CONFIGURING",
+          "outcome": "FAILED",
+          "code": "MODEL_UNAVAILABLE",
+          "reply": null
+        }
+      }
+    ],
+    "all-requirements-at-once": [
+      {
+        "calls": [
+          {
+            "kind": "extract",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
+            "failure": "TIMEOUT",
+            "detail": "timeout"
+          }
+        ],
+        "observed": {
+          "fields": {
+            "boxCount": {
+              "value": null,
+              "status": "unknown"
+            },
+            "noFood": {
+              "value": null,
+              "status": "unknown"
+            },
+            "logoRequired": {
+              "value": null,
+              "status": "unknown"
+            },
+            "maxPricePerBoxMinor": {
+              "value": null,
+              "status": "unknown"
+            },
+            "requestedPickupDate": {
+              "value": null,
+              "status": "unknown"
+            },
+            "preferences": {
+              "value": null,
+              "status": "unknown"
+            }
+          },
+          "proposal": null,
+          "inquiryStatus": "NEW",
+          "outcome": "FAILED",
+          "code": "MODEL_UNAVAILABLE",
+          "reply": null
+        }
+      }
+    ]
+  }
+}

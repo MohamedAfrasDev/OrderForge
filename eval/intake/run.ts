@@ -64,7 +64,7 @@ describe("intake evaluation against the real model (manual)", () => {
 
       const runs: ModelRun[] = [];
       for (const [model, isPaid] of [...free.map((m) => [m, false] as const), ...paid.map((m) => [m, true] as const)]) {
-        const port = recording(paced(createOpenRouterModel({ apiKey, model, allowPaidPrimary: isPaid }), gapMs));
+        const port = recording(paced(createOpenRouterModel({ apiKey, model, allowPaidPrimary: isPaid, ...(process.env.EVAL_TIMEOUT_MS ? { timeoutMs: Number(process.env.EVAL_TIMEOUT_MS) } : {}) }), gapMs));
         const results: ScenarioRun[] = [];
         for (const scenario of scenarios) results.push(await runScenario(db, scenario, port));
         runs.push({ model, paid: isPaid, runs: results });

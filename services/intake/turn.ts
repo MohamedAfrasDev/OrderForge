@@ -13,6 +13,7 @@ import {
   fallbackQuestion,
   mergeRequirements,
   parseExtraction,
+  proposeJsonSchema,
   proposeSchema,
   rankAlternatives,
   rankingSchema,
@@ -168,12 +169,12 @@ export async function runIntakeTurn(db: SupabaseClient, deps: TurnDeps, inquiryI
   const current = latest?.stored ?? emptyStored();
   const step: Step = { logical: 0, requests: 0, base: runsBefore };
 
-  async function ask<T>(kind: ModelKind, prompt: Prompt, schema: z.ZodType, parse: (raw: unknown) => ParseOutcome<T>): Promise<ModelResult<T>> {
+  async function ask<T>(kind: ModelKind, prompt: Prompt, jsonSchema: Record<string, unknown>, parse: (raw: unknown) => ParseOutcome<T>): Promise<ModelResult<T>> {
     if (step.logical >= MAX_MODEL_QUESTIONS) throw new Error("model question budget exceeded");
     step.logical += 1;
     let result: ModelResult<T>;
     try {
-      result = await deps.model.complete({ kind, messages: prompt.messages, jsonSchema: jsonSchemaOf(schema), parse });
+      result = await deps.model.complete({ kind, messages: prompt.messages, jsonSchema, parse });
     } catch {
       result = { ok: false, failure: "PROVIDER_FAILURE", model: null, detail: "the model call failed", calls: 1 };
     }
@@ -196,7 +197,7 @@ export async function runIntakeTurn(db: SupabaseClient, deps: TurnDeps, inquiryI
   const read = await ask<Extraction>(
     "extract",
     buildPrompt("extract", { conversation: conversation.entries, current: current.fields, catalog: catalogForModel(snapshot.catalog), today }),
-    extractionSchema,
+    jsonSchemaOf(extractionSchema),
     (raw): ParsedExtraction => parseExtraction(raw),
   );
   if (!read.ok) return outage(read.failure);
@@ -223,7 +224,7 @@ export async function runIntakeTurn(db: SupabaseClient, deps: TurnDeps, inquiryI
   } else if (first !== undefined) {
     // 3a. Ask the one question code chose. The model may reword it; the fixed wording is always there.
     const fallback = fallbackQuestion(first);
-    const worded = await ask("ask", buildPrompt("ask", { field: first, fallback, current: fields, conversation: conversation.entries }), askSchema, (raw) => {
+    const worded = await ask("ask", buildPrompt("ask", { field: first, fallback, current: fields, conversation: conversation.entries }), jsonSchemaOf(askSchema), (raw) => {
       const parsed = askSchema.safeParse(raw);
       return parsed.success ? { ok: true, value: parsed.data } : { ok: false, errors: parsed.error.issues.map((i) => i.message) };
     });
@@ -240,7 +241,7 @@ export async function runIntakeTurn(db: SupabaseClient, deps: TurnDeps, inquiryI
     if (!view.ok) throw new Error("read_catalog refused");
     const allowed = new Map(view.result.slots.map((s) => [s.id, new Set(s.allowedSkus)]));
 
-    const proposed = await ask("propose", buildPrompt("propose", { catalog: view.result, requirements: fields, boxCount, today }), proposeSchema, (raw) => {
+    const proposed = await ask("propose", buildPrompt("propose", { catalog: view.result, requirements: fields, boxCount, today }), proposeJsonSchema(view.result.slots), (raw) => {
       const parsed = proposeSchema.safeParse(raw);
       if (!parsed.success) return { ok: false, errors: parsed.error.issues.map((i) => i.message) };
       const errors = selectionErrors(parsed.data.selections, allowed);
@@ -264,7 +265,7 @@ export async function runIntakeTurn(db: SupabaseClient, deps: TurnDeps, inquiryI
       const blockers = [...new Set(checked.result.blockers.map((b) => b.code))];
       let alternatives: Proposal["alternatives"] = [];
       if (found.length > 0) {
-        const ranking = await ask("rank", buildPrompt("rank", { requirements: fields, alternatives: found.map((a, index) => forPrompt(a, index)) }), rankingSchema, (raw) => {
+        const ranking = await ask("rank", buildPrompt("rank", { requirements: fields, alternatives: found.map((a, index) => forPrompt(a, index)) }), jsonSchemaOf(rankingSchema), (raw) => {
           const parsed = rankingSchema.safeParse(raw);
           return parsed.success ? { ok: true, value: parsed.data } : { ok: false, errors: parsed.error.issues.map((i) => i.message) };
         });

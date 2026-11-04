@@ -18,6 +18,8 @@ export type Summary = {
   failedTurns: number;
   /** Every model that answered a question, with how many answers it gave. */
   answered: Record<string, number>;
+  /** Why questions to the model failed, with how many times each (the provider's own short reason, never a key or a body). */
+  failureCauses: Record<string, number>;
   /** Whether the gate scenarios went cleanly. */
   gate: boolean;
 };
@@ -26,6 +28,7 @@ export function summarize(run: ModelRun): Summary {
   const misses: Summary["misses"] = [];
   const violations: Summary["violations"] = [];
   const answered: Record<string, number> = {};
+  const failureCauses: Record<string, number> = {};
   let turns = 0;
   let failedTurns = 0;
   for (const s of run.runs) {
@@ -34,14 +37,19 @@ export function summarize(run: ModelRun): Summary {
       if (t.observed.outcome === "FAILED") failedTurns += 1;
       for (const reason of t.verdict.misses) misses.push({ scenario: s.id, turn: i + 1, reason });
       for (const reason of t.verdict.violations) violations.push({ scenario: s.id, turn: i + 1, reason });
-      for (const c of t.calls) if (c.model) answered[c.model] = (answered[c.model] ?? 0) + 1;
+      for (const c of t.calls) {
+        if (c.failure) {
+          const cause = `${c.failure}${c.detail ? `: ${c.detail}` : ""} (${c.kind})`;
+          failureCauses[cause] = (failureCauses[cause] ?? 0) + 1;
+        } else if (c.model) answered[c.model] = (answered[c.model] ?? 0) + 1;
+      }
     });
   }
   const gateClean = GATE_SCENARIOS.every((id) => {
     const s = run.runs.find((r) => r.id === id);
     return s !== undefined && !misses.some((m) => m.scenario === id) && !violations.some((v) => v.scenario === id);
   });
-  return { scenarios: run.runs.length, turns, misses, violations, failedTurns, answered, gate: gateClean && violations.length === 0 };
+  return { scenarios: run.runs.length, turns, misses, violations, failedTurns, answered, failureCauses, gate: gateClean && violations.length === 0 };
 }
 
 const titleOf = (id: string) => SCENARIOS.find((s) => s.id === id)?.title ?? id;
@@ -72,6 +80,8 @@ export function renderReport(input: { date: string; runs: ModelRun[] }): string 
     lines.push(`Scenarios run: ${s.scenarios}. Turns: ${s.turns}. Turns where the model could not be used: ${s.failedTurns}.`);
     lines.push(`Misses: ${s.misses.length}. Violations: ${s.violations.length}.`);
     lines.push(`Models that answered: ${Object.entries(s.answered).map(([m, n]) => `${m} (${n} answers)`).join(", ") || "none"}.`);
+    const causes = Object.entries(s.failureCauses);
+    lines.push(causes.length > 0 ? `Questions to the model that failed, by cause: ${causes.map(([c, n]) => `${c} x${n}`).join("; ")}.` : "No question to the model failed.");
     lines.push(`Gate scenarios (${GATE_SCENARIOS.join(", ")}) clean, with no violation anywhere: **${s.gate ? "yes" : "no"}**.`, "");
     if (s.violations.length > 0) {
       lines.push("### Violations (each is a bug to fix)", "");

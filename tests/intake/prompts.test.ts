@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { catalogForModel, type Catalog } from "@/domain/catalog";
-import { PROMPT_VERSION, buildPrompt, emptyRequirements, mergeRequirements, parseExtraction, proposeSchema, type RequirementsDoc } from "@/domain/intake";
+import { PROMPT_VERSION, buildPrompt, emptyRequirements, mergeRequirements, parseExtraction, proposeJsonSchema, proposeSchema, type RequirementsDoc } from "@/domain/intake";
 import { cents } from "@/lib/money";
 
 const CATALOG: Catalog = {
@@ -150,5 +150,41 @@ describe("proposeSchema", () => {
     expect(proposeSchema.safeParse({ selections: { notebook: "NOTEBOOK-A5" }, price: 1 }).success).toBe(false);
     expect(proposeSchema.safeParse({ selections: { notebook: 5 } }).success).toBe(false);
     expect(proposeSchema.safeParse({ boxCount: 20, selections: {} }).success).toBe(false);
+  });
+});
+
+// Found by the first real-model run: a provider with a strict grammar rejected the free-form keys of the old proposal schema.
+const UNSUPPORTED_KEYS = ["propertyNames", "patternProperties", "$ref", "$defs", "if", "then", "else", "not", "oneOf", "allOf"];
+const keysIn = (value: unknown): string[] =>
+  Array.isArray(value) ? value.flatMap(keysIn) : value && typeof value === "object" ? Object.entries(value).flatMap(([k, v]) => [k, ...keysIn(v)]) : [];
+
+describe("proposeJsonSchema", () => {
+  const slots = [
+    { id: "notebook", allowedSkus: ["NOTEBOOK-A5"] },
+    { id: "gift", allowedSkus: ["BOTTLE-STEEL", "ORGANIZER-DESK", "TRUFFLES-BOX"] },
+  ];
+
+  it("names every slot, limits each to its own SKUs, and allows nothing else", () => {
+    expect(proposeJsonSchema(slots)).toEqual({
+      type: "object",
+      properties: {
+        selections: {
+          type: "object",
+          properties: { notebook: { type: "string", enum: ["NOTEBOOK-A5"] }, gift: { type: "string", enum: ["BOTTLE-STEEL", "ORGANIZER-DESK", "TRUFFLES-BOX"] } },
+          required: ["notebook", "gift"],
+          additionalProperties: false,
+        },
+      },
+      required: ["selections"],
+      additionalProperties: false,
+    });
+  });
+
+  it("uses only keywords a strict structured-output grammar accepts", () => {
+    expect(keysIn(proposeJsonSchema(slots)).filter((k) => UNSUPPORTED_KEYS.includes(k))).toEqual([]);
+  });
+
+  it("describes what proposeSchema accepts", () => {
+    expect(proposeSchema.safeParse({ selections: { notebook: "NOTEBOOK-A5", gift: "BOTTLE-STEEL" } }).success).toBe(true);
   });
 });

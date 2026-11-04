@@ -13,6 +13,23 @@ export type ConversationEntry = { id: string; role: "customer" | "assistant" | "
 /** What the model may return when proposing a configuration: a SKU per slot id. No amount, no count, nothing else. */
 export const proposeSchema = z.strictObject({ selections: z.record(z.string().max(80), z.string().max(80)) });
 
+/**
+ * The JSON schema sent to the provider for a proposal: one property per slot of the box, each limited to the SKUs that slot allows,
+ * nothing else. Providers with a strict grammar reject free-form keys (`propertyNames`), and this is stricter anyway: the model
+ * cannot name a slot or a product that does not exist. Code still validates the answer.
+ */
+export function proposeJsonSchema(slots: ReadonlyArray<{ id: string; allowedSkus: readonly string[] }>): Record<string, unknown> {
+  const properties = Object.fromEntries(slots.map((s) => [s.id, { type: "string", enum: [...s.allowedSkus] }]));
+  return {
+    type: "object",
+    properties: {
+      selections: { type: "object", properties, required: slots.map((s) => s.id), additionalProperties: false },
+    },
+    required: ["selections"],
+    additionalProperties: false,
+  };
+}
+
 export type AlternativeForPrompt = { index: number; slotId: string; fromSku: string; toSku: string; perBoxMinor: number; totalMinor: number };
 
 export type PromptContext = {

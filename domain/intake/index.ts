@@ -2,7 +2,7 @@
 export { amountsOfAlternative, rankAlternatives, rankingSchema } from "./alternatives";
 export type { RankedAlternative, RankingInput } from "./alternatives";
 export { extractionSchema, parseExtraction } from "./extraction";
-export { PROMPT_VERSION, buildPrompt, proposeSchema } from "./prompts";
+export { PROMPT_VERSION, buildPrompt, proposeJsonSchema, proposeSchema } from "./prompts";
 export type { AlternativeForPrompt, ConversationEntry, Prompt, PromptContext, PromptMessage } from "./prompts";
 export { acceptExplanation, acceptQuestion, askSchema, fallbackQuestion } from "./questions";
 export type { ParsedExtraction } from "./extraction";

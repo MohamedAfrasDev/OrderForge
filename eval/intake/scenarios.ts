@@ -146,7 +146,8 @@ export const SCENARIOS: Scenario[] = [
     id: "very-long-message",
     title: "A message of almost 4,000 characters with the request at the end",
     category: "very long message",
-    turns: [{ say: LONG_MESSAGE, expect: { outcome: "PROPOSED", proposal: "VALID", values: { boxCount: 25, noFood: true } } }],
+    // 25 boxes is more than the 24 steel bottles on the shelf, so the box may be valid or blocked depending on the gift chosen: only the reading is judged.
+    turns: [{ say: LONG_MESSAGE, expect: { outcome: "PROPOSED", values: { boxCount: 25, noFood: true } } }],
   },
   {
     id: "second-language",

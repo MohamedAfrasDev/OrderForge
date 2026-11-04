@@ -19,7 +19,7 @@ export const EVAL_NOW = "2026-11-04T10:00:00.000Z";
 const SECRET = "eval-secret-with-enough-length-0000";
 
 /** One question the pipeline put to the model and what came back: the parsed answer, or the way it failed. */
-export type RecordedCall = { kind: ModelKind; model: string | null; answer?: unknown; failure?: string };
+export type RecordedCall = { kind: ModelKind; model: string | null; answer?: unknown; failure?: string; detail?: string };
 
 export type TurnRun = { say: string; calls: RecordedCall[]; observed: Observed; verdict: Verdict };
 export type ScenarioRun = { id: string; turns: TurnRun[] };
@@ -30,7 +30,7 @@ export function recording(inner: ModelPort): ModelPort & { drain(): RecordedCall
   return {
     async complete(request) {
       const result = await inner.complete(request);
-      calls.push(result.ok ? { kind: request.kind, model: result.model, answer: result.value } : { kind: request.kind, model: result.model, failure: result.failure });
+      calls.push(result.ok ? { kind: request.kind, model: result.model, answer: result.value } : { kind: request.kind, model: result.model, failure: result.failure, detail: result.detail });
       return result;
     },
     drain() {

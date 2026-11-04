@@ -30,6 +30,7 @@ npm run eval:intake
 | `EVAL_PAID` | Comma-separated paid models to run too, each alone and labeled paid (this spends money: cents) | none |
 | `EVAL_ONLY` | Comma-separated scenario ids, for a quick trial | all |
 | `EVAL_PACE_MS` | Gap between requests, so the free tier's rate limit does not decide the result | `3000` |
+| `EVAL_TIMEOUT_MS` | Per-request timeout. The app uses 20 000; a longer value measures how a slow free model answers when given time (state it in the results) | `20000` (the app's own) |
 | `EVAL_RECORD` | A model id from this run whose answers become `fixtures/replay.json` | none |
 
 OpenRouter limits free models (a few requests a minute, and a small number a day for an account without credit). A run that hits a

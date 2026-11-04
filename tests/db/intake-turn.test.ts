@@ -247,6 +247,24 @@ describe("demo step H and the caps: a conversation that does not converge goes t
   });
 });
 
+describe("what the pipeline asks a provider for", () => {
+  it("sends schemas a strict structured-output grammar accepts, and a proposal schema built from the catalog's own slots", async () => {
+    const m = await catalogMerchant(db);
+    const { who, messageId } = await begin(db, m.slug, "30 boxes, no food");
+    const inner = createFakeModel({ answers: { extract: [{ boxCount: confirmed(30), noFood: confirmed(true) }], propose: [{ selections: BOTTLE_BOX }], rank: [{ ranking: [] }] } });
+    const sent: Array<{ kind: string; jsonSchema: Record<string, unknown> }> = [];
+    const spy = { complete: (request: Parameters<typeof inner.complete>[0]) => (sent.push({ kind: request.kind, jsonSchema: request.jsonSchema }), inner.complete(request)) };
+    await runIntakeTurn(db, { model: spy as never }, who, messageId, ctx);
+
+    expect(sent.map((s) => s.kind)).toEqual(["extract", "propose", "rank"]);
+    const keys = (v: unknown): string[] => (Array.isArray(v) ? v.flatMap(keys) : v && typeof v === "object" ? Object.entries(v).flatMap(([k, x]) => [k, ...keys(x)]) : []);
+    for (const s of sent) expect(keys(s.jsonSchema).filter((k) => ["propertyNames", "patternProperties", "$ref", "$defs"].includes(k)), s.kind).toEqual([]);
+    const propose = sent.find((s) => s.kind === "propose")!.jsonSchema as { properties: { selections: { properties: Record<string, { enum: string[] }> } } };
+    expect(Object.keys(propose.properties.selections.properties).sort()).toEqual(["card", "gift", "notebook", "packaging", "pen"]);
+    expect(propose.properties.selections.properties.gift!.enum).toEqual(["BOTTLE-STEEL", "ORGANIZER-DESK", "TRUFFLES-BOX"]);
+  });
+});
+
 describe("the bounds on one turn and the record of each run", () => {
   it("the worst turn (read, propose, rank) asks the model three times and no more", async () => {
     const m = await catalogMerchant(db);
