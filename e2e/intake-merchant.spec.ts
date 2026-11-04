@@ -32,15 +32,15 @@ test.describe("handed-over inquiries (local Supabase, stand-in model)", () => {
     await page.context().setExtraHTTPHeaders({ "x-forwarded-for": `100.64.${a}.${b}` });
   }
 
-  /** The customer describes an order on the store page, then asks the merchant to take over. */
+  /** The customer describes an order on the store page, then asks the shop to take over. */
   async function customerHandsOver(page: Page, message: string) {
     await asNewVisitor(page);
     await page.goto(`/store/${slugA}`);
     await page.getByLabel("Describe the custom order you have in mind").fill(message);
     await page.getByRole("button", { name: "Start my request" }).click();
     await page.waitForURL(/\/o\//);
-    await page.getByRole("button", { name: "Ask the merchant to take over" }).first().click();
-    await expect(page.getByRole("status").filter({ hasText: "The merchant has your request" })).toBeVisible();
+    await page.getByRole("button", { name: "Ask the shop to take over" }).first().click();
+    await expect(page.getByRole("heading", { name: "With the shop", level: 2 })).toBeVisible();
   }
 
   const card = (page: Page, text: string) => page.getByRole("article", { name: /^Inquiry / }).filter({ hasText: text });
@@ -59,7 +59,7 @@ test.describe("handed-over inquiries (local Supabase, stand-in model)", () => {
     await expect(mine).toContainText("30 (confirmed)");
     await expect(mine).toContainText("No food");
     await expect(mine.getByRole("listitem").filter({ hasText: text })).toHaveCount(1);
-    await expect(mine).toContainText("You asked the merchant to take over");
+    await expect(mine).toContainText("You asked the shop to take over");
 
     await mine.getByLabel("Reply to the customer").fill("Happy to help. Which logo file will you send?");
     await mine.getByRole("button", { name: "Send reply" }).click();
@@ -67,7 +67,8 @@ test.describe("handed-over inquiries (local Supabase, stand-in model)", () => {
 
     await customer.reload();
     await expect(customer.getByText("Which logo file will you send?")).toBeVisible();
-    await expect(customer.getByText(/^merchant ·/)).toBeVisible();
+    // The reply is signed with the shop's name, not with a role.
+    await expect(customer.getByRole("article").filter({ hasText: "Which logo file will you send?" })).toContainText(/E2E Pay ia/);
   });
 
   test("an inquiry handed over after a failure has nothing recorded, and the page says so", async ({ page, browser }) => {
@@ -78,8 +79,8 @@ test.describe("handed-over inquiries (local Supabase, stand-in model)", () => {
     await customer.getByLabel("Describe the custom order you have in mind").fill(text);
     await customer.getByRole("button", { name: "Start my request" }).click();
     await customer.waitForURL(/\/o\//);
-    await customer.getByRole("button", { name: "Ask the merchant to take over" }).first().click();
-    await expect(customer.getByRole("status").filter({ hasText: "The merchant has your request" })).toBeVisible();
+    await customer.getByRole("button", { name: "Ask the shop to take over" }).first().click();
+    await expect(customer.getByRole("heading", { name: "With the shop", level: 2 })).toBeVisible();
 
     await signIn(page, a);
     await page.goto("/merchant/inquiries");

@@ -24,7 +24,7 @@ export function StartForm({ action }: Props) {
         className="w-full rounded-lg border border-border bg-background p-3 text-sm"
       />
       <p className="text-xs text-muted-foreground">
-        This is a sandbox demo with synthetic data. Please do not enter real personal or payment details: your message is read by an AI model.
+        This is a sandbox demo with synthetic data. Don&apos;t enter real personal or payment details: your message is read by an AI model.
       </p>
       <Button type="submit" size="lg" disabled={pending}>
         {pending ? "Reading your request…" : "Start my request"}

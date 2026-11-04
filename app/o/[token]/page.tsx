@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { Conversation } from "@/components/conversation";
 import { CustomerHeader } from "@/components/customer-header";
 import { JobStatus } from "@/components/job-status";
 import { INQUIRY_STATUSES, type InquiryStatus } from "@/domain/intake";
@@ -38,8 +39,6 @@ export default function OrderRoomPage({ params, searchParams }: PageProps<"/o/[t
   );
 }
 
-const formatTime = (iso: string) => `${iso.slice(0, 16).replace("T", " ")} UTC`;
-
 // Reading route params is request-time data, so this streams inside <Suspense>.
 async function OrderRoom({ params, searchParams }: { params: PageProps<"/o/[token]">["params"]; searchParams: PageProps<"/o/[token]">["searchParams"] }) {
   const { token } = await params;
@@ -63,23 +62,12 @@ async function OrderRoom({ params, searchParams }: { params: PageProps<"/o/[toke
   const quoteState = quote === null ? "NONE" : quote.status === "ACCEPTED" ? "ACCEPTED" : quote.expired ? "EXPIRED" : "PUBLISHED";
   const journey = journeyOf({ inquiry: inquiryStatus, quote: quoteState, payment: payment?.status ?? null, job: job?.status ?? null, stalled: Boolean(intake?.unanswered) });
 
-  const conversation = (
-    <section aria-label="Conversation" className="flex flex-col gap-3">
-      {messages.length === 0 ? (
-        <p className="text-muted-foreground">No messages yet.</p>
-      ) : (
-        messages.map((m) => (
-          <article key={m.id} className="rounded-lg border border-border p-3">
-            <p className="text-xs text-muted-foreground">
-              {m.role} · {formatTime(m.createdAt)}
-            </p>
-            <p className="mt-1 whitespace-pre-wrap text-sm">{m.body}</p>
-          </article>
-        ))
-      )}
-    </section>
+  // With the order still being built, the conversation sits beside "Your order so far"; once it is accepted it stands alone.
+  const talk = intake ? (
+    <IntakePanels token={token} spec={intake.spec} status={inquiry.status} unanswered={intake.unanswered} messages={messages} shopName={inquiry.merchantName} />
+  ) : (
+    <Conversation messages={messages} shopName={inquiry.merchantName} />
   );
-  const panels = intake ? <IntakePanels token={token} spec={intake.spec} status={inquiry.status} unanswered={intake.unanswered} /> : null;
 
   return (
     <>
@@ -92,16 +80,11 @@ async function OrderRoom({ params, searchParams }: { params: PageProps<"/o/[toke
           <QuoteCard quote={quote} hold={hold} accept={acceptQuoteAction.bind(null, token)} />
           {payment ? <PaymentStatus view={payment} notice={notice} pay={payWithPayPalAction.bind(null, token)} /> : null}
           {job ? <JobStatus view={job} /> : null}
-          {conversation}
-          {panels}
+          {talk}
         </>
       ) : (
-        <>
-          {conversation}
-          {panels}
-        </>
+        talk
       )}
-
 
       <p className="text-xs text-muted-foreground">
         This page is private to anyone who has the link. Keep the link to yourself.

@@ -79,6 +79,14 @@ test.describe("the order room at every stage (local Supabase, stand-in model, fa
     expect(text, `${where}: a status line`).not.toMatch(/Status:/);
     const header = await page.getByTestId("order-header").innerText();
     expect(forbiddenIn(header), `${where}: header words`).toEqual([]);
+    // The order so far, the open question, the boxes and the writing box use the customer's vocabulary too (the conversation's own
+    // messages, the price and the payment sections join this check in T4).
+    for (const region of ["Your order so far", "Open question", "Proposals"]) {
+      const found = page.getByRole("region", { name: region });
+      if ((await found.count()) > 0) expect(forbiddenIn(await found.innerText()), `${where}: ${region}`).toEqual([]);
+    }
+    const form = page.getByRole("form", { name: "New message" });
+    if ((await form.count()) > 0) expect(forbiddenIn(await form.innerText()), `${where}: message form`).toEqual([]);
   }
 
   const customerLink = (inquiryId: string) =>
@@ -97,7 +105,7 @@ test.describe("the order room at every stage (local Supabase, stand-in model, fa
     await expectStage(page, "choose", "Choose");
     await scan(page, "boxes shown");
 
-    await page.getByRole("button", { name: "Ask the merchant to take over" }).first().click();
+    await page.getByRole("button", { name: "Ask the shop to take over" }).first().click();
     await expectStage(page, "withShop", "Choose");
     await scan(page, "with the shop");
   });

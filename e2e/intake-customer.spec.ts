@@ -55,7 +55,7 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     await expect(page.getByRole("heading", { name: "Your request", exact: true })).toBeVisible();
   }
 
-  const spec = (page: Page) => page.getByRole("region", { name: "Your specification" });
+  const spec = (page: Page) => page.getByRole("region", { name: "Your order so far" });
 
   test("the store page says it is synthetic and starts a request", async ({ page }) => {
     const store = await newStore();
@@ -71,11 +71,11 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     await start(page, store.slug, "No food, our logo, under $40 per box");
 
     // No quantity yet: the specification says so and exactly one question is open.
-    await expect(spec(page).getByText("Not specified").first()).toBeVisible();
+    await expect(spec(page).getByText("Tell us").first()).toBeVisible();
     await expect(spec(page)).toContainText("No food");
     await expect(spec(page)).toContainText("Yes");
     await expect(spec(page)).toContainText("$40.00");
-    await expect(spec(page)).toContainText("from your message");
+    await expect(spec(page)).toContainText("From your message");
     const question = page.getByRole("region", { name: "Open question" });
     await expect(question).toContainText("How many boxes would you like?");
     await expect(page.getByRole("region", { name: "Proposals" })).toHaveCount(0);
@@ -90,7 +90,7 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     await expect(page.getByRole("region", { name: "Open question" })).toHaveCount(0);
 
     // Pick it: a quote the customer can accept, priced by the catalog engine.
-    await proposals.getByRole("button", { name: "Use this one" }).click();
+    await proposals.getByRole("button", { name: "Choose this box" }).click();
     const quote = page.getByRole("region", { name: "Quote" });
     await expect(quote).toContainText("$1,080.00");
     await expect(quote).toContainText("$36.00");
@@ -102,15 +102,17 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     const store = await newStore();
     await start(page, store.slug, "20 welcome boxes, notebooks, no food, our logo, under $40 per box");
     const proposals = page.getByRole("region", { name: "Proposals" });
-    await expect(proposals).toContainText("Proposed box");
+    await expect(proposals).toContainText("A box for you");
     await expect(proposals).toContainText("$35.00 per box · $700.00 for 20 boxes");
     await expect(spec(page)).toContainText("notebooks");
 
-    await page.getByText("Change something", { exact: true }).click();
+    // Tap a line to change it: its editor opens in place, and saving is the customer's own answer.
+    await spec(page).getByRole("button", { name: /Number of boxes/ }).click();
     await spec(page).getByLabel("Number of boxes").fill("22"); // 24 steel bottles are in stock, so 22 still fits
-    await spec(page).getByRole("button", { name: "Save my changes" }).click();
+    await spec(page).getByRole("button", { name: "Save", exact: true }).click();
     await expect(proposals).toContainText("$770.00 for 22 boxes");
-    await expect(spec(page)).toContainText("your own edit");
+    await expect(spec(page)).toContainText("You set this");
+    await expect(page.getByText("You changed your order")).toBeVisible();
   });
 
   test("a provider outage keeps the message, offers retry and handoff, and shows no ready state", async ({ page }) => {
@@ -120,7 +122,7 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     await expect(page.getByText("[[outage]] 30 boxes, no food")).toBeVisible();
     await expect(page.getByText("The assistant could not answer just now.").first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Ask the merchant to take over" }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Ask the shop to take over" }).first()).toBeVisible();
     await expect(page.getByRole("region", { name: "Quote" })).toHaveCount(0);
     await expect(page.getByRole("region", { name: "Proposals" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Use this one" })).toHaveCount(0);
@@ -128,8 +130,8 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     await page.getByRole("button", { name: "Try again" }).click();
     await expect(page.getByRole("button", { name: "Try again" })).toBeVisible(); // still down, still kept
 
-    await page.getByRole("button", { name: "Ask the merchant to take over" }).first().click();
-    await expect(page.getByRole("status").filter({ hasText: "The merchant has your request" })).toBeVisible();
+    await page.getByRole("button", { name: "Ask the shop to take over" }).first().click();
+    await expect(page.getByRole("heading", { name: "With the shop", level: 2 })).toBeVisible();
     await expect(page.getByRole("heading", { name: "With the shop", level: 2 })).toBeVisible();
     await expect(page.getByRole("button", { name: "Try again" })).toHaveCount(0);
   });
@@ -174,5 +176,71 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     const forged = link.slice(0, at) + (link[at] === "A" ? "B" : "A") + link.slice(at + 1);
     await otherPage.goto(forged);
     await expect(otherPage.getByText("This page could not be found")).toBeVisible();
+  });
+  test("the order so far sits beside the conversation on a desktop and below it on a phone", async ({ page }) => {
+    const store = await newStore();
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await start(page, store.slug, "20 boxes, no food");
+    const conversation = await page.getByRole("region", { name: "Conversation" }).boundingBox();
+    const order = await spec(page).boundingBox();
+    expect(conversation && order).toBeTruthy();
+    expect(order!.x).toBeGreaterThanOrEqual(conversation!.x + conversation!.width - 1); // to its right
+    expect(Math.abs(order!.y - conversation!.y)).toBeLessThan(400); // level with it, not far below
+
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.reload();
+    const phoneConversation = await page.getByRole("region", { name: "Conversation" }).boundingBox();
+    const phoneOrder = await spec(page).boundingBox();
+    expect(phoneOrder!.y).toBeGreaterThanOrEqual(phoneConversation!.y + phoneConversation!.height - 1); // below it
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  });
+
+  test("tapping a choice answers the open question as the customer's own answer, and the assistant carries on", async ({ page }) => {
+    const store = await newStore();
+    await start(page, store.slug, "No food, our logo, under $40 per box");
+    const question = page.getByRole("region", { name: "Open question" });
+    await expect(question).toContainText("How many boxes would you like?");
+    await expect(question.getByRole("button")).toHaveText(["10 boxes", "20 boxes", "50 boxes", "Use this number"]);
+
+    await question.getByRole("button", { name: "20 boxes", exact: true }).click();
+    const proposals = page.getByRole("region", { name: "Proposals" });
+    await expect(proposals).toContainText("$35.00 per box · $700.00 for 20 boxes");
+    await expect(spec(page).getByRole("button", { name: /Number of boxes/ })).toContainText("20");
+    await expect(spec(page).getByRole("button", { name: /Number of boxes/ })).toContainText("You set this");
+    await expect(page.getByRole("region", { name: "Open question" })).toHaveCount(0);
+    await expect(page.getByText("You changed your order")).toBeVisible(); // a quiet note, not something they typed
+  });
+
+  test("typing a number into the question box works the same way, and a blocked box offers another", async ({ page }) => {
+    const store = await newStore();
+    await start(page, store.slug, "No food, our logo, under $40 per box");
+    const question = page.getByRole("region", { name: "Open question" });
+    await question.getByLabel("Or type a number").fill("30");
+    await question.getByRole("button", { name: "Use this number" }).click();
+    await expect(page.getByRole("region", { name: "Proposals" })).toContainText("Replace Steel water bottle with Desk organizer");
+    await expect(spec(page).getByRole("button", { name: /Number of boxes/ })).toContainText("30");
+  });
+
+  test("an entry that is not a valid answer is refused in plain words and nothing changes", async ({ page }) => {
+    const store = await newStore();
+    await start(page, store.slug, "20 boxes, no food");
+    await spec(page).getByRole("button", { name: /Budget per box/ }).click();
+    await spec(page).getByLabel("Budget per box").fill("forty"); // a text box: the browser lets it through, the server refuses it
+    await spec(page).getByRole("button", { name: "Save", exact: true }).click();
+    await expect(spec(page).getByRole("alert")).toHaveText("Check what you entered and try again.");
+    await expect(spec(page).getByRole("button", { name: /Budget per box/ })).toContainText("Tell us");
+    await expect(page.getByText("You changed your order")).toHaveCount(0);
+  });
+
+  test("a line the customer has not answered reads Tell us, and filling it in is their own answer", async ({ page }) => {
+    const store = await newStore();
+    await start(page, store.slug, "20 boxes, no food");
+    const budget = spec(page).getByRole("button", { name: /Budget per box/ });
+    await expect(budget).toContainText("Tell us");
+    await budget.click();
+    await spec(page).getByLabel("Budget per box").fill("45.50");
+    await spec(page).getByRole("button", { name: "Save", exact: true }).click();
+    await expect(spec(page).getByRole("button", { name: /Budget per box/ })).toContainText("$45.50");
+    await expect(spec(page).getByRole("button", { name: /Budget per box/ })).toContainText("You set this");
   });
 });

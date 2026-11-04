@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { IntakeErrorCode } from "@/domain/intake";
+import { forbiddenIn } from "@/domain/journey";
 import { intakeFailureMessage } from "@/services/intake/customer-messages";
 
 const CODES: IntakeErrorCode[] = [
@@ -25,9 +26,13 @@ describe("what the customer is told", () => {
     }
   });
 
+  it("uses only the customer's vocabulary: no forbidden word in any message", () => {
+    for (const code of CODES) expect(forbiddenIn(intakeFailureMessage(code)), code).toEqual([]);
+  });
+
   it("offers a way forward when the assistant fails", () => {
     expect(intakeFailureMessage("MODEL_UNAVAILABLE")).toMatch(/try again/i);
-    expect(intakeFailureMessage("MODEL_UNAVAILABLE")).toMatch(/merchant/i);
+    expect(intakeFailureMessage("MODEL_UNAVAILABLE")).toMatch(/shop/i);
     expect(intakeFailureMessage("MODEL_OUTPUT_INVALID")).toBe(intakeFailureMessage("MODEL_UNAVAILABLE"));
   });
 });

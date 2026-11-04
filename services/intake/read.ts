@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { FIELD_NAMES, storedRequirementsSchema, type FieldName, type FieldStatus, type Proposal, type StoredRequirements } from "@/domain/intake";
+import { FIELD_NAMES, quickRepliesFor, storedRequirementsSchema, type BlockingField, type FieldName, type FieldStatus, type Proposal, type QuickReplies, type StoredRequirements } from "@/domain/intake";
 import type { VerifiedInquiryId } from "@/lib/access/inquiry-reads";
 import { CatalogLoadError, loadCatalogSnapshot } from "@/services/catalog/load-snapshot";
 import { latestRequirements, loadInquiry } from "./shared";
@@ -31,6 +31,9 @@ export type CustomerSpecView = {
   inquiryStatus: string;
   fields: CustomerSpecField[];
   question: string | null;
+  /** The line the open question is about, and the tappable answers code offers for it (labels only, no ids). Both null when no question is open. */
+  questionField: BlockingField | null;
+  quick: QuickReplies | null;
   proposal: Proposal | null;
   /** Names for the SKUs the proposal mentions, so the screen never shows a code. */
   productNames: Record<string, string>;
@@ -48,6 +51,8 @@ export async function requirementsForCustomer(db: SupabaseClient, inquiryId: Ver
     inquiryStatus: inquiry.status,
     fields: fieldsOf(latest.stored),
     question: latest.stored.question?.text ?? null,
+    questionField: latest.stored.question?.field ?? null,
+    quick: latest.stored.question ? quickRepliesFor({ field: latest.stored.question.field }, latest.stored.fields) : null,
     proposal: latest.stored.proposal,
     productNames: await productNames(db, inquiry.merchantId),
   };

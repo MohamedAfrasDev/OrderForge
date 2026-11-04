@@ -7,6 +7,8 @@ export type { AlternativeForPrompt, ConversationEntry, Prompt, PromptContext, Pr
 export { acceptExplanation, acceptQuestion, askSchema, fallbackQuestion } from "./questions";
 export type { ParsedExtraction } from "./extraction";
 export { blockingFields, confirmedBoxCount, emptyRequirements, mergeRequirements, toCatalogRequirements } from "./requirements";
+export { parseAnswer, quickRepliesFor } from "./quick-replies";
+export type { ParsedAnswer, QuickChoice, QuickReplies } from "./quick-replies";
 export { inquiryTransition } from "./state";
 export { STORED_REQUIREMENTS_TAG, emptyStored, storedRequirementsSchema } from "./stored";
 export type { OpenQuestion, Proposal, ProposalAlternative, StoredRequirements } from "./stored";

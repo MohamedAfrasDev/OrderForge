@@ -72,7 +72,7 @@ export async function postCustomerMessage(db: SupabaseClient, inquiryId: Verifie
   if (!out.ok && out.code === "LIMIT_REACHED") {
     const moved = await transitionInquiry(db, inquiryId, { type: "HAND_OFF" }, ctx, `customer:${inquiryId}`);
     if (moved.ok && moved.changed) {
-      const note = await db.from("messages").insert({ inquiry_id: inquiryId, role: "system", body: "This conversation has reached its length limit, so the merchant will take over from here.", created_at: ctx.now });
+      const note = await db.from("messages").insert({ inquiry_id: inquiryId, role: "system", body: "This conversation has reached its length limit, so the shop will take over from here.", created_at: ctx.now });
       if (note.error) throw new Error(`store note: ${note.error.message}`);
     }
     return { ok: false, code: "LIMIT_REACHED" };

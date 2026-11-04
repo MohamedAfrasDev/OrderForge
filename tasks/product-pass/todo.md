@@ -1,7 +1,7 @@
 # Tasks: product-pass
 
 Spec: [doc/spec/SPEC-product-pass.md](../../doc/spec/SPEC-product-pass.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend chosen as the email provider); task list APPROVED 4 Nov 2026; T0 to T2 built. Tick a box only after its Verify step passes. Every task is test first. Existing end-to-end specs for the shop pages are updated by changing selectors, never by removing or weakening a check.
+Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend chosen as the email provider); task list APPROVED 4 Nov 2026; T0 to T3 built. Tick a box only after its Verify step passes. Every task is test first. Existing end-to-end specs for the shop pages are updated by changing selectors, never by removing or weakening a check.
 
 ## Phase A: prove the grid
 
@@ -43,7 +43,7 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
   - Rule learned: customer-page specs must visit `/o/` from a private address (`x-forwarded-for`), or they use up the shared 60-a-minute budget of the other specs.
   - Depends on: T1.
 
-- [ ] **T3 The conversation with "Your order so far" and quick replies**
+- [x] **T3 The conversation with "Your order so far" and quick replies**
   - Acceptance: the conversation and the order-so-far card sit side by side on a desktop and stacked on a phone; each line shows its value, how sure we are and where it came
     from, unknown lines read "Tell us", and tapping a line edits it (the existing edit action). `quickRepliesFor(question, fields)` is pure and decided by code for each
     blocking field (a number with presets for the quantity; Yes / No for food and logo; a few budgets plus "Other"; "Any day" plus a date for the pickup date) and never
@@ -51,9 +51,13 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
     existing numbered message; typing still works; a tap and a message at once never produce two replies. No raw state name appears.
   - Verify: `npm run test -- tests/intake/quick-replies.test.ts && npm run test:e2e -- e2e/intake-customer.spec.ts`
   - Files: `domain/intake/{quick-replies,index}.ts`, `tests/intake/quick-replies.test.ts`, `app/o/[token]/{intake-panels,intake-forms,intake-actions}.tsx`, `e2e/intake-customer.spec.ts`
+  - Done 4 Nov 2026. As built: `quickRepliesFor` and `parseAnswer` (pure, 53 tests with the purity test); `services/intake/answer.ts` (`applyEdits`, `answerWithChoice`) with 9 database tests including a tap racing a message and five taps at once. A tap sends only the field and a position; the server recomputes the choices from the open question, so a stale or forged tap is refused. The order room shows the conversation beside "Your order so far" (below it on a phone, between the conversation and the box to write in), lines read "Tell us" until answered, every line opens a small editor, and the open question has its choices plus a typed box (number, dollars or date). The app's own "I updated my requirements (change N)." message shows as a quiet "You changed your order" note. The old "Change something" editor is gone.
+  - Wording swept for the glossary: customer-facing "merchant" became "shop" in the notes and buttons ("Ask the shop to take over"), "Please" is gone from the customer messages and the message form, "Choose this box" replaces "Use this one", the conversation names its speakers (You, Assistant, the shop's name, Note). The scan covers the order so far, the open question, the boxes and the message form against the vocabulary list at every stage; the conversation's own messages and the quote and payment sections join it in T4. A banner that repeated the header's sentence was cut.
+  - The replay fixture's code-written reply strings (14) were refreshed for the new wording ("ask the shop to take over"); the recorded model answers were not touched and the replay still compares everything exactly.
   - Depends on: T2.
 
 - [ ] **T4 The price and PayPal sections, and "Keep this page"**
+  - Added 4 Nov 2026 (spec step D, which no earlier task covered): the suggested boxes list their items by name with each item's price, the price per box and the total, and say in a friendly line when something was swapped and why (for example "only 24 are left"), with "Choose this box" as the one button. T3 renamed the button and the wording only.
   - Acceptance: the quote section is an itemised price (each item with its price, the price per box, the number of boxes, the total), how long the price is held, and its
     conditions in plain words. **The terms sentence the customer accepts, and the hash behind it, are not changed or reworded**; the plain explanation is added beside it. The PayPal box states
     exactly what is held, that the shop decides, and what happens on yes and on no; "Approve on PayPal" is the one main button. "Keep this page" shows the link, copies it (with a

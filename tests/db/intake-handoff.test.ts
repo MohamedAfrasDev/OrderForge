@@ -21,7 +21,7 @@ describe("handOffToMerchant", () => {
       expect(await statusOf(inquiryId)).toBe("REVIEW_REQUIRED");
       const messages = await messagesOf(db, inquiryId);
       expect(messages.map((x) => x.role)).toEqual(["customer", "system"]);
-      expect(messages[1]!.body).toMatch(/asked the merchant to take over/);
+      expect(messages[1]!.body).toMatch(/asked the shop to take over/);
     });
   }
 

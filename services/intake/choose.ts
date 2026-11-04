@@ -26,7 +26,7 @@ class ClaimLost extends Error {
   }
 }
 
-const REVIEW_NOTE = "This request needs the merchant to look at it before a quote can be offered. They will reply here.";
+const REVIEW_NOTE = "This request needs the shop to look at it before a quote can be offered. They will reply here.";
 
 /**
  * The customer picks one proposed box by its key (never an amount). Code revalidates it against live stock and prices (a box
@@ -127,8 +127,8 @@ const note = appendMessage;
 export type HandOffReason = "customer_request" | "failure";
 
 const HANDOFF_NOTE: Record<HandOffReason, string> = {
-  customer_request: "You asked the merchant to take over. They can see this conversation and your requirements, and they will reply here.",
-  failure: "The assistant could not continue, so the merchant will take over. They can see this conversation and your requirements.",
+  customer_request: "You asked the shop to take over. They can see this conversation and your requirements, and they will reply here.",
+  failure: "The assistant could not continue, so the shop will take over. They can see this conversation and your requirements.",
 };
 
 /**
