@@ -109,7 +109,7 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
   - Gate: typecheck and lint clean; unit 1233; database 1282; E2E 116.
   - Depends on: T6.
 
-- [ ] **T8 Catalog editing: the rules and the services (no screen)**
+- [x] **T8 Catalog editing: the rules and the services (no screen)**
   - Acceptance: `domain/catalog-edit` holds strict schemas (name 1 to 120, category 1 to 64, price whole cents from 0 to 10,000,000, food and active flags, stock on hand a whole number from 0 to
     1,000,000, a new product's SKU 1 to 64 from a safe character set) and the rules as pure functions: `checkDeactivation` (the last active product of a slot cannot be deactivated),
     `checkStockChange` (not below what is held), a new product must name at least one slot. `addProduct` and `editProduct` check the shop's ownership on the server for every call, refuse
@@ -119,6 +119,9 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
     shop's product is not found; stock never goes below held under parallel edits. A purity test covers the new domain.
   - Verify: `npm run test -- tests/catalog-edit && npm run test:db -- tests/db/catalog-edit.test.ts`
   - Files: `domain/catalog-edit/{schemas,rules,index}.ts`, `services/catalog/edit.ts`, `tests/catalog-edit/{rules,purity}.test.ts`, `tests/db/catalog-edit.test.ts`
+  - Done 5 Nov 2026. As built: `domain/catalog-edit` (strict schemas, `checkDeactivation`, `checkStockChange`, `checkNewProductSlots`, `withSkuInSlots`) and `services/catalog/edit.ts` (`editProduct`, `addProduct`, `catalogEditMessage`). Codes: NOT_FOUND, INVALID_INPUT, DUPLICATE_SKU, STOCK_HELD, LAST_IN_SLOT (with the part's name or the held count as detail). The stock check and write are one statement (`reserved <= new on hand`), so parallel edits cannot go below what is held (tested with 12 at once). `addProduct` inserts the product and stock, then writes the template last and reads it back, repeating on the newest version if a parallel add overwrote it (two adds at once both end up in the template, tested). An edit that changes nothing writes and audits nothing. Audit records the product id and the names of the fields changed (`fields` added to the audit allowlist), never values.
+  - Proved: a price edit, a deactivation and a stock edit leave an accepted quote byte for byte as it was, and checkout still holds the stock (of the now switched-off product), the customer still approves and the shop's accept captures; a failure after the product is inserted but before the template write leaves a product in no box and an unchanged template; another shop's product is NOT_FOUND; a new product shows up in the quote builder's choices.
+  - Gate: typecheck and lint clean; unit 1272; database 1298; E2E 116.
   - Depends on: none.
 
 - [ ] **T9 The editable catalog grid and the add-product form**
