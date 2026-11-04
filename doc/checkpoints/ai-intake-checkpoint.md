@@ -7,13 +7,13 @@ Evidence is labeled **scripted** (hand-written model answers in the real shape, 
 this **mocked**), **stand-in** (the rule-based local model, used only for the screens), **replayed** (answers a real model gave,
 recorded and played back through the real pipeline), **real-model** (a live evaluation, kept in
 [doc/evidence/ai-intake-real-model.md](../evidence/ai-intake-real-model.md)), **local** (Docker Supabase on this machine) and **CI**
-(GitHub Actions). Nothing was applied to the hosted project: migration 0009 is local only. No hosted run has been done.
+(GitHub Actions). Migration 0009 was applied to the hosted project on 4 Nov (see Hosted migration). No hosted run of the journey has been done.
 
 ## Verdict
 
-**10 of 10 criteria met locally.** Two things are open and are the user's: the free primary has not been shown to work (Gemma, the
-configured one, was rate limited upstream all day and has not been evaluated), and the three hosted steps below are waiting for a
-fresh yes. The module is not ready to rely on in the hosted demo until migration 0009 is applied and the branch is merged.
+**10 of 10 criteria met locally.** Open, and the user's: the free primary has not been shown to work (Gemma, the
+configured one, was rate limited upstream all day and has not been evaluated), and the last two hosted steps below wait for a
+fresh yes. The module is not ready to rely on in the hosted demo until the branch is merged and deployed; the hosted database is ready for it.
 
 Local gates on the reviewed code: typecheck 0 errors, lint 0 problems, 1025 unit, 1253 database, 91 end-to-end tests.
 Of those, the intake tests are 238 unit (13 files in `tests/intake`), 142 database (11 files, `tests/db/intake-*`) and 11 end-to-end.
@@ -33,10 +33,32 @@ Of those, the intake tests are 238 unit (13 files in `tests/intake`), 142 databa
 | 9 | `domain/intake` passes the purity test; typecheck, lint, unit, database and E2E green locally and in CI; payment and access tests green | Met | `tests/intake/purity.test.ts` limits the domain's imports and bans clock, environment and `Math.random`. Local: figures above, including every payment and access test. **CI: green on pushes of the branch, all 8 most recent pushes, the last (`e5ad8de`) on the final code; the commit carrying this checkpoint is to be confirmed after it is pushed.** |
 | 10 | The customer can describe a request, see and edit the specification, and reach a quote they can accept | Met | E2E (7 tests): no quantity, one question, "Make it 30 boxes", the organizer offered at $36.00 per box and $1,080.00, "Use this one", the quote card, accepted; a full request gets the $35.00 box and a changed specification gets a new proposal; plus the merchant side (4 tests): a handed-over inquiry, a reply the customer reads, isolation. local + stand-in |
 
-## Hosted steps (not done; each needs a fresh yes)
+## Hosted migration
 
-1. **Apply migration 0009 to the hosted project,** with a dry run first and read-only checks before and after, as for 0007 and 0008. It
-   adds one column, a unique index, a guard trigger and one function. Do this **before** merging and deploying: the new code reads and writes `messages.reply_to`.
+Applied on 4 Nov after a fresh explicit yes, with `supabase db push --db-url` against the hosted project (ref `twkepbycivkmhrmurxwi`, the
+one in `.env`). A dry run first listed exactly one pending migration, `0009_intake.sql`. Checked read-only before and after, over the
+same connection (labeled hosted):
+
+| | Before | After |
+|---|---|---|
+| Applied migrations | 0001 to 0008 | 0001 to 0009 |
+| `messages.reply_to` column | absent | present, 0 rows use it |
+| Unique index `messages_one_reply_per_message` | absent | present |
+| Guard trigger `messages_guard_reply` and check `messages_reply_to_assistant_only` | absent | present (1 and 1) |
+| Functions `intake_post_message`, `guard_message_reply` | 0 | 2 |
+| `intake_post_message` callable by | n/a | `service_role` only (not `anon`, not `authenticated`) |
+| Messages (assistant ones) | 6 (0) | 6 (0) |
+| Inquiries, requirement versions | 6 and 0 | 6 and 0 |
+| Captured attempts, jobs | 2 and 2 | 2 and 2 |
+| Stock invariant problems (`check_stock_invariants()`) | 0 | 0 |
+
+No existing data was touched (the precondition, a new nullable column, held). The hosted site still runs the code from before this module
+until the branch is merged and deployed; that older code never reads `reply_to`, so nothing changes for users in between. Not run
+against hosted: the database tests, which clear application data (local only by design).
+
+## Hosted steps still waiting for a fresh yes
+
+1. ~~Apply migration 0009~~ (done, above).
 2. **Set `OPENROUTER_MODEL` and `OPENROUTER_FALLBACK_MODEL` on Vercel.** They are optional and the code's defaults are the two models you chose, so I
    recommend not setting them (one fewer hosted change). `INTAKE_MODEL` must stay unset on Vercel; the app refuses the stand-in there.
 3. **One hosted run of the full journey,** with you as the customer, real model. With Gemma rate limited, the paid fallback will
@@ -57,5 +79,5 @@ Of those, the intake tests are 238 unit (13 files in `tests/intake`), 142 databa
 ## Open items
 
 1. Evaluate Gemma 31B free when its upstream limit lifts (`EVAL_MODELS=google/gemma-4-31b-it:free npm run eval:intake`), record it, and decide the primary.
-2. The three hosted steps above, after a fresh yes; then open the pull request (none yet).
+2. The two remaining hosted steps (the Vercel variables, which I recommend leaving unset, and the one hosted run of the journey), after a fresh yes; then open the pull request (none yet).
 3. Optional, from earlier modules: the sandbox merchant id for `PAYPAL_PAYEE_MERCHANT_ID`.

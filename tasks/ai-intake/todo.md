@@ -1,7 +1,7 @@
 # Tasks: ai-intake
 
 Spec: [doc/spec/SPEC-ai-intake.md](../../doc/spec/SPEC-ai-intake.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T10 built; T11 local review done, hosted steps and the Gemma verification open (0009 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
+Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T10 built; T11 local review done, 0009 applied to hosted 4 Nov, hosted journey run and Gemma verification open (0009 applied to local only). Tick a box only after its Verify step passes. Every task is test first.
 
 ## Phase A: pure logic and the model port (no database; the client is tested against a local fake server)
 
@@ -124,7 +124,7 @@ Status: spec APPROVED 3 Nov 2026; task list approved 3 Nov 2026; T1 to T10 built
   - Status: DONE (deliverables). Real runs on 4 Nov 2026 (reports in `eval/intake/reports/`): `gemma-4-31b-it:free` rate limited upstream on every call (429); `nemotron-3.5-super-vl:free` exposed a real defect in the proposal schema (fixed, with tests), was unusable on 15 of 22 turns at the app's 20 s limit, and with 60 s per request went cleanly through the gate scenarios with 0 violations, 2 genuine misses and 1 unusable answer. Fixtures recorded from that run. The paid fallback `openai/gpt-oss-120b` alone at the app's 20 s limit: all 22 turns usable (48 answers), gate clean, 0 violations, 1 miss (`budget-two-ways`: it read one budget and did not ask which was meant). DECIDED (user, 4 Nov 2026): keep `google/gemma-4-31b-it:free` as the free primary with `openai/gpt-oss-120b` as the fallback (the current defaults), and verify Gemma with `EVAL_MODELS=google/gemma-4-31b-it:free npm run eval:intake` once its upstream rate limit lifts, before the T11 checkpoint is closed. If Gemma proves slow or unavailable at the 20 s limit, the choice of a paid primary comes back to the user.
   - Depends on: T9. Ask first before the manual run spends anything on your key (it is mostly free; a handful of paid fallback calls at most).
 
-- [~] **T11 Checkpoint** (local review DONE 4 Nov 2026 in `doc/checkpoints/ai-intake-checkpoint.md`: 10 of 10 criteria met locally; the hosted steps wait for a fresh yes; Gemma evaluation open) (also: re-run the evaluation on Gemma 31B free once its rate limit lifts, per the 4 Nov decision, and record it)
+- [~] **T11 Checkpoint** (local review DONE 4 Nov 2026 in `doc/checkpoints/ai-intake-checkpoint.md`: 10 of 10 criteria met locally; migration 0009 APPLIED to hosted 4 Nov (read-only checks before and after in the checkpoint); the Vercel variables and the hosted journey run wait for a fresh yes; Gemma evaluation open) (also: re-run the evaluation on Gemma 31B free once its rate limit lifts, per the 4 Nov decision, and record it)
   - Acceptance: every spec success criterion reviewed against current state with labeled evidence (replayed, mocked, real-model, local, CI); CI green on the
     last code commit; the real-model evaluation recorded separately; record in `doc/checkpoints/ai-intake-checkpoint.md`; statuses updated in `SPEC.md` and this
     file. Applying 0009 to the hosted project, setting the two optional environment variables on Vercel, and one hosted run of the full journey (you as
