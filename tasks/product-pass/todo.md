@@ -95,7 +95,7 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
   - Gate: typecheck and lint clean; unit 1233; database 1269; E2E 112.
   - Depends on: T0.
 
-- [ ] **T7 Build a quote**
+- [x] **T7 Build a quote**
   - Acceptance: `quoteBuilderView` returns, for an inquiry the shop owns that is `REVIEW_REQUIRED`, the customer's wishes, the quantity (from the confirmed value) and, per slot, the active
     products the template allows with name, unit price and available stock; otherwise null. `buildQuoteForInquiry` takes only a quantity, a product per slot and the two fixed notes
     (`ARTWORK_ACCEPTANCE`, `PRODUCTION_SLOT_CONFIRMATION`, fixed text), refuses another shop's inquiry as not found and an inquiry not with the shop as an illegal state, calls
@@ -104,6 +104,9 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
     in their order room and can accept it. The page `/merchant/inquiries/[id]/quote` is reached from the request's detail area.
   - Verify: `npm run test:db -- tests/db/intake-builder.test.ts && npm run test:e2e -- e2e/shop-quote.spec.ts`
   - Files: `services/intake/merchant-quote.ts`, `app/merchant/inquiries/[id]/quote/{page,actions,quote-form}.tsx`, `tests/db/intake-builder.test.ts`, `e2e/shop-quote.spec.ts`
+  - Done 5 Nov 2026. As built: the request's detail area has "Build a quote", which opens the form (number of boxes prefilled from the confirmed value, one product per part of the box with price and stock, two fixed notes, no price field). `buildQuoteForInquiry` checks the box with the catalog engine first (blockers come back in plain words and nothing changes), then claims the inquiry with a compare-and-set so a double submit makes one quote, drafts and publishes through the existing services, gives the claim back (and withdraws the draft) if either fails, audits `intake.quote_built` with ids only, and adds one system note for the customer.
+  - Decisions to know: `quoteBuilderView` also returns null when the inquiry already has a DRAFT quote (a held draft is published from Quote review, so two paths never fight). The fixed note texts are written for the customer ("The shop will check your artwork...", "The shop will confirm your production date...") and are scanned for forbidden vocabulary. The page reads under the shop's session; the action writes with the service client after verifying the session on every call. The action does not call `refresh()`, because the page would re-read, find the request priced and replace the form's "Price sent" message.
+  - Gate: typecheck and lint clean; unit 1233; database 1282; E2E 116.
   - Depends on: T6.
 
 - [ ] **T8 Catalog editing: the rules and the services (no screen)**

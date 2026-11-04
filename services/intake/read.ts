@@ -62,7 +62,7 @@ export async function requirementsForCustomer(db: SupabaseClient, inquiryId: Ver
   };
 }
 
-function fieldsOf(stored: StoredRequirements): CustomerSpecField[] {
+export function fieldsOf(stored: StoredRequirements): CustomerSpecField[] {
   return FIELD_NAMES.map((name) => {
     const f = stored.fields[name];
     return { name, label: LABELS[name], value: f.value, status: f.status, source: f.source === null ? null : f.source === "customer_edit" ? "edit" : "message" };

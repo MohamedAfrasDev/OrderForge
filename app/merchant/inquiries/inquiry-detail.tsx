@@ -1,4 +1,7 @@
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
 import { cents, format } from "@/lib/money";
+import { cn } from "@/lib/utils";
 import type { CustomerSpecField, MerchantInquiry } from "@/services/intake/read";
 import { ReplyForm } from "./reply-form";
 
@@ -62,6 +65,10 @@ export function InquiryDetail({ inquiry }: { inquiry: MerchantInquiry }) {
           ))}
         </ol>
       </div>
+
+      <Link href={`/merchant/inquiries/${inquiry.inquiryId}/quote`} className={cn(buttonVariants(), "self-start")}>
+        Build a quote
+      </Link>
 
       <ReplyForm inquiryId={inquiry.inquiryId} />
     </article>
