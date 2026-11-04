@@ -26,7 +26,7 @@ test.describe("deciding on authorized orders (local Supabase + fake PayPal, mock
   test("the merchant confirms the listed condition and accepts: the payment is taken once, even on a double click", async ({ page }) => {
     const p = await authorizedPurchase(db, a, [SLOT]);
     await signIn(page, a);
-    await page.getByRole("link", { name: "Payment decisions" }).click();
+    await page.getByRole("link", { name: "Review orders" }).click();
     await expect(page).toHaveURL(/\/merchant\/decisions$/);
 
     const card = cardFor(page, p.inquiryId);

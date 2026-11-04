@@ -2,16 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireMerchant } from "@/lib/access/require-merchant";
-import { cents, format } from "@/lib/money";
 import { createSessionClient } from "@/lib/supabase/server";
-import { listInquiriesForMerchant, type CustomerSpecField, type MerchantInquiry } from "@/services/intake/read";
-import { ReplyForm } from "./reply-form";
+import { listInquiriesForMerchant, type MerchantInquiry } from "@/services/intake/read";
+import { InquiryDetail } from "./inquiry-detail";
+import { RequestsGrid, type RequestRow } from "./requests-grid";
 
-export const metadata: Metadata = { title: "Inquiries · OrderForge" };
+export const metadata: Metadata = { title: "Requests · OrderForge" };
 
 export default function MerchantInquiriesPage() {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-12">
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
       <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
         <Inquiries />
       </Suspense>
@@ -19,69 +19,19 @@ export default function MerchantInquiriesPage() {
   );
 }
 
-const formatTime = (iso: string) => `${iso.slice(0, 16).replace("T", " ")} UTC`;
+const excerpt = (text: string) => (text.length > 90 ? `${text.slice(0, 87)}...` : text);
 
-const STATUS_WORDS: Record<string, string> = {
-  confirmed: "confirmed",
-  needs_confirmation: "needs confirmation",
-  conflicted: "conflicting",
-  unknown: "not specified",
-};
-
-function show(f: CustomerSpecField): string {
-  const v = f.value;
-  if (v === null || v === undefined) return "Not specified";
-  if (f.name === "maxPricePerBoxMinor" && typeof v === "number") return format(cents(v));
-  if (f.name === "noFood" || f.name === "logoRequired") return v === true ? "Yes" : "No";
-  if (Array.isArray(v)) return v.join(", ");
-  return String(v);
-}
-
-function InquiryCard({ inquiry }: { inquiry: MerchantInquiry }) {
-  return (
-    <article aria-label={`Inquiry ${inquiry.inquiryId.slice(0, 8)}`} className="flex flex-col gap-4 rounded-lg border border-border p-4">
-      <header className="flex flex-col gap-1">
-        <h3 className="text-base font-semibold">Inquiry {inquiry.inquiryId.slice(0, 8)}</h3>
-        <p className="text-sm text-muted-foreground">Handed over {formatTime(inquiry.handedOverAt)}</p>
-      </header>
-
-      <div>
-        <h4 className="text-sm font-medium">What the customer wants</h4>
-        {inquiry.fields.length === 0 ? (
-          <p className="mt-1 text-sm text-muted-foreground">Nothing was recorded before the handover. Read the conversation below.</p>
-        ) : (
-          <dl className="mt-1 grid gap-x-4 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
-            {inquiry.fields.map((f) => (
-              <div key={f.name} className="contents">
-                <dt className="font-medium">{f.label}</dt>
-                <dd>
-                  {show(f)}
-                  {f.status === "unknown" ? null : <span className="text-xs text-muted-foreground"> ({STATUS_WORDS[f.status]})</span>}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        )}
-        {inquiry.question ? <p className="mt-2 text-sm">The assistant was waiting on: {inquiry.question}</p> : null}
-      </div>
-
-      <div>
-        <h4 className="text-sm font-medium">Conversation</h4>
-        <ol className="mt-1 flex flex-col gap-2">
-          {inquiry.messages.map((m) => (
-            <li key={m.id} className="rounded-md border border-border p-2">
-              <p className="text-xs text-muted-foreground">
-                {m.role} · {formatTime(m.createdAt)}
-              </p>
-              <p className="mt-1 whitespace-pre-wrap text-sm">{m.body}</p>
-            </li>
-          ))}
-        </ol>
-      </div>
-
-      <ReplyForm inquiryId={inquiry.inquiryId} />
-    </article>
-  );
+function toRow(i: MerchantInquiry): RequestRow {
+  const first = i.messages.find((m) => m.role === "customer");
+  const boxes = i.fields.find((f) => f.name === "boxCount");
+  const last = i.messages[i.messages.length - 1];
+  return {
+    id: i.inquiryId,
+    handedOver: i.handedOverAt,
+    request: excerpt(first?.body ?? "(no message)"),
+    boxes: boxes?.value === null || boxes?.value === undefined ? "" : String(boxes.value),
+    state: last?.role === "merchant" ? "You replied" : "Needs your reply",
+  };
 }
 
 // Session and database reads are request-time data, so this streams inside <Suspense>.
@@ -89,31 +39,21 @@ function InquiryCard({ inquiry }: { inquiry: MerchantInquiry }) {
 async function Inquiries() {
   const { merchant } = await requireMerchant();
   const inquiries = await listInquiriesForMerchant(await createSessionClient(), merchant.id);
+  const details = Object.fromEntries(inquiries.map((i) => [i.inquiryId, <InquiryDetail key={i.inquiryId} inquiry={i} />]));
 
   return (
     <>
       <header className="flex flex-col gap-1">
         <p className="text-sm text-muted-foreground">{merchant.name}</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Inquiries</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Requests</h1>
         <p className="text-sm text-muted-foreground">
-          Requests the assistant handed over, newest first.{" "}
+          Requests the assistant handed over, newest first. Choose one to read it and reply.{" "}
           <Link href="/merchant" className="underline">
-            Back
+            Back to Today
           </Link>
         </p>
       </header>
-
-      {inquiries.length === 0 ? (
-        <p className="text-muted-foreground">No inquiries are waiting for you.</p>
-      ) : (
-        <ul className="flex flex-col gap-4">
-          {inquiries.map((i) => (
-            <li key={i.inquiryId}>
-              <InquiryCard inquiry={i} />
-            </li>
-          ))}
-        </ul>
-      )}
+      <RequestsGrid rows={inquiries.map(toRow)} details={details} />
     </>
   );
 }

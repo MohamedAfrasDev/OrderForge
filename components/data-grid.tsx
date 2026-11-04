@@ -7,6 +7,7 @@ import {
   ModuleRegistry,
   NumberFilterModule,
   QuickFilterModule,
+  RowStyleModule,
   TextFilterModule,
   ValidationModule,
   themeQuartz,
@@ -14,7 +15,7 @@ import {
   type GetRowIdParams,
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 // AG Grid Community only (MIT, no licence key, no Enterprise feature). Only the modules a grid here uses are registered, so the
 // shop pages carry nothing more, and this file is imported by shop pages only: no customer route loads any of it.
@@ -25,6 +26,7 @@ ModuleRegistry.registerModules([
   NumberFilterModule,
   ColumnAutoSizeModule,
   CellStyleModule,
+  RowStyleModule,
   // Names a module a grid needs but this list lacks. Development only.
   ...(process.env.NODE_ENV === "production" ? [] : [ValidationModule]),
 ]);
@@ -55,14 +57,26 @@ export type DataGridProps<T extends { id: string }> = {
   searchLabel?: string;
   /** Shown instead of an empty grid. */
   emptyText?: string;
+  /**
+   * The detail-area pattern: what to show below the grid for each row, by row id, built on the server. A click (or Enter on a focused cell)
+   * selects a row and opens its detail; the first row is open to begin with. All details are rendered by the server and handed over whole,
+   * so nothing is fetched when a row is chosen.
+   */
+  details?: Record<string, ReactNode>;
+  /** The accessible name of the detail area, given the selected row. */
+  detailLabel?: (row: T) => string;
 };
 
 /**
  * A data grid for the shop's lists: sortable columns, an optional search box, keyboard movement, and a theme from the app's colours.
  * Plain data in, nothing fetched here. The grid scrolls inside itself, so a narrow screen never makes the page scroll sideways.
  */
-export function DataGrid<T extends { id: string }>({ label, rows, columns, searchLabel, emptyText }: DataGridProps<T>) {
+export function DataGrid<T extends { id: string }>({ label, rows, columns, searchLabel, emptyText, details, detailLabel }: DataGridProps<T>) {
   const [search, setSearch] = useState("");
+  const [chosen, setChosen] = useState<string | null>(null);
+  // The chosen row if it still exists, else the first row: a refresh that removes a row never leaves the detail area blank.
+  const selectedId = details ? (rows.some((r) => r.id === chosen) ? chosen : (rows[0]?.id ?? null)) : null;
+  const selectedRow = rows.find((r) => r.id === selectedId);
   const wrapper = useRef<HTMLDivElement>(null);
   const defaultColDef = useMemo<ColDef<T>>(
     // No type guessing: a boolean is shown as the text the column's formatter gives, not as a checkbox.
@@ -105,8 +119,27 @@ export function DataGrid<T extends { id: string }>({ label, rows, columns, searc
           quickFilterText={search}
           domLayout="autoHeight"
           animateRows={false}
+          getRowStyle={
+            details
+              ? (params) => ({ cursor: "pointer", ...(params.data?.id === selectedId ? { backgroundColor: "var(--accent)" } : {}) })
+              : undefined
+          }
+          onRowClicked={details ? (event) => event.data && setChosen(event.data.id) : undefined}
+          onCellKeyDown={
+            details
+              ? (event) => {
+                  const key = (event.event as KeyboardEvent | null)?.key;
+                  if (event.data && (key === "Enter" || key === " ")) setChosen(event.data.id);
+                }
+              : undefined
+          }
         />
       </div>
+      {details && selectedRow ? (
+        <section aria-label={detailLabel ? detailLabel(selectedRow) : "Details"} data-testid="grid-detail" className="min-w-0">
+          {details[selectedRow.id]}
+        </section>
+      ) : null}
     </div>
   );
 }

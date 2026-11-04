@@ -34,7 +34,7 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     await expect.poll(async () => (await jobOf(db, p.purchaseId))?.status, { timeout: 15_000 }).toBe("QUEUED");
 
     await page.getByRole("link", { name: "Back" }).click();
-    await page.getByRole("link", { name: "Jobs" }).click();
+    await page.getByRole("link", { name: "Prepare orders" }).click();
     await expect(page).toHaveURL(/\/merchant\/jobs$/);
     const card = cardFor(page, p.inquiryId);
     await expect(card).toContainText("30 boxes");

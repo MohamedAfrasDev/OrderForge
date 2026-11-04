@@ -49,12 +49,14 @@ test.describe("merchant sign in (local Supabase)", () => {
     await page.getByRole("button", { name: "Sign in" }).click();
 
     await expect(page).toHaveURL(/\/merchant$/);
-    await expect(page.getByRole("heading", { name: process.env.E2E_SIGNOUT_NAME! })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Today", level: 1 })).toBeVisible();
+    await expect(page.getByText(process.env.E2E_SIGNOUT_NAME!)).toBeVisible();
     await expect(page.getByText(process.env.E2E_SIGNOUT_EMAIL!)).toBeVisible();
 
     // Survives a reload (session cookie), then ends on sign out.
     await page.reload();
-    await expect(page.getByRole("heading", { name: process.env.E2E_SIGNOUT_NAME! })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Today", level: 1 })).toBeVisible();
+    await expect(page.getByText(process.env.E2E_SIGNOUT_NAME!)).toBeVisible();
 
     await page.getByRole("button", { name: "Sign out" }).click();
     await expect(page).toHaveURL(/\/merchant\/login$/);

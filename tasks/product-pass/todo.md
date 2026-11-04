@@ -83,13 +83,16 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
 
 ## Phase C: the shop
 
-- [ ] **T6 The shop's Today, the grid wrapper's detail pattern and the Requests grid**
+- [x] **T6 The shop's Today, the grid wrapper's detail pattern and the Requests grid**
   - Acceptance: `merchantOverview(db, merchantId)` returns the counts of requests to answer (handed-over inquiries plus held draft quotes), orders waiting for the shop's OK and
     orders to prepare, from reads under the shop's own session (row level security), isolated per shop (tested with two shops). The shop's home shows them as three counts with one
     button each, and "More" holds the catalog, stock holds, quote history and the developer pages. The grid wrapper gains the detail-area pattern (a row opens its detail below
     the grid). The Requests page is a grid (newest first, sortable and filterable) whose detail area holds the conversation, the order so far and the reply form, as today.
   - Verify: `npm run test:db -- tests/db/merchant-overview.test.ts && npm run test:e2e -- e2e/intake-merchant.spec.ts e2e/merchant-auth.spec.ts`
   - Files: `services/merchant/overview.ts`, `app/merchant/page.tsx`, `app/merchant/inquiries/page.tsx`, `components/data-grid.tsx`, `tests/db/merchant-overview.test.ts`, `e2e/intake-merchant.spec.ts`
+  - Done 4 Nov 2026. As built: Today (`/merchant`) shows three counts, each with one button ("Open requests", "Review orders", "Prepare orders"; zero reads "nothing waiting" and the button turns secondary) and a "More" list (Catalog, Stock holds, Quote review). `merchantOverview` reads under the shop's session: requests = inquiries in `REVIEW_REQUIRED`; payments = the decisions list's "waiting" rows; orders = jobs not `COLLECTED`. Tested with two shops, and a visitor with no session is refused. The grid wrapper gained `details` (server-built, by row id; click or Enter selects; first row open by default). The Requests page is a grid (newest first, search, sort) with the old inquiry card (now `inquiry-detail.tsx`) as its detail area.
+  - Correction to the task text: a held draft quote's inquiry is already `REVIEW_REQUIRED`, so adding "held drafts" to the count would count it twice; the number is the inquiries only. The "developer pages" mentioned in the acceptance do not exist as links, so none is listed. Existing specs now click through the new buttons/rows (payments, fulfillment, merchant-auth, intake-merchant); no check was weakened.
+  - Gate: typecheck and lint clean; unit 1233; database 1269; E2E 112.
   - Depends on: T0.
 
 - [ ] **T7 Build a quote**

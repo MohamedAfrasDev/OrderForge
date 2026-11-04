@@ -43,7 +43,13 @@ test.describe("handed-over inquiries (local Supabase, stand-in model)", () => {
     await expect(page.getByRole("heading", { name: "With the shop", level: 2 })).toBeVisible();
   }
 
-  const card = (page: Page, text: string) => page.getByRole("article", { name: /^Inquiry / }).filter({ hasText: text });
+  /** Chooses the request's row in the Requests grid and returns its detail article. */
+  async function openRequest(page: Page, text: string) {
+    const grid = page.getByRole("grid", { name: "Requests" });
+    await page.getByLabel("Search requests").fill(text);
+    await grid.getByRole("row").filter({ hasText: text }).first().click();
+    return page.getByRole("article", { name: /^Inquiry / }).filter({ hasText: text });
+  }
 
   test("the merchant sees the conversation and specification, replies, and the customer reads the reply", async ({ page, browser }) => {
     const text = `30 boxes, no food, our logo, ref ${Date.now()}`;
@@ -51,9 +57,13 @@ test.describe("handed-over inquiries (local Supabase, stand-in model)", () => {
     await customerHandsOver(customer, text);
 
     await signIn(page, a);
-    await page.getByRole("link", { name: "Inquiries" }).click();
+    // Today says a request waits, and its one button leads to the Requests grid.
+    const today = page.getByTestId("today-requests");
+    await expect(today).toContainText("1 request needs your answer");
+    await expect(today).toHaveAttribute("data-count", "1");
+    await page.getByRole("link", { name: "Open requests" }).click();
     await expect(page).toHaveURL(/\/merchant\/inquiries$/);
-    const mine = card(page, text);
+    const mine = await openRequest(page, text);
     await expect(mine).toHaveCount(1);
     await expect(mine).toContainText("Number of boxes");
     await expect(mine).toContainText("30 (confirmed)");
@@ -84,9 +94,34 @@ test.describe("handed-over inquiries (local Supabase, stand-in model)", () => {
 
     await signIn(page, a);
     await page.goto("/merchant/inquiries");
-    const mine = card(page, text);
+    const mine = await openRequest(page, text);
     await expect(mine).toContainText("Nothing was recorded before the handover");
     await expect(mine).toContainText(text);
+  });
+
+  test("the grid opens one request at a time below it: choosing another row swaps the detail, and the keyboard can choose too", async ({ page, browser }) => {
+    const stamp = Date.now();
+    const one = `first request ${stamp}`;
+    const two = `second request ${stamp}`;
+    await customerHandsOver(await (await browser.newContext()).newPage(), one);
+    await customerHandsOver(await (await browser.newContext()).newPage(), two);
+
+    await signIn(page, a);
+    await page.goto("/merchant/inquiries");
+    await page.getByLabel("Search requests").fill(String(stamp));
+    const grid = page.getByRole("grid", { name: "Requests" });
+    await expect(grid.getByRole("row").filter({ hasText: String(stamp) })).toHaveCount(2);
+
+    const detail = page.getByTestId("grid-detail");
+    await grid.getByRole("row").filter({ hasText: one }).first().click();
+    await expect(detail).toContainText(one);
+    await expect(detail).not.toContainText(two);
+
+    // Keyboard: focus a cell of the other row and press Enter.
+    await grid.getByRole("row").filter({ hasText: two }).first().getByRole("gridcell").first().focus();
+    await page.keyboard.press("Enter");
+    await expect(detail).toContainText(two);
+    await expect(detail).not.toContainText(one);
   });
 
   test("another merchant sees none of it", async ({ page, browser }) => {
@@ -96,7 +131,7 @@ test.describe("handed-over inquiries (local Supabase, stand-in model)", () => {
 
     await signIn(page, b);
     await page.goto("/merchant/inquiries");
-    await expect(page.getByRole("heading", { name: "Inquiries" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Requests", level: 1 })).toBeVisible();
     await expect(page.getByText(text)).toHaveCount(0);
     await expect(page.getByText("No inquiries are waiting for you.")).toBeVisible();
   });
