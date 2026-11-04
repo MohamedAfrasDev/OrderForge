@@ -182,7 +182,7 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     const at = link.length - 8; // inside the signature, where a changed character really changes the bytes
     const forged = link.slice(0, at) + (link[at] === "A" ? "B" : "A") + link.slice(at + 1);
     await otherPage.goto(forged);
-    await expect(otherPage.getByText("This page could not be found")).toBeVisible();
+    await expect(otherPage.getByRole("heading", { name: "We couldn't find that" })).toBeVisible();
   });
   test("the order so far sits beside the conversation on a desktop and below it on a phone", async ({ page }) => {
     const store = await newStore();

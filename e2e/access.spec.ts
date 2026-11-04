@@ -73,7 +73,7 @@ test.describe("customer links (local Supabase)", () => {
     // Revocation needs the database, so it is decided after the page shell has streamed:
     // the status is already 200, but the content is the not-found view and nothing leaks.
     await page.goto(`/o/${link}`);
-    await expect(page.getByText("This page could not be found")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "We couldn't find that" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Your request", exact: true })).toHaveCount(0);
   });
 
@@ -100,7 +100,7 @@ test.describe("customer links (local Supabase)", () => {
 
     for (const slug of ["no-such-store-zz", "Bad%20Slug!"]) {
       await page.goto(`/store/${slug}`);
-      await expect(page.getByText("This page could not be found")).toBeVisible();
+      await expect(page.getByRole("heading", { name: "We couldn't find that" })).toBeVisible();
     }
   });
 });

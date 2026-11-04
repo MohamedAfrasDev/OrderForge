@@ -1,7 +1,7 @@
 # Tasks: product-pass
 
 Spec: [doc/spec/SPEC-product-pass.md](../../doc/spec/SPEC-product-pass.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend chosen as the email provider); task list APPROVED 4 Nov 2026; T0 to T4 built. Tick a box only after its Verify step passes. Every task is test first. Existing end-to-end specs for the shop pages are updated by changing selectors, never by removing or weakening a check.
+Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend chosen as the email provider); task list APPROVED 4 Nov 2026; T0 to T5 built. Tick a box only after its Verify step passes. Every task is test first. Existing end-to-end specs for the shop pages are updated by changing selectors, never by removing or weakening a check.
 
 ## Phase A: prove the grid
 
@@ -71,12 +71,14 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
   - Still to come: the "emailed" half of keep-this-page (T10/T11). The conversation's own messages are not vocabulary-scanned (they carry the customer's words). Shop-side pages keep their own wording.
   - Depends on: T1.
 
-- [ ] **T5 The home page entry, the shared header and the calm not-found page**
+- [x] **T5 The home page entry, the shared header and the calm not-found page**
   - Acceptance: `/` says what OrderForge is in one sentence, with "Try it as a customer" opening the demo store (a code constant for `demo-gift-boxes`, shown only when that store exists,
     so there is no dead link) and "Shop sign in" as the secondary link. A wrong, forged, expired or revoked customer link gets a calm "we couldn't find that request" page with a link
     home; the response stays a 404 and says nothing about whether the request exists. The sandbox banner stays and is smaller on a phone. No horizontal scroll of the page at 390 px.
   - Verify: `npm run test:e2e -- e2e/home.spec.ts e2e/access.spec.ts e2e/banner.spec.ts`
   - Files: `app/page.tsx`, `app/not-found.tsx`, `lib/demo-store.ts`, `e2e/home.spec.ts`, `e2e/{access,banner}.spec.ts` (selectors)
+  - Done 4 Nov 2026. As built: `/` has one sentence ("Order custom gift boxes by describing what you need, see an exact price, and approve it on PayPal; you're charged only if the shop accepts."), "Try it as a customer" first and "Shop sign in" second, and three plain steps. The customer link is shown only when `findDemoStore` finds `demo-gift-boxes` (`lib/demo-store.ts`, equal to the seed's slug by test); otherwise the page says no store is open and offers only the sign-in. `app/not-found.tsx` is one calm page ("We couldn't find that", a way home) for every address that leads nowhere, so it cannot say whether a request exists; a revoked link and a link to nothing show identical text (tested). The sandbox banner is slimmer on a phone (30 px or less, tested at 390 px with no sideways scroll and the main button on screen).
+  - Two honest notes. Forged, expired and malformed order links get a real 404 from the proxy; revoked and unknown ones need the database, so they are decided after the page has streamed (status 200, same calm content), as before this task. A separate shared header was not built: the not-found page carries the way home and no other page needed one.
   - Depends on: none.
 
 ## Phase C: the shop
