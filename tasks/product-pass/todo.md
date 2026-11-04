@@ -1,7 +1,7 @@
 # Tasks: product-pass
 
 Spec: [doc/spec/SPEC-product-pass.md](../../doc/spec/SPEC-product-pass.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend chosen as the email provider); task list APPROVED 4 Nov 2026; T0 built. Tick a box only after its Verify step passes. Every task is test first. Existing end-to-end specs for the shop pages are updated by changing selectors, never by removing or weakening a check.
+Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend chosen as the email provider); task list APPROVED 4 Nov 2026; T0 and T1 built. Tick a box only after its Verify step passes. Every task is test first. Existing end-to-end specs for the shop pages are updated by changing selectors, never by removing or weakening a check.
 
 ## Phase A: prove the grid
 
@@ -19,7 +19,7 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
 
 ## Phase B: the customer's experience
 
-- [ ] **T1 `domain/journey`: `journeyOf`, the glossary, purity**
+- [x] **T1 `domain/journey`: `journeyOf`, the glossary, purity**
   - Acceptance: `journeyOf` is pure and total over every combination of inquiry status, quote state (`NONE`, `PUBLISHED`, `EXPIRED`, `ACCEPTED`), payment status
     (`NONE`, `PAYING`, `WAITING_MERCHANT`, `CHECKING`, `PAID`, `DECLINED`, `FAILED`, or null) and job status (`PREPARING`, `READY`, `COLLECTED`, `DELAYED`, or null):
     it returns the six steps (Describe, Choose, Review price, Approve, Shop confirms, Pick up) each `done`, `current`, `upcoming` or `stopped`, the current step,
