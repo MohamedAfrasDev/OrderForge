@@ -2,7 +2,7 @@
 
 Module id: `product-pass` · Depends on: `ai-intake` (built; PR 8 open, to be merged first) and every module before it · Index: [../../SPEC.md](../../SPEC.md) · Brief: [../OrderForge Build Brief v1.1.md](../OrderForge%20Build%20Brief%20v1.1.md)
 
-Status: **DRAFT 4, 4 Nov 2026, awaiting your approval.** Email provider chosen by you: **Resend**. Draft 2 plus your changes of 4 Nov: (1) the shop can **add and edit products**, (2) **email notifications** are in, (3) **AG Grid** is the library for the shop's data grids. Those three are real new behaviour, a new migration, new environment variables and a new dependency, so this module is now much larger than a screen pass (see section 11, the schedule and the cut order). Money, stock rules, quote rules, payments, jobs and the intake pipeline still do not change.
+Status: **APPROVED 4 Nov 2026** (defaults for all nine open questions). Email provider chosen by you: **Resend**. Task list: [tasks/product-pass/](../../tasks/product-pass/todo.md), awaiting approval. Draft 2 plus your changes of 4 Nov: (1) the shop can **add and edit products**, (2) **email notifications** are in, (3) **AG Grid** is the library for the shop's data grids. Those three are real new behaviour, a new migration, new environment variables and a new dependency, so this module is now much larger than a screen pass (see section 11, the schedule and the cut order). Money, stock rules, quote rules, payments, jobs and the intake pipeline still do not change.
 
 ## 1. Objective
 
