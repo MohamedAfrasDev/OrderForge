@@ -9,7 +9,7 @@ Status: capability map approved 2026-11-01. Module specs live in `doc/spec/`. `f
 `fulfillment`: BUILT (tasks T1 to T7; checkpoint 3 Nov, 10 of 10 criteria met, CI green on e6f17ea (PR 6, merged); migration 0008 applied to hosted; hosted checks done 3 Nov; record in `doc/checkpoints/fulfillment-checkpoint.md`).
 `ai-intake`: spec APPROVED 3 Nov 2026 (`doc/spec/SPEC-ai-intake.md`); task list approved; build in progress: T1 to T10 done; T11 checkpoint written (10 of 10 criteria met locally), 0009 APPLIED to hosted 4 Nov; the hosted journey run and the Gemma evaluation open.
 
-`product-pass`: spec DRAFT 4 Nov 2026 (`doc/spec/SPEC-product-pass.md`), awaiting approval. Added at the user's request after the question of whether the product feels end to end: a pass over the screens (journey strip, plain wording, a way into the customer flow, keeping the link, merchant counts) and one chained end-to-end test. No business logic changes, no migration.
+`product-pass`: spec DRAFT 2 (4 Nov 2026, `doc/spec/SPEC-product-pass.md`), awaiting approval. Added at the user's request to make the product feel complete for a non-technical user: a customer-first redesign of the screens and wording (journey strip, live order summary with quick replies, plain price and PayPal explanation, keep-this-page, a way in from the home page), the shop's Today page, and one new behaviour, the shop's Build a quote screen, plus two chained end-to-end tests. No migration, dependency or environment variable.
 
 ## 1. Objective
 
