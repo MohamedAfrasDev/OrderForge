@@ -25,7 +25,7 @@ export const WORDS = {
   waitingShop: { headline: "Waiting for the shop to confirm", detail: "PayPal is holding your payment while the shop reviews your order." },
   checkingPayment: { headline: "We're checking your payment", detail: "This can take a few minutes, and there's nothing you need to do." },
   declined: { headline: "The shop couldn't take this order", detail: "You weren't charged, and PayPal has released the hold." },
-  preparing: { headline: "Your order is being prepared", detail: "The shop is getting your order ready." },
+  preparing: { headline: "Your order is being prepared", detail: "Your payment is confirmed, and the shop is putting your order together." },
   delayed: { headline: "Your order is taking a little longer", detail: "The shop needs more time than planned." },
   ready: { headline: "Your order is ready for pickup", detail: "Collect it from the shop whenever it suits you." },
   collected: { headline: "Collected", detail: "Your order has been collected, thank you." },

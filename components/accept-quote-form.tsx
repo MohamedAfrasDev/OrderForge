@@ -19,7 +19,7 @@ export function AcceptQuoteForm({ action, quoteId, hash }: Props) {
       <input type="hidden" name="quoteId" value={quoteId} />
       <input type="hidden" name="hash" value={hash} />
       <Button type="submit" size="lg" disabled={pending || state.status === "done"}>
-        {pending ? "Accepting…" : "Accept this exact quote"}
+        {pending ? "Accepting…" : "Accept this price"}
       </Button>
       {state.status === "error" ? (
         <p role="alert" className="text-sm text-destructive">

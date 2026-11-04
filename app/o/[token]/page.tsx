@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Conversation } from "@/components/conversation";
 import { CustomerHeader } from "@/components/customer-header";
 import { JobStatus } from "@/components/job-status";
+import { KeepPage } from "@/components/keep-page";
 import { INQUIRY_STATUSES, type InquiryStatus } from "@/domain/intake";
 import { journeyOf } from "@/domain/journey";
 import { PaymentStatus } from "@/components/payment-status";
@@ -73,12 +74,14 @@ async function OrderRoom({ params, searchParams }: { params: PageProps<"/o/[toke
     <>
       <CustomerHeader shopName={inquiry.merchantName} journey={journey} />
 
+      <KeepPage shopName={inquiry.merchantName} />
+
       {/* In the order the customer meets them. Before there is a price: the conversation, then the order so far, the boxes and the box to
           write in. Once there is a price, what they have to do now comes first and the conversation follows. */}
       {quote ? (
         <>
           <QuoteCard quote={quote} hold={hold} accept={acceptQuoteAction.bind(null, token)} />
-          {payment ? <PaymentStatus view={payment} notice={notice} pay={payWithPayPalAction.bind(null, token)} /> : null}
+          {payment ? <PaymentStatus view={payment} notice={notice} totalMinor={quote.totalMinor} pay={payWithPayPalAction.bind(null, token)} /> : null}
           {job ? <JobStatus view={job} /> : null}
           {talk}
         </>
@@ -86,9 +89,6 @@ async function OrderRoom({ params, searchParams }: { params: PageProps<"/o/[toke
         talk
       )}
 
-      <p className="text-xs text-muted-foreground">
-        This page is private to anyone who has the link. Keep the link to yourself.
-      </p>
     </>
   );
 }

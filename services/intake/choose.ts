@@ -26,7 +26,7 @@ class ClaimLost extends Error {
   }
 }
 
-const REVIEW_NOTE = "This request needs the shop to look at it before a quote can be offered. They will reply here.";
+const REVIEW_NOTE = "This request needs the shop to look at it before a price can be offered. They will reply here.";
 
 /**
  * The customer picks one proposed box by its key (never an amount). Code revalidates it against live stock and prices (a box
@@ -94,7 +94,7 @@ export async function chooseConfiguration(db: SupabaseClient, deps: ChooseDeps, 
     const published = await publishQuote(db, quoteId, { kind: "system" }, ctx);
     if (published.ok) {
       await auditIntake(db, ctx, ACTOR, "intake.state_changed", inquiryId, { from: "CONFIGURING", to: "QUOTE_READY" });
-      await note(db, inquiryId, "assistant", `Your quote is ready: ${format(cents(priced.totalMinor))} for ${priced.boxCount} boxes (${format(cents(priced.perBoxMinor))} per box). Review it and accept it when you are ready.`, ctx);
+      await note(db, inquiryId, "assistant", `Your price is ready: ${format(cents(priced.totalMinor))} for ${priced.boxCount} boxes (${format(cents(priced.perBoxMinor))} per box). Review it and accept it when you're ready.`, ctx);
       return { ok: true, value: { ...base, status: "QUOTE_READY" } };
     }
     if (published.code !== "MERCHANT_REVIEW_REQUIRED") throw new Error(`publish quote: ${published.code}`);

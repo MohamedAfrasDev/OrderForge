@@ -85,17 +85,20 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     await page.getByRole("button", { name: "Send" }).click();
     const proposals = page.getByRole("region", { name: "Proposals" });
     await expect(proposals).toContainText("Replace Steel water bottle with Desk organizer");
+    await expect(proposals).toContainText("We can't make the first box we picked");
+    await expect(proposals).toContainText("Desk organizer (swapped in)");
+    await expect(proposals).toContainText("$14.00");
     await expect(proposals).toContainText("$36.00 per box · $1,080.00 in total");
     await expect(spec(page)).toContainText("30");
     await expect(page.getByRole("region", { name: "Open question" })).toHaveCount(0);
 
     // Pick it: a quote the customer can accept, priced by the catalog engine.
     await proposals.getByRole("button", { name: "Choose this box" }).click();
-    const quote = page.getByRole("region", { name: "Quote" });
+    const quote = page.getByRole("region", { name: "Your price" });
     await expect(quote).toContainText("$1,080.00");
     await expect(quote).toContainText("$36.00");
-    await quote.getByRole("button", { name: "Accept this exact quote" }).click();
-    await expect(quote.getByRole("status")).toContainText("You accepted this exact quote");
+    await quote.getByRole("button", { name: "Accept this price" }).click();
+    await expect(quote.getByRole("status")).toContainText("You accepted this exact price");
   });
 
   test("a full request gets a valid box with code's price, and the customer can change the specification", async ({ page }) => {
@@ -104,6 +107,10 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     const proposals = page.getByRole("region", { name: "Proposals" });
     await expect(proposals).toContainText("A box for you");
     await expect(proposals).toContainText("$35.00 per box · $700.00 for 20 boxes");
+    // The box lists what is in it, item by item with its price.
+    for (const line of ["A5 notebook", "$12.00", "Black gel pen", "$3.00", "Steel water bottle", "$13.00", "Branded welcome card", "$2.00", "Gift box packaging", "$5.00"]) {
+      await expect(proposals).toContainText(line);
+    }
     await expect(spec(page)).toContainText("notebooks");
 
     // Tap a line to change it: its editor opens in place, and saving is the customer's own answer.
@@ -123,7 +130,7 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     await expect(page.getByText("The assistant could not answer just now.").first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Ask the shop to take over" }).first()).toBeVisible();
-    await expect(page.getByRole("region", { name: "Quote" })).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Your price" })).toHaveCount(0);
     await expect(page.getByRole("region", { name: "Proposals" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Use this one" })).toHaveCount(0);
 

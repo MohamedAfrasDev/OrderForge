@@ -81,22 +81,22 @@ test.describe("customer quote card (local Supabase)", () => {
     await publish(quoteId);
 
     await page.goto(`/o/${inquiry.link}`);
-    const card = page.getByRole("region", { name: "Quote" });
-    await expect(card.getByRole("heading", { name: "Quote version 1" })).toBeVisible();
+    const card = page.getByRole("region", { name: "Your price" });
+    await expect(card.getByRole("heading", { name: "Your price", exact: true })).toBeVisible();
     await expect(card.getByRole("row", { name: /Desk organizer/ })).toContainText("$14.00");
     await expect(card).toContainText("$36.00");
     await expect(card).toContainText("$1,080.00");
     await expect(card.getByText("Production slot to be confirmed.").first()).toBeVisible();
     await expect(card).toContainText("You are authorizing this exact proposal, subject to the merchant confirming the listed production conditions.");
 
-    await card.getByRole("button", { name: "Accept this exact quote" }).click();
-    await expect(card.getByRole("status")).toContainText("You accepted this exact quote");
+    await card.getByRole("button", { name: "Accept this price" }).click();
+    await expect(card.getByRole("status")).toContainText("You accepted this exact price");
     await expect(card.getByRole("button", { name: /Accept/ })).toHaveCount(0);
     expect(await count("approvals", quoteId)).toBe(1);
     expect(await count("purchases", quoteId)).toBe(1);
 
     await page.reload();
-    await expect(page.getByRole("region", { name: "Quote" }).getByRole("status")).toContainText("You accepted this exact quote");
+    await expect(page.getByRole("region", { name: "Your price" }).getByRole("status")).toContainText("You accepted this exact price");
     await expect(page.getByRole("button", { name: /Accept/ })).toHaveCount(0);
   });
 
@@ -106,20 +106,20 @@ test.describe("customer quote card (local Supabase)", () => {
     await publish(v1);
 
     await page.goto(`/o/${inquiry.link}`);
-    await expect(page.getByRole("heading", { name: "Quote version 1" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your price", exact: true })).toBeVisible();
 
     // The merchant publishes a changed quote while the customer still has version 1 open.
     const v2 = await draft(inquiry.id, 31);
     await publish(v2);
 
-    await page.getByRole("button", { name: "Accept this exact quote" }).click();
-    await expect(page.getByRole("region", { name: "Quote" }).getByRole("alert")).toContainText("newer version");
+    await page.getByRole("button", { name: "Accept this price" }).click();
+    await expect(page.getByRole("region", { name: "Your price" }).getByRole("alert")).toContainText("newer version");
     expect(await count("approvals", v1)).toBe(0);
 
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Quote version 2" })).toBeVisible();
-    await expect(page.getByRole("region", { name: "Quote" })).toContainText("$1,116.00");
-    await expect(page.getByRole("button", { name: "Accept this exact quote" })).toBeVisible();
+    await expect(page.getByText("This is an updated price. It replaces the earlier one.")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Your price" })).toContainText("$1,116.00");
+    await expect(page.getByRole("button", { name: "Accept this price" })).toBeVisible();
   });
 
   test("an expired quote shows no accept button", async ({ page }) => {
@@ -128,7 +128,7 @@ test.describe("customer quote card (local Supabase)", () => {
     await publish(quoteId, new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString());
 
     await page.goto(`/o/${inquiry.link}`);
-    await expect(page.getByRole("region", { name: "Quote" })).toContainText("This quote expired");
+    await expect(page.getByRole("region", { name: "Your price" })).toContainText("This price expired");
     await expect(page.getByRole("button", { name: /Accept/ })).toHaveCount(0);
   });
 
@@ -138,7 +138,7 @@ test.describe("customer quote card (local Supabase)", () => {
 
     await page.goto(`/o/${inquiry.link}`);
     await expect(page.getByRole("heading", { name: "Your request", exact: true })).toBeVisible();
-    await expect(page.getByRole("region", { name: "Quote" })).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Your price" })).toHaveCount(0);
     await expect(page.getByText("Gold foil lid.")).toHaveCount(0);
   });
 
@@ -155,9 +155,9 @@ test.describe("customer quote card (local Supabase)", () => {
     const field = page.locator('input[name="quoteId"]');
     await field.evaluate((el, id) => ((el as HTMLInputElement).value = id), theirQuote);
     await expect(field).toHaveValue(theirQuote);
-    await page.getByRole("button", { name: "Accept this exact quote" }).click();
+    await page.getByRole("button", { name: "Accept this price" }).click();
 
-    await expect(page.getByRole("region", { name: "Quote" }).getByRole("alert")).toContainText("not available");
+    await expect(page.getByRole("region", { name: "Your price" }).getByRole("alert")).toContainText("isn't available");
     expect(await count("approvals", theirQuote)).toBe(0);
     const row = await db.from("quote_versions").select("status").eq("id", theirQuote).single();
     expect(row.data?.status).toBe("PUBLISHED");

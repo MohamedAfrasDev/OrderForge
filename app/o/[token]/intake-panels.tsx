@@ -81,9 +81,34 @@ export function IntakePanels({ token, spec, status, unanswered, messages, shopNa
   const withShop = status === "REVIEW_REQUIRED";
   const names = spec?.productNames ?? {};
   const name = (sku: string) => names[sku] ?? "an item";
-  const chosen = spec?.proposal?.chosen ?? null;
+  const proposal = spec?.proposal ?? null;
+  const chosen = proposal?.chosen ?? null;
   const canChoose = status === "CONFIGURING" && !chosen;
   const open = spec?.question && status === "CLARIFYING" && spec.questionField && spec.quick ? { field: spec.questionField, quick: spec.quick } : null;
+  /** What is in a box, item by item with its price; the swapped-in item is marked. Falls back to the names alone if the catalog could not be read. */
+  const items = (selections: Record<string, string>, swappedSlot?: string) => {
+    const slots = Object.keys(spec?.slots ?? {}).filter((slot) => selections[slot] !== undefined);
+    if (slots.length === 0) return <p className="text-sm">{Object.values(selections).map(name).join(", ")}</p>;
+    return (
+      <ul className="flex flex-col text-sm">
+        {slots.map((slot) => {
+          const sku = selections[slot]!;
+          const quantity = spec!.slots[slot]!.quantity;
+          const price = spec!.productPrices[sku];
+          return (
+            <li key={slot} className="flex justify-between gap-3 border-t border-border py-1 first:border-t-0">
+              <span>
+                {name(sku)}
+                {quantity > 1 ? ` × ${quantity}` : ""}
+                {slot === swappedSlot ? " (swapped in)" : ""}
+              </span>
+              <span className="tabular-nums">{price === undefined ? "" : format(cents(price * quantity))}</span>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
   const openField = open?.field ?? null;
   const quick = open?.quick ?? null;
 
@@ -115,14 +140,14 @@ export function IntakePanels({ token, spec, status, unanswered, messages, shopNa
           </section>
         ) : null}
 
-        {spec?.proposal ? (
+        {proposal ? (
           <section aria-label="Proposals" className="flex flex-col gap-3">
-            {spec.proposal.status === "VALID" && spec.proposal.priced ? (
+            {proposal.status === "VALID" && proposal.priced ? (
               <article className="flex flex-col gap-2 rounded-lg border border-border p-4">
                 <h2 className="text-lg font-medium">A box for you</h2>
-                <p className="text-sm">{Object.values(spec.proposal.selections).map(name).join(", ")}</p>
+                {items(proposal.selections)}
                 <p className="text-sm font-medium">
-                  {format(cents(spec.proposal.priced.perBoxMinor))} per box · {format(cents(spec.proposal.priced.totalMinor))} for {spec.proposal.priced.boxCount} boxes
+                  {format(cents(proposal.priced.perBoxMinor))} per box · {format(cents(proposal.priced.totalMinor))} for {proposal.priced.boxCount} boxes
                 </p>
                 {canChoose ? <ChooseButton action={chooseAction.bind(null, token)} optionKey="proposal" /> : null}
               </article>
@@ -131,10 +156,10 @@ export function IntakePanels({ token, spec, status, unanswered, messages, shopNa
                 <h2 className="text-lg font-medium">Boxes that work</h2>
                 <p className="text-sm text-muted-foreground">
                   We can&apos;t make the first box we picked
-                  {spec.proposal.blockers.length > 0 ? ` (${[...new Set(spec.proposal.blockers.map((b) => BLOCKER_WORDS[b] ?? "it is not available as asked"))].join("; ")})` : ""}.
+                  {proposal.blockers.length > 0 ? ` (${[...new Set(proposal.blockers.map((b) => BLOCKER_WORDS[b] ?? "it is not available as asked"))].join("; ")})` : ""}.
                 </p>
-                {spec.proposal.alternatives.length === 0 ? <p className="text-sm">No other box fits. You can change something in your order, or ask the shop to take over.</p> : null}
-                {spec.proposal.alternatives.map((a) => (
+                {proposal.alternatives.length === 0 ? <p className="text-sm">No other box fits. You can change something in your order, or ask the shop to take over.</p> : null}
+                {proposal.alternatives.map((a) => (
                   <article key={a.key} className="flex flex-col gap-2 rounded-lg border border-border p-4">
                     <p className="text-sm font-medium">
                       Replace {name(a.fromSku)} with {name(a.toSku)}
@@ -142,6 +167,7 @@ export function IntakePanels({ token, spec, status, unanswered, messages, shopNa
                     <p className="text-sm">
                       {format(cents(a.perBoxMinor))} per box · {format(cents(a.totalMinor))} in total
                     </p>
+                    {items({ ...proposal.selections, [a.slotId]: a.toSku }, a.slotId)}
                     {a.explanation ? <p className="text-sm text-muted-foreground">{a.explanation}</p> : null}
                     {canChoose ? <ChooseButton action={chooseAction.bind(null, token)} optionKey={a.key} /> : null}
                   </article>

@@ -112,10 +112,10 @@ test.describe("quote review queue (local Supabase)", () => {
       secret: process.env.E2E_ACCESS_LINK_SECRET!,
     });
     await page.goto(`/o/${link}`);
-    const quote = page.getByRole("region", { name: "Quote" });
+    const quote = page.getByRole("region", { name: "Your price" });
     await expect(quote).toContainText("We can foil the lid for this order.");
     await expect(quote).not.toContainText("Gold foil lid.");
-    await expect(quote.getByRole("button", { name: "Accept this exact quote" })).toBeVisible();
+    await expect(quote.getByRole("button", { name: "Accept this price" })).toBeVisible();
   });
 
   test("blank wording is refused and the draft stays", async ({ page }) => {
@@ -182,7 +182,7 @@ test.describe("quote review queue (local Supabase)", () => {
     await page.goto("/merchant/dev/quotes");
     await page.getByRole("button", { name: "Create a published quote" }).click();
     await page.getByRole("link", { name: "Open the customer link" }).click();
-    const quote = page.getByRole("region", { name: "Quote" });
+    const quote = page.getByRole("region", { name: "Your price" });
     await expect(quote).toContainText("$1,080.00");
     await expect(quote).toContainText("Production slot to be confirmed by the merchant.");
   });

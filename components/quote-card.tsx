@@ -9,7 +9,7 @@ const formatTime = (iso: string) => `${iso.slice(0, 16).replace("T", " ")} UTC`;
 
 type Props = {
   quote: CustomerQuoteView;
-  /** The hold on an accepted quote, when there is one. */
+  /** The hold on an accepted price, when there is one. */
   hold?: CustomerHoldView | null;
   accept: (previous: AcceptState, formData: FormData) => Promise<AcceptState>;
 };
@@ -17,15 +17,19 @@ type Props = {
 function holdText(hold: CustomerHoldView): string {
   if (hold.state === "HELD") return hold.expiresAt ? `Your items are held until ${formatTime(hold.expiresAt)}.` : "Your items are being held.";
   if (hold.state === "SECURED") return "Your items are reserved for you.";
-  return "The hold on your items has ended. If you still want them, ask the merchant to hold them again.";
+  return "The hold on your items has ended. If you still want them, ask the shop to hold them again.";
 }
 
-/** The exact quote the customer is being asked to accept, with its conditions and terms. */
+/**
+ * The exact price the customer is being asked to accept: each item with its price, the price per box, how many boxes, the total, how
+ * long it is held, and anything to know. The terms below are the words that were hashed and accepted, shown exactly as stored.
+ */
 export function QuoteCard({ quote, hold, accept }: Props) {
   return (
-    <section aria-label="Quote" className="flex flex-col gap-4 rounded-lg border border-border p-4">
+    <section aria-label="Your price" className="flex flex-col gap-4 rounded-lg border border-border p-4">
       <header className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold tracking-tight">Quote version {quote.version}</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Your price</h2>
+        {quote.version > 1 ? <p className="text-sm">This is an updated price. It replaces the earlier one.</p> : null}
         <p className="text-xs text-muted-foreground">Prices in US dollars. Sandbox demo with synthetic data.</p>
       </header>
 
@@ -34,8 +38,8 @@ export function QuoteCard({ quote, hold, accept }: Props) {
         <thead>
           <tr className="border-b border-border text-left text-muted-foreground">
             <th className="py-1 font-medium">Item</th>
-            <th className="py-1 text-right font-medium">Qty per box</th>
-            <th className="py-1 text-right font-medium">Unit price</th>
+            <th className="py-1 text-right font-medium">In each box</th>
+            <th className="py-1 text-right font-medium">Price</th>
           </tr>
         </thead>
         <tbody>
@@ -59,8 +63,8 @@ export function QuoteCard({ quote, hold, accept }: Props) {
       </dl>
 
       {quote.conditions.length > 0 ? (
-        <div>
-          <h3 className="text-sm font-medium">Conditions on this quote</h3>
+        <div data-conditions>
+          <h3 className="text-sm font-medium">Things to know about this price</h3>
           <ul className="mt-1 list-disc pl-5 text-sm">
             {quote.conditions.map((c, i) => (
               <li key={`${c.code}-${i}`}>{c.text}</li>
@@ -69,7 +73,7 @@ export function QuoteCard({ quote, hold, accept }: Props) {
         </div>
       ) : null}
 
-      <div>
+      <div data-terms>
         <h3 className="text-sm font-medium">What you are agreeing to</h3>
         <p className="mt-1 whitespace-pre-line text-sm">{quote.terms}</p>
       </div>
@@ -77,17 +81,17 @@ export function QuoteCard({ quote, hold, accept }: Props) {
       {quote.status === "ACCEPTED" ? (
         <>
           <p role="status" className="rounded-md bg-muted p-3 text-sm">
-            You accepted this exact quote{quote.acceptedAt ? ` on ${formatTime(quote.acceptedAt)}` : ""}. Payment is the next step.
+            You accepted this exact price{quote.acceptedAt ? ` on ${formatTime(quote.acceptedAt)}` : ""}. Payment is the next step.
           </p>
           {hold ? <p className="text-sm">{holdText(hold)}</p> : null}
         </>
       ) : quote.expired ? (
         <p role="status" className="rounded-md bg-muted p-3 text-sm">
-          This quote expired{quote.expiresAt ? ` on ${formatTime(quote.expiresAt)}` : ""}. Ask the merchant for a new one.
+          This price expired{quote.expiresAt ? ` on ${formatTime(quote.expiresAt)}` : ""}. Ask the shop for a new one.
         </p>
       ) : (
         <>
-          {quote.expiresAt ? <p className="text-xs text-muted-foreground">You can accept this quote until {formatTime(quote.expiresAt)}.</p> : null}
+          {quote.expiresAt ? <p className="text-xs text-muted-foreground">You can accept this price until {formatTime(quote.expiresAt)}.</p> : null}
           <AcceptQuoteForm action={accept} quoteId={quote.quoteId} hash={quote.hash} />
         </>
       )}

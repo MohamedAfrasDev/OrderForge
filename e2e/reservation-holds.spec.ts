@@ -117,14 +117,14 @@ test.describe("stock holds (local Supabase)", () => {
     const reservationId = await reserve(p.purchaseId);
 
     await page.goto(`/o/${p.link}`);
-    const card = page.getByRole("region", { name: "Quote" });
-    await expect(card.getByRole("status")).toContainText("You accepted this exact quote");
+    const card = page.getByRole("region", { name: "Your price" });
+    await expect(card.getByRole("status")).toContainText("You accepted this exact price");
     await expect(card).toContainText(/Your items are held until \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\./);
 
     await beginOperation(db, reservationId, "authorize", ctx());
     await settleOperation(db, reservationId, "AUTHORIZED", ctx());
     await page.reload();
-    await expect(page.getByRole("region", { name: "Quote" })).toContainText("Your items are reserved for you.");
+    await expect(page.getByRole("region", { name: "Your price" })).toContainText("Your items are reserved for you.");
     await expect(page.getByText(/held until/)).toHaveCount(0);
   });
 
@@ -133,15 +133,15 @@ test.describe("stock holds (local Supabase)", () => {
     await reserve(p.purchaseId, new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString());
 
     await page.goto(`/o/${p.link}`);
-    await expect(page.getByRole("region", { name: "Quote" })).toContainText("The hold on your items has ended");
+    await expect(page.getByRole("region", { name: "Your price" })).toContainText("The hold on your items has ended");
     await expect(page.getByText(/held until/)).toHaveCount(0);
   });
 
   test("an accepted quote with no hold yet shows no hold line at all", async ({ page }) => {
     const p = await acceptedPurchase(a);
     await page.goto(`/o/${p.link}`);
-    const card = page.getByRole("region", { name: "Quote" });
-    await expect(card.getByRole("status")).toContainText("You accepted this exact quote");
+    const card = page.getByRole("region", { name: "Your price" });
+    await expect(card.getByRole("status")).toContainText("You accepted this exact price");
     await expect(card).not.toContainText(/held until|reserved for you|hold on your items/);
   });
 

@@ -48,7 +48,7 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     // The customer follows along.
     const customer = await (await browser.newContext()).newPage();
     await customer.goto(`/o/${p.link}`);
-    await expect(customer.getByRole("region", { name: "Your order" })).toContainText("We are preparing your order");
+    await expect(customer.getByRole("region", { name: "Your order" })).toContainText("The shop is getting your order ready");
 
     await card.getByRole("button", { name: "Start preparing" }).click();
     await expect(card).toContainText("Status: Preparing");
@@ -96,7 +96,7 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     const customer = await (await browser.newContext()).newPage();
     await customer.goto(`/o/${p.link}`);
     const view = customer.getByRole("region", { name: "Your order" });
-    await expect(view).toContainText("delayed");
+    await expect(view).toContainText("taking longer than planned");
     await expect(view).not.toContainText("Ribbon");
     await expect(customer.getByText("Ribbon")).toHaveCount(0);
 

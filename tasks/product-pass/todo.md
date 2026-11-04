@@ -1,7 +1,7 @@
 # Tasks: product-pass
 
 Spec: [doc/spec/SPEC-product-pass.md](../../doc/spec/SPEC-product-pass.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend chosen as the email provider); task list APPROVED 4 Nov 2026; T0 to T3 built. Tick a box only after its Verify step passes. Every task is test first. Existing end-to-end specs for the shop pages are updated by changing selectors, never by removing or weakening a check.
+Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend chosen as the email provider); task list APPROVED 4 Nov 2026; T0 to T4 built. Tick a box only after its Verify step passes. Every task is test first. Existing end-to-end specs for the shop pages are updated by changing selectors, never by removing or weakening a check.
 
 ## Phase A: prove the grid
 
@@ -56,7 +56,7 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
   - The replay fixture's code-written reply strings (14) were refreshed for the new wording ("ask the shop to take over"); the recorded model answers were not touched and the replay still compares everything exactly.
   - Depends on: T2.
 
-- [ ] **T4 The price and PayPal sections, and "Keep this page"**
+- [x] **T4 The price and PayPal sections, and "Keep this page"**
   - Added 4 Nov 2026 (spec step D, which no earlier task covered): the suggested boxes list their items by name with each item's price, the price per box and the total, and say in a friendly line when something was swapped and why (for example "only 24 are left"), with "Choose this box" as the one button. T3 renamed the button and the wording only.
   - Acceptance: the quote section is an itemised price (each item with its price, the price per box, the number of boxes, the total), how long the price is held, and its
     conditions in plain words. **The terms sentence the customer accepts, and the hash behind it, are not changed or reworded**; the plain explanation is added beside it. The PayPal box states
@@ -65,6 +65,10 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
     job sections use the glossary. The existing quote, payment and fulfillment customer checks pass with updated wording selectors.
   - Verify: `npm run test -- tests/keep-page.test.ts && npm run test:e2e -- e2e/quote-accept.spec.ts e2e/payments-customer.spec.ts e2e/fulfillment-customer.spec.ts`
   - Files: `components/{quote-card,payment-status,job-status,keep-page}.tsx`, `tests/keep-page.test.ts`, existing customer specs (selectors)
+  - Done 4 Nov 2026. As built: the price section is "Your price" (an itemised table, price per box, number of boxes, total, how long it is held, "Things to know about this price", and "This is an updated price" instead of a version number). The terms the customer accepts and the hash behind them are untouched and tested word for word (`data-terms`). The accept button is "Accept this price"; the PayPal box (in the Payment section, showing the accepted total) says "You won't be charged yet. PayPal sets aside $X. The shop reviews your order and, only if they accept, you're charged. If they say no, the hold disappears." with one button, "Approve on PayPal" ("Continue on PayPal" to carry on). "Keep this page" sits under the header: the page's own address (never the notice after it), Copy link, and "Email it to me" (a `mailto:` built in the browser by `keepLinkMailto`, whose subject cannot be bent by the shop's name); copying sends nothing (tested). The suggested boxes list their items with prices, mark the swapped-in item and explain the swap (step D).
+  - Customer wording rewritten and tested: every payment notice, payment status, order status and price-acceptance message (74 cases in `tests/customer-vocabulary.test.ts`) uses the glossary, says "shop", and ends in a full stop; the two assistant notes that said "quote" now say "price".
+  - The scan now covers the whole order room except the terms and the shop's own condition notes, which are not ours to reword. Found and fixed while scanning: the Payment section said the same thing twice after returning from PayPal ("Thank you" now only confirms the approval), and the header and the order section repeated one sentence.
+  - Still to come: the "emailed" half of keep-this-page (T10/T11). The conversation's own messages are not vocabulary-scanned (they carry the customer's words). Shop-side pages keep their own wording.
   - Depends on: T1.
 
 - [ ] **T5 The home page entry, the shared header and the calm not-found page**

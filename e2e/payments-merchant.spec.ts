@@ -68,7 +68,7 @@ test.describe("deciding on authorized orders (local Supabase + fake PayPal, mock
 
     const customer = await (await browser.newContext()).newPage();
     await customer.goto(`/o/${p.link}`);
-    await expect(customer.getByRole("region", { name: "Payment" })).toContainText("you were not charged");
+    await expect(customer.getByRole("region", { name: "Payment" })).toContainText("you weren't charged");
     await expect(customer.getByRole("region", { name: "Payment" }).getByRole("button")).toHaveCount(0);
   });
 

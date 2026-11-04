@@ -19,8 +19,8 @@ test.describe("paying for an accepted quote (local Supabase + fake PayPal, mocke
 
     await page.goto(`/o/${p.link}`);
     const payment = page.getByRole("region", { name: "Payment" });
-    await expect(payment).toContainText("Pay with PayPal to confirm your order");
-    await payment.getByRole("button", { name: "Pay with PayPal" }).click();
+    await expect(payment).toContainText("You won't be charged yet.");
+    await payment.getByRole("button", { name: "Approve on PayPal" }).click();
     await expect(page).toHaveURL(/https:\/\/www\.sandbox\.paypal\.com\/checkoutnow\?token=FAKEORDER\d+/);
 
     const attempt = await attemptOf(db, p.purchaseId);
@@ -30,14 +30,14 @@ test.describe("paying for an accepted quote (local Supabase + fake PayPal, mocke
     // PayPal sends the buyer back with the order id as `token`.
     await page.goto(`/o/${p.link}/return?token=${attempt.paypal_order_id}`);
     await expect(page).toHaveURL(new RegExp(`/o/${p.link.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\?payment=DONE$`));
-    await expect(payment).toContainText("Thank you. Your payment is authorized with PayPal");
-    await expect(payment).toContainText("you are charged only when they do");
+    await expect(payment).toContainText("Thank you, you've approved the payment.");
+    await expect(payment).toContainText("you're charged only if the shop accepts");
     await expect(payment.getByRole("button")).toHaveCount(0);
     expect((await attemptOf(db, p.purchaseId)).state).toBe("AUTHORIZED");
 
     // Coming back a second time is harmless: still one authorization.
     await page.goto(`/o/${p.link}/return?token=${attempt.paypal_order_id}`);
-    await expect(payment).toContainText("waiting for the merchant");
+    await expect(payment).toContainText("PayPal is holding your payment while the shop reviews your order");
     expect((await attemptOf(db, p.purchaseId)).state).toBe("AUTHORIZED");
     const authorized = await db.from("payment_events").select("id").eq("payment_attempt_id", attempt.id).eq("event_type", "payment.authorized");
     expect(authorized.data).toHaveLength(1);
@@ -47,15 +47,15 @@ test.describe("paying for an accepted quote (local Supabase + fake PayPal, mocke
     const p = await acceptedPurchase(db, seller);
     await page.route("https://www.sandbox.paypal.com/**", (route) => route.fulfill({ status: 200, body: "PayPal" }));
     await page.goto(`/o/${p.link}`);
-    await page.getByRole("button", { name: "Pay with PayPal" }).click();
+    await page.getByRole("button", { name: "Approve on PayPal" }).click();
     await expect(page).toHaveURL(/checkoutnow/);
     const attempt = await attemptOf(db, p.purchaseId);
 
     await page.goto(`/o/${p.link}/return?token=${attempt.paypal_order_id}`);
-    await expect(page.getByRole("region", { name: "Payment" })).toContainText("PayPal does not show your payment as approved yet");
+    await expect(page.getByRole("region", { name: "Payment" })).toContainText("PayPal doesn't show your payment as approved yet");
     expect((await attemptOf(db, p.purchaseId)).state).toBe("PROVIDER_CREATED");
     // The customer can carry on from where they were.
-    await expect(page.getByRole("button", { name: "Continue with PayPal" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continue on PayPal" })).toBeVisible();
   });
 
   test("an order id that is not this customer's gets the general message and changes nothing", async ({ page }) => {
@@ -63,13 +63,13 @@ test.describe("paying for an accepted quote (local Supabase + fake PayPal, mocke
     const theirs = await acceptedPurchase(db, seller);
     await page.route("https://www.sandbox.paypal.com/**", (route) => route.fulfill({ status: 200, body: "PayPal" }));
     await page.goto(`/o/${theirs.link}`);
-    await page.getByRole("button", { name: "Pay with PayPal" }).click();
+    await page.getByRole("button", { name: "Approve on PayPal" }).click();
     await expect(page).toHaveURL(/checkoutnow/);
     const other = await attemptOf(db, theirs.purchaseId);
     await approveAtFake(other.paypal_order_id!);
 
     await page.goto(`/o/${mine.link}/return?token=${other.paypal_order_id}`);
-    await expect(page.getByRole("region", { name: "Payment" })).toContainText("That could not be done right now");
+    await expect(page.getByRole("region", { name: "Payment" })).toContainText("That couldn't be done right now");
     expect((await attemptOf(db, theirs.purchaseId)).state).toBe("PROVIDER_CREATED");
   });
 

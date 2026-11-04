@@ -37,6 +37,10 @@ export type CustomerSpecView = {
   proposal: Proposal | null;
   /** Names for the SKUs the proposal mentions, so the screen never shows a code. */
   productNames: Record<string, string>;
+  /** Each product's price in cents (the catalog's), so a suggested box can list what is in it. */
+  productPrices: Record<string, number>;
+  /** The box's slots by id: their plain label and how many of the product go in each box. */
+  slots: Record<string, { label: string; quantity: number }>;
 };
 
 /** The latest version of the verified inquiry's specification, or null until something has been recorded. */
@@ -54,7 +58,7 @@ export async function requirementsForCustomer(db: SupabaseClient, inquiryId: Ver
     questionField: latest.stored.question?.field ?? null,
     quick: latest.stored.question ? quickRepliesFor({ field: latest.stored.question.field }, latest.stored.fields) : null,
     proposal: latest.stored.proposal,
-    productNames: await productNames(db, inquiry.merchantId),
+    ...(await catalogFacts(db, inquiry.merchantId)),
   };
 }
 
@@ -65,12 +69,17 @@ function fieldsOf(stored: StoredRequirements): CustomerSpecField[] {
   });
 }
 
-/** A merchant whose catalog cannot be read gets no names, not a broken page: the screen then says "an item". */
-async function productNames(db: SupabaseClient, merchantId: string): Promise<Record<string, string>> {
+/** What a screen needs to list a box in words. A shop whose catalog cannot be read gets nothing here, not a broken page (an item then reads "an item"). */
+async function catalogFacts(db: SupabaseClient, merchantId: string): Promise<Pick<CustomerSpecView, "productNames" | "productPrices" | "slots">> {
   try {
-    return Object.fromEntries((await loadCatalogSnapshot(db, merchantId)).catalog.products.map((p) => [p.sku, p.name]));
+    const { catalog } = await loadCatalogSnapshot(db, merchantId);
+    return {
+      productNames: Object.fromEntries(catalog.products.map((p) => [p.sku, p.name])),
+      productPrices: Object.fromEntries(catalog.products.map((p) => [p.sku, p.unitPriceMinor])),
+      slots: Object.fromEntries(catalog.slots.map((s) => [s.id, { label: s.label, quantity: s.quantity }])),
+    };
   } catch (error) {
-    if (error instanceof CatalogLoadError) return {};
+    if (error instanceof CatalogLoadError) return { productNames: {}, productPrices: {}, slots: {} };
     throw error;
   }
 }

@@ -85,6 +85,18 @@ test.describe("the order room at every stage (local Supabase, stand-in model, fa
       const found = page.getByRole("region", { name: region });
       if ((await found.count()) > 0) expect(forbiddenIn(await found.innerText()), `${where}: ${region}`).toEqual([]);
     }
+    // The price, the payment, the order status and "Keep this page" too. Two parts of the price section are not ours to reword and are
+    // left out: the terms (the words that were hashed and accepted, shown exactly as stored) and the shop's own condition notes.
+    for (const region of ["Your price", "Payment", "Your order", "Keep this page"]) {
+      const found = page.getByRole("region", { name: region });
+      if ((await found.count()) === 0) continue;
+      const text = await found.evaluate((el) => {
+        const copy = el.cloneNode(true) as HTMLElement;
+        copy.querySelectorAll("[data-terms], [data-conditions], input").forEach((n) => n.remove());
+        return copy.textContent ?? "";
+      });
+      expect(forbiddenIn(text), `${where}: ${region}`).toEqual([]);
+    }
     const form = page.getByRole("form", { name: "New message" });
     if ((await form.count()) > 0) expect(forbiddenIn(await form.innerText()), `${where}: message form`).toEqual([]);
   }

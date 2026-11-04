@@ -23,7 +23,7 @@ test.describe("the customer's view of a paid order (local Supabase + fake PayPal
 
     const authorized = await authorizedPurchase(db, seller);
     await page.goto(`/o/${authorized.link}`);
-    await expect(page.getByRole("region", { name: "Payment" })).toContainText("authorized with PayPal");
+    await expect(page.getByRole("region", { name: "Payment" })).toContainText("PayPal is holding your payment");
     await expect(orderRegion(page)).toHaveCount(0);
 
     const paid = await paidPurchase(db, seller);
@@ -36,7 +36,7 @@ test.describe("the customer's view of a paid order (local Supabase + fake PayPal
     const p = await paidPurchase(db, seller);
     const jobId = await makeJob(db, p.purchaseId);
     await page.goto(`/o/${p.link}`);
-    await expect(orderRegion(page)).toContainText(/We are preparing your order\. We aim to have it ready by \d{4}-\d{2}-\d{2}\./);
+    await expect(orderRegion(page)).toContainText(/The shop is getting your order ready\. They aim to have it ready by \d{4}-\d{2}-\d{2}\./);
 
     const actor = actorOf(seller);
     const ctx = () => ({ now: new Date().toISOString(), correlationId: "e2e-fulfillment-customer" });
@@ -56,7 +56,7 @@ test.describe("the customer's view of a paid order (local Supabase + fake PayPal
     await moveJob(db, actorOf(seller), jobId, "ON_HOLD", { note: "Internal: supplier problem." }, { now: new Date().toISOString(), correlationId: "e2e-fulfillment-customer" });
     await page.goto(`/o/${p.link}`);
     const region = orderRegion(page);
-    await expect(region).toContainText("Your order is delayed");
+    await expect(region).toContainText("Your order is taking longer than planned");
     const text = (await region.innerText()).toLowerCase();
     expect(text).not.toMatch(/internal|supplier|organizer|notebook|pick list|worksheet|[0-9a-f]{8}-[0-9a-f]{4}/);
   });

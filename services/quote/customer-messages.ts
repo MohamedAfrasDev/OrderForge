@@ -4,20 +4,20 @@ import type { QuoteErrorCode } from "@/domain/quote";
 export function acceptFailureMessage(code: QuoteErrorCode): string {
   switch (code) {
     case "HASH_MISMATCH":
-      return "This quote changed since you opened the page. Reload to see the current version before accepting.";
+      return "This price changed since you opened the page. Reload to see the current one before accepting.";
     case "SUPERSEDED":
-      return "The merchant sent a newer version of this quote. Reload the page to see it.";
+      return "The shop sent you a newer version of this price. Reload the page to see it.";
     case "EXPIRED":
-      return "This quote has expired. Ask the merchant for a new one.";
+      return "This price has expired. Ask the shop for a new one.";
     case "WITHDRAWN":
-      return "The merchant withdrew this quote. Ask them for an updated one.";
+      return "The shop withdrew this price. Ask them for an updated one.";
     case "QUOTE_STALE":
     case "CONFIGURATION_BLOCKED":
-      return "Prices or availability changed, so this quote can no longer be accepted as it is. The merchant will need to send an updated quote.";
+      return "Prices or availability changed, so this price can't be accepted as it is. The shop will need to send you an updated one.";
     case "NOT_PUBLISHED":
     case "NOT_FOUND":
-      return "This quote is not available to accept.";
+      return "This price isn't available to accept.";
     default:
-      return "This quote cannot be accepted right now. Please contact the merchant.";
+      return "This price can't be accepted right now. Contact the shop.";
   }
 }
