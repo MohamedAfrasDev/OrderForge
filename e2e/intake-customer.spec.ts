@@ -52,7 +52,7 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     await page.getByLabel("Describe the custom order you have in mind").fill(message);
     await page.getByRole("button", { name: "Start my request" }).click();
     await page.waitForURL(/\/o\//);
-    await expect(page.getByRole("heading", { name: "Your request" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your request", exact: true })).toBeVisible();
   }
 
   const spec = (page: Page) => page.getByRole("region", { name: "Your specification" });
@@ -106,7 +106,7 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     await expect(proposals).toContainText("$35.00 per box · $700.00 for 20 boxes");
     await expect(spec(page)).toContainText("notebooks");
 
-    await page.getByText("Change something").click();
+    await page.getByText("Change something", { exact: true }).click();
     await spec(page).getByLabel("Number of boxes").fill("22"); // 24 steel bottles are in stock, so 22 still fits
     await spec(page).getByRole("button", { name: "Save my changes" }).click();
     await expect(proposals).toContainText("$770.00 for 22 boxes");
@@ -130,7 +130,7 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
 
     await page.getByRole("button", { name: "Ask the merchant to take over" }).first().click();
     await expect(page.getByRole("status").filter({ hasText: "The merchant has your request" })).toBeVisible();
-    await expect(page.getByText("Status:")).toContainText("REVIEW_REQUIRED");
+    await expect(page.getByRole("heading", { name: "With the shop", level: 2 })).toBeVisible();
     await expect(page.getByRole("button", { name: "Try again" })).toHaveCount(0);
   });
 

@@ -12,6 +12,7 @@ export const STEP_LABELS = ["Describe", "Choose", "Review price", "Approve", "Sh
 
 export const WORDS = {
   reading: { headline: "Reading your request", detail: "We're reading what you wrote, which only takes a moment." },
+  stalled: { headline: "The assistant hasn't answered yet", detail: "Your message is kept, so try again or ask the shop to take over." },
   needAnswer: { headline: "We need one answer", detail: "Answer the question below and we'll carry on." },
   choose: { headline: "Choose your box", detail: "Pick the box you like best, or change something in your order." },
   withShop: { headline: "With the shop", detail: "The shop has your request and will reply here." },

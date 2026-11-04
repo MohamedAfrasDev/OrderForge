@@ -1,7 +1,7 @@
 # Tasks: product-pass
 
 Spec: [doc/spec/SPEC-product-pass.md](../../doc/spec/SPEC-product-pass.md) · Plan: [plan.md](plan.md)
-Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend chosen as the email provider); task list APPROVED 4 Nov 2026; T0 and T1 built. Tick a box only after its Verify step passes. Every task is test first. Existing end-to-end specs for the shop pages are updated by changing selectors, never by removing or weakening a check.
+Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend chosen as the email provider); task list APPROVED 4 Nov 2026; T0 to T2 built. Tick a box only after its Verify step passes. Every task is test first. Existing end-to-end specs for the shop pages are updated by changing selectors, never by removing or weakening a check.
 
 ## Phase A: prove the grid
 
@@ -31,13 +31,16 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
   - Files: `domain/journey/{journey,wording,index}.ts`, `tests/journey/{journey,wording,purity}.test.ts`
   - Depends on: none.
 
-- [ ] **T2 The order room layout: header, strip, headline, no raw state, the scan test**
+- [x] **T2 The order room layout: header, strip, headline, no raw state, the scan test**
   - Acceptance: the order room header shows the shop name, the progress strip and the headline from `journeyOf`; the raw `Status:` line is gone; the sections follow the
     order the customer meets them (conversation and order so far, boxes, price, payment, order status). Behaviour and server actions are unchanged. An end-to-end
     scan walks the page at every stage (request started, a question open, boxes shown, price published, accepted, payment authorized and waiting, paid and
     preparing, ready, collected, declined, handed to the shop) and finds no raw state name, SKU, id or forbidden word; the strip and headline are right at each stage.
   - Verify: `npm run test:e2e -- e2e/order-room-words.spec.ts e2e/intake-customer.spec.ts e2e/quote-accept.spec.ts e2e/payments-customer.spec.ts e2e/fulfillment-customer.spec.ts`
   - Files: `app/o/[token]/page.tsx`, `components/{journey-strip,customer-header}.tsx`, `e2e/order-room-words.spec.ts`, existing customer specs (selectors)
+  - Done 4 Nov 2026. Scan scope as built: on the whole page, no raw state name, SKU, id or `Status:` line at any of the 12 stages (stalled assistant, open question, boxes, with the shop, price to review, price expired, accepted, waiting for the shop, declined, being prepared, ready, collected); the header (strip, headline, detail) is also checked against the full vocabulary list. The rest of the page (quote card, payment, conversation text) joins the vocabulary check in T4 and T3 when their wording is rewritten. The page title stays "Your request" (h1) with the headline as an h2, so existing selectors only needed `exact: true`.
+  - Amended T1 while building this: `journeyOf` takes an optional `stalled` input (a message the assistant has not answered). Without it a failed first message left the header saying "We're reading what you wrote" forever. It matters only before a price and before the request is with the shop; it has its own wording and tests (1,600 combinations now).
+  - Rule learned: customer-page specs must visit `/o/` from a private address (`x-forwarded-for`), or they use up the shared 60-a-minute budget of the other specs.
   - Depends on: T1.
 
 - [ ] **T3 The conversation with "Your order so far" and quick replies**

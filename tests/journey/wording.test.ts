@@ -10,7 +10,7 @@ const strings = [
 describe("the customer glossary", () => {
   it("has six step labels and a headline and detail for every situation", () => {
     expect(STEP_LABELS).toEqual(["Describe", "Choose", "Review price", "Approve", "Shop confirms", "Pick up"]);
-    expect(Object.keys(WORDS).length).toBeGreaterThanOrEqual(17);
+    expect(Object.keys(WORDS).length).toBeGreaterThanOrEqual(18);
   });
 
   it.each(strings)("%s uses no raw state, code, id or forbidden word", (_where, text) => {

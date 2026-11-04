@@ -12,6 +12,11 @@ export type JourneyInput = {
   quote: "NONE" | "PUBLISHED" | "EXPIRED" | "ACCEPTED";
   payment: "NONE" | "PAYING" | "WAITING_MERCHANT" | "CHECKING" | "PAID" | "DECLINED" | "FAILED" | null;
   job: "PREPARING" | "READY" | "COLLECTED" | "DELAYED" | null;
+  /**
+   * A customer message the assistant has not answered (it failed or is not done). Matters only before a price exists and while the
+   * request is not with the shop: the header must not say "reading your request" forever.
+   */
+  stalled?: boolean;
 };
 
 export type JourneyStep = { id: StepId; label: string; state: StepState };
@@ -68,6 +73,9 @@ function situationOf(input: JourneyInput): Situation {
   if (input.quote === "EXPIRED") return { step: PRICE, key: "priceExpired", waitingOn: "you", stopped: true };
   if (input.quote === "PUBLISHED") return { step: PRICE, key: "reviewPrice", waitingOn: "you" };
 
+  if (input.stalled && (input.inquiry === "NEW" || input.inquiry === "CLARIFYING" || input.inquiry === "CONFIGURING")) {
+    return { step: input.inquiry === "CONFIGURING" ? CHOOSE : DESCRIBE, key: "stalled", waitingOn: "you" };
+  }
   switch (input.inquiry) {
     case "NEW":
       return { step: DESCRIBE, key: "reading", waitingOn: "nobody" };

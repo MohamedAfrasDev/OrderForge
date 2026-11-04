@@ -14,7 +14,9 @@ type JobCovered = CustomerJobView["status"] extends NonNullable<JourneyInput["jo
 const covered: [PaymentCovered, JobCovered] = [true, true];
 
 const every = (): JourneyInput[] =>
-  INQUIRY_STATUSES.flatMap((inquiry) => QUOTES.flatMap((quote) => PAYMENTS.flatMap((payment) => JOBS.map((job) => ({ inquiry, quote, payment, job })))));
+  INQUIRY_STATUSES.flatMap((inquiry) =>
+    QUOTES.flatMap((quote) => PAYMENTS.flatMap((payment) => JOBS.flatMap((job) => [false, true].map((stalled) => ({ inquiry, quote, payment, job, stalled }))))),
+  );
 
 const base: JourneyInput = { inquiry: "NEW" as InquiryStatus, quote: "NONE", payment: null, job: null };
 
@@ -25,6 +27,11 @@ describe("journeyOf: the strip and the headline at each stage (a table written a
     ["a question is open", { inquiry: "CLARIFYING" }, 0, "current", "needAnswer", "you"],
     ["boxes are being chosen", { inquiry: "CONFIGURING" }, 1, "current", "choose", "you"],
     ["handed to the shop, no price yet", { inquiry: "REVIEW_REQUIRED" }, 1, "current", "withShop", "shop"],
+    ["the assistant has not answered the first message", { inquiry: "NEW", stalled: true }, 0, "current", "stalled", "you"],
+    ["the assistant has not answered a later message", { inquiry: "CLARIFYING", stalled: true }, 0, "current", "stalled", "you"],
+    ["the assistant has not answered while choosing", { inquiry: "CONFIGURING", stalled: true }, 1, "current", "stalled", "you"],
+    ["stalled but already with the shop", { inquiry: "REVIEW_REQUIRED", stalled: true }, 1, "current", "withShop", "shop"],
+    ["stalled but a price is already there", { inquiry: "QUOTE_READY", quote: "PUBLISHED", stalled: true }, 2, "current", "reviewPrice", "you"],
     ["a price is ready but cannot be shown yet", { inquiry: "QUOTE_READY" }, 2, "current", "pricePreparing", "nobody"],
     ["a price to review", { inquiry: "QUOTE_READY", quote: "PUBLISHED" }, 2, "current", "reviewPrice", "you"],
     ["the price expired", { inquiry: "QUOTE_READY", quote: "EXPIRED" }, 2, "stopped", "priceExpired", "you"],
@@ -65,6 +72,20 @@ describe("journeyOf: the strip and the headline at each stage (a table written a
     }
   });
 
+  it("a stalled assistant only matters before a price and before the shop has the request", () => {
+    for (const inquiry of INQUIRY_STATUSES) {
+      for (const quote of QUOTES) {
+        const stalled = journeyOf({ ...base, inquiry, quote, stalled: true });
+        const plain = journeyOf({ ...base, inquiry, quote });
+        const matters = quote === "NONE" && (inquiry === "NEW" || inquiry === "CLARIFYING" || inquiry === "CONFIGURING");
+        if (matters) {
+          expect(stalled.headline, `${inquiry}/${quote}`).toBe(WORDS.stalled.headline);
+          expect(stalled.current, `${inquiry}/${quote}`).toBe(plain.current);
+        } else expect(stalled, `${inquiry}/${quote}`).toEqual(plain);
+      }
+    }
+  });
+
   it("the steps carry the glossary's labels in order", () => {
     expect(journeyOf(base).steps.map((s) => s.label)).toEqual(["Describe", "Choose", "Review price", "Approve", "Shop confirms", "Pick up"]);
     expect(new Set(journeyOf(base).steps.map((s) => s.id)).size).toBe(6);
@@ -74,8 +95,8 @@ describe("journeyOf: the strip and the headline at each stage (a table written a
 describe("journeyOf: true for every combination of states", () => {
   const all = every();
 
-  it("covers 800 combinations and the input types cover the views", () => {
-    expect(all).toHaveLength(5 * 4 * 8 * 5);
+  it("covers 1,600 combinations and the input types cover the views", () => {
+    expect(all).toHaveLength(5 * 4 * 8 * 5 * 2);
     expect(covered).toEqual([true, true]);
   });
 

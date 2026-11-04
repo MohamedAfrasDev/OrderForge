@@ -11,7 +11,7 @@ test.describe("customer links (local Supabase)", () => {
 
   test("a valid link opens its own inquiry and nobody else's", async ({ page }) => {
     await page.goto(`/o/${env("E2E_INQUIRY_A_LINK")}`);
-    await expect(page.getByRole("heading", { name: "Your request" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your request", exact: true })).toBeVisible();
     await expect(page.getByText(env("E2E_INQUIRY_A_TEXT"))).toBeVisible();
     await expect(page.getByText(env("E2E_INQUIRY_B_TEXT"))).toHaveCount(0);
 
@@ -66,7 +66,7 @@ test.describe("customer links (local Supabase)", () => {
     });
 
     await page.goto(`/o/${link}`);
-    await expect(page.getByRole("heading", { name: "Your request" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your request", exact: true })).toBeVisible();
 
     await db.from("inquiries").update({ access_version: 2 }).eq("id", inquiry.data!.id);
 
@@ -74,7 +74,7 @@ test.describe("customer links (local Supabase)", () => {
     // the status is already 200, but the content is the not-found view and nothing leaks.
     await page.goto(`/o/${link}`);
     await expect(page.getByText("This page could not be found")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Your request" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Your request", exact: true })).toHaveCount(0);
   });
 
   test.describe("garbage links", () => {

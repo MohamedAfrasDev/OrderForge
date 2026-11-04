@@ -137,7 +137,7 @@ test.describe("customer quote card (local Supabase)", () => {
     await draft(inquiry.id, 30, [{ code: "UNSUPPORTED_CUSTOMIZATION", text: "Gold foil lid." }]);
 
     await page.goto(`/o/${inquiry.link}`);
-    await expect(page.getByRole("heading", { name: "Your request" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your request", exact: true })).toBeVisible();
     await expect(page.getByRole("region", { name: "Quote" })).toHaveCount(0);
     await expect(page.getByText("Gold foil lid.")).toHaveCount(0);
   });
