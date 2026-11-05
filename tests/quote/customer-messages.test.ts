@@ -17,7 +17,7 @@ describe("acceptFailureMessage", () => {
     expect(acceptFailureMessage("HASH_MISMATCH")).toMatch(/reload/i);
     expect(acceptFailureMessage("SUPERSEDED")).toMatch(/newer version/i);
     expect(acceptFailureMessage("EXPIRED")).toMatch(/expired/i);
-    expect(acceptFailureMessage("QUOTE_STALE")).toMatch(/merchant/i);
+    expect(acceptFailureMessage("QUOTE_STALE")).toMatch(/shop/i);
   });
 
   it("never exposes internals: no code names, hashes, ids or stock", () => {

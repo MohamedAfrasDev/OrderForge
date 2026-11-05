@@ -7,12 +7,14 @@ import { cents, format } from "@/lib/money";
 import { createSessionClient } from "@/lib/supabase/server";
 import { listJobsForMerchant, type JobDetail } from "@/services/fulfillment/read";
 import { JobForms, type Move } from "./job-forms";
+import { PrintButton } from "./print-button";
+import { JobsGrid, type JobGridRow } from "./jobs-grid";
 
 export const metadata: Metadata = { title: "Jobs · OrderForge" };
 
 export default function MerchantJobsPage() {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-12">
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6">
       <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
         <Jobs />
       </Suspense>
@@ -61,8 +63,14 @@ function JobCard({ job }: { job: JobDetail }) {
         <p className="text-xs text-muted-foreground">Collected by the customer from you (pickup). Quote version {w.quote.version}.</p>
       </header>
 
-      <div>
-        <h4 className="text-sm font-medium">Pick list</h4>
+      <div data-pick-list>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h4 className="text-sm font-medium">Pick list</h4>
+          <PrintButton />
+        </div>
+        <p className="mt-1 hidden text-sm print:block">
+          Request {job.inquiryId.slice(0, 8)} · {w.boxCount} boxes · ready by {job.readyBy}
+        </p>
         <ul className="mt-1 list-disc pl-5 text-sm">
           {w.pick.map((p) => (
             <li key={p.sku}>
@@ -120,6 +128,8 @@ async function Jobs() {
   const jobs = await listJobsForMerchant(await createSessionClient(), merchant.id);
   const open = jobs.filter((j) => j.status !== "COLLECTED");
   const done = jobs.filter((j) => j.status === "COLLECTED");
+  const gridRows = (list: JobDetail[]): JobGridRow[] => list.map((j) => ({ id: j.jobId, request: j.inquiryId.slice(0, 8), boxes: j.worksheet.boxCount, status: STATUS_TEXT[j.status], readyBy: j.readyBy, paidMinor: j.worksheet.paid.totalMinor }));
+  const detailsOf = (list: JobDetail[]) => Object.fromEntries(list.map((j) => [j.jobId, <JobCard key={j.jobId} job={j} />]));
 
   return (
     <>
@@ -138,34 +148,14 @@ async function Jobs() {
         <h2 id="open-heading" className="text-lg font-semibold">
           To prepare
         </h2>
-        {open.length === 0 ? (
-          <p className="text-muted-foreground">No jobs are waiting.</p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {open.map((j) => (
-              <li key={j.jobId}>
-                <JobCard job={j} />
-              </li>
-            ))}
-          </ul>
-        )}
+        <JobsGrid label="Jobs to prepare" emptyText="No jobs are waiting." rows={gridRows(open)} details={detailsOf(open)} />
       </section>
 
       <section aria-labelledby="done-heading" className="flex flex-col gap-3">
         <h2 id="done-heading" className="text-lg font-semibold">
           Collected
         </h2>
-        {done.length === 0 ? (
-          <p className="text-muted-foreground">Nothing has been collected yet.</p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {done.map((j) => (
-              <li key={j.jobId}>
-                <JobCard job={j} />
-              </li>
-            ))}
-          </ul>
-        )}
+        <JobsGrid label="Jobs collected" emptyText="Nothing has been collected yet." rows={gridRows(done)} details={detailsOf(done)} />
       </section>
     </>
   );

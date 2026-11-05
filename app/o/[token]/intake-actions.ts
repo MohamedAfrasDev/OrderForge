@@ -6,14 +6,15 @@ import type { VerifiedInquiryId } from "@/lib/access/inquiry-reads";
 import { getIntakeModel } from "@/lib/ai/wiring";
 import { newCorrelationId } from "@/lib/correlation";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { IntakeErrorCode } from "@/domain/intake";
+import { FIELD_NAMES, parseAnswer, type FieldName, type IntakeErrorCode, type IntakeResult } from "@/domain/intake";
+import { answerWithChoice, applyEdits, type AnswerOutcome } from "@/services/intake/answer";
 import { chooseConfiguration, handOffToMerchant } from "@/services/intake/choose";
 import { intakeFailureMessage } from "@/services/intake/customer-messages";
-import { editRequirements } from "@/services/intake/edit";
-import { requirementsForCustomer, unansweredMessageId } from "@/services/intake/read";
+import { unansweredMessageId } from "@/services/intake/read";
 import { loadInquiry } from "@/services/intake/shared";
 import { postCustomerMessage } from "@/services/intake/start";
 import { runIntakeTurn } from "@/services/intake/turn";
+import { notifySoon } from "@/lib/notifications/run";
 
 export type IntakeState = { status: "idle" } | { status: "error"; message: string } | { status: "done" };
 
@@ -39,6 +40,13 @@ async function answer(inquiryId: VerifiedInquiryId, messageId: string): Promise<
   }
 }
 
+/** What the customer is told after an answer was applied: done, or why the assistant could not carry on (their answer is kept). */
+function stateOf(result: IntakeResult<AnswerOutcome>): IntakeState {
+  if (!result.ok) return failed(result.code);
+  if (result.value.turn === "FAILED") return failed(result.value.code ?? "MODEL_UNAVAILABLE");
+  return { status: "done" };
+}
+
 /** The customer writes a message. It is stored first (so it survives any failure), then the assistant answers it once. */
 export async function sendMessageAction(token: string, _previous: IntakeState, formData: FormData): Promise<IntakeState> {
   const inquiryId = await verified(token);
@@ -47,12 +55,14 @@ export async function sendMessageAction(token: string, _previous: IntakeState, f
   const posted = await postCustomerMessage(db, inquiryId, formData.get("message"), ctx());
   if (!posted.ok) {
     refresh();
+    notifySoon();
     return failed(posted.code);
   }
-  // With the merchant, the message is for them: the assistant stays out of it.
+  // With the shop, the message is for them: the assistant stays out of it.
   const inquiry = await loadInquiry(db, inquiryId);
   const result = inquiry?.status === "REVIEW_REQUIRED" ? ({ status: "done" } as IntakeState) : await answer(inquiryId, posted.value.messageId);
   refresh();
+  notifySoon();
   return result;
 }
 
@@ -63,70 +73,69 @@ export async function retryTurnAction(token: string): Promise<IntakeState> {
   const messageId = await unansweredMessageId(createAdminClient(), inquiryId);
   const result = messageId ? await answer(inquiryId, messageId) : idle;
   refresh();
+  notifySoon();
   return result;
 }
 
-/** "Ask the merchant to take over". */
+/** "Ask the shop to take over". */
 export async function handOffAction(token: string): Promise<IntakeState> {
   const inquiryId = await verified(token);
   if (!inquiryId) return NOT_FOUND;
   const result = await handOffToMerchant(createAdminClient(), inquiryId, "customer_request", ctx());
   refresh();
+  notifySoon();
   return result.ok ? { status: "done" } : failed(result.code);
 }
 
-/** "Use this one": the form carries only which option, never an amount. */
+/** "Choose this box": the form carries only which option, never an amount. */
 export async function chooseAction(token: string, _previous: IntakeState, formData: FormData): Promise<IntakeState> {
   const inquiryId = await verified(token);
   if (!inquiryId) return NOT_FOUND;
   const result = await chooseConfiguration(createAdminClient(), {}, inquiryId, formData.get("key"), ctx());
   refresh();
+  notifySoon();
   return result.ok ? { status: "done" } : failed(result.code);
 }
 
-const text = (v: FormDataEntryValue | null) => (typeof v === "string" ? v.trim() : "");
-const yesNo = (v: string): boolean | null | "bad" => (v === "" ? null : v === "yes" ? true : v === "no" ? false : "bad");
-
 /**
- * The customer edits the visible specification. Only fields that differ from what is recorded are sent, as the customer's own
- * confirmed values (blank clears one). Then a short message asks the assistant to look again, so a fresh proposal appears.
+ * A line of "Your order so far" edited, or a typed answer to the open question: one field, one value read by `parseAnswer`
+ * (blank clears the line), applied as the customer's own confirmed answer. The field is checked against the known lines.
  */
-export async function editSpecAction(token: string, _previous: IntakeState, formData: FormData): Promise<IntakeState> {
+export async function editFieldAction(token: string, field: string, _previous: IntakeState, formData: FormData): Promise<IntakeState> {
   const inquiryId = await verified(token);
   if (!inquiryId) return NOT_FOUND;
-  const db = createAdminClient();
-  const current = await requirementsForCustomer(db, inquiryId);
-  const before = (name: string) => current?.fields.find((f) => f.name === name)?.value ?? null;
-
-  const wanted: Record<string, unknown> = {};
-  const boxes = text(formData.get("boxCount"));
-  wanted.boxCount = boxes === "" ? null : /^\d{1,7}$/.test(boxes) ? Number(boxes) : "bad";
-  wanted.noFood = yesNo(text(formData.get("noFood")));
-  wanted.logoRequired = yesNo(text(formData.get("logoRequired")));
-  const budget = text(formData.get("budget"));
-  wanted.maxPricePerBoxMinor = budget === "" ? null : /^\d{1,6}(\.\d{1,2})?$/.test(budget) ? Math.round(Number(budget) * 100) : "bad";
-  const date = text(formData.get("requestedPickupDate"));
-  wanted.requestedPickupDate = date === "" ? null : date;
-  const prefs = text(formData.get("preferences"));
-  wanted.preferences = prefs === "" ? null : prefs.split(",").map((p) => p.trim()).filter(Boolean);
-
-  const edits: Record<string, unknown> = {};
-  for (const [name, value] of Object.entries(wanted)) {
-    if (value === "bad") return failed("INVALID_INPUT");
-    if (JSON.stringify(value) !== JSON.stringify(before(name))) edits[name] = value;
-  }
-  if (Object.keys(edits).length === 0) return { status: "error", message: "Nothing changed." };
-
-  const saved = await editRequirements(db, inquiryId, edits, ctx());
-  if (!saved.ok) return failed(saved.code);
-  const inquiry = await loadInquiry(db, inquiryId);
-  if (inquiry?.status === "REVIEW_REQUIRED") {
-    refresh();
-    return { status: "done" };
-  }
-  // A new proposal is made from a message, so the edit is announced as one (numbered, so it is never read as a double submit).
-  const posted = await postCustomerMessage(db, inquiryId, `I updated my requirements (change ${saved.value.version}).`, ctx());
-  const result = posted.ok ? await answer(inquiryId, posted.value.messageId) : failed(posted.code);
+  if (!(FIELD_NAMES as readonly string[]).includes(field)) return failed("INVALID_INPUT");
+  const raw = formData.get("value");
+  const parsed = parseAnswer(field as FieldName, typeof raw === "string" ? raw : "");
+  if (!parsed.ok) return failed("INVALID_INPUT");
+  const result = await runApply(inquiryId, { [field]: parsed.value });
   refresh();
+  notifySoon();
   return result;
+}
+
+/**
+ * A tap on a choice under the open question. The browser sends which field and which position; what the choice means is decided
+ * on the server from the code's own list for the question that is open now.
+ */
+export async function quickReplyAction(token: string, field: string, index: number): Promise<IntakeState> {
+  const inquiryId = await verified(token);
+  if (!inquiryId) return NOT_FOUND;
+  let result: IntakeState;
+  try {
+    result = stateOf(await answerWithChoice(createAdminClient(), { model: getIntakeModel() }, inquiryId, field, index, ctx()));
+  } catch {
+    result = failed("MODEL_UNAVAILABLE");
+  }
+  refresh();
+  notifySoon();
+  return result;
+}
+
+async function runApply(inquiryId: VerifiedInquiryId, edits: Record<string, unknown>): Promise<IntakeState> {
+  try {
+    return stateOf(await applyEdits(createAdminClient(), { model: getIntakeModel() }, inquiryId, edits, ctx()));
+  } catch {
+    return failed("MODEL_UNAVAILABLE");
+  }
 }

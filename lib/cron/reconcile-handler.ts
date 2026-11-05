@@ -17,6 +17,11 @@ export type ReconcileDeps = {
   reconcilePayments?: (context: { now: string; correlationId: string }) => Promise<unknown>;
   /** Creates the job of every paid purchase that lacks one. Runs after payments and before the sweep; its failure never stops the sweep. */
   createMissingJobs?: (context: { now: string; correlationId: string }) => Promise<unknown>;
+  /**
+   * Queues and sends the emails the current state calls for. Runs last, after every other step. Its failure is not a failure of the run:
+   * an email problem must never make the scheduler report a broken reconcile, and the next run tries again.
+   */
+  notify?: (context: { now: string; correlationId: string }) => Promise<unknown>;
   /** Runs after the heartbeat. The reservation module supplies it; omitted, a run is just the heartbeat. */
   sweepReservations?: (context: { now: string; correlationId: string }) => Promise<SweepSummary>;
   /** The clock, injectable for tests. */
@@ -94,6 +99,13 @@ export async function handleReconcile(request: Request, deps: ReconcileDeps): Pr
     } catch {
       // The heartbeat is already recorded. A failed sweep must be visible to the scheduler, and reveals nothing else.
       failure ??= "sweep_failed";
+    }
+  }
+  if (deps.notify) {
+    try {
+      await deps.notify(context);
+    } catch {
+      // Not remembered: see `notify` above.
     }
   }
   if (failure) return reply({ error: failure }, 500);

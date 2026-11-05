@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { Conversation } from "@/components/conversation";
+import { CustomerHeader } from "@/components/customer-header";
 import { JobStatus } from "@/components/job-status";
+import { KeepPage } from "@/components/keep-page";
+import { linkEmailStatus } from "@/services/notifications/read";
+import { INQUIRY_STATUSES, type InquiryStatus } from "@/domain/intake";
+import { journeyOf } from "@/domain/journey";
 import { PaymentStatus } from "@/components/payment-status";
 import { QuoteCard } from "@/components/quote-card";
 import { getCustomerMessages } from "@/lib/access/inquiry-reads";
@@ -35,8 +41,6 @@ export default function OrderRoomPage({ params, searchParams }: PageProps<"/o/[t
   );
 }
 
-const formatTime = (iso: string) => `${iso.slice(0, 16).replace("T", " ")} UTC`;
-
 // Reading route params is request-time data, so this streams inside <Suspense>.
 async function OrderRoom({ params, searchParams }: { params: PageProps<"/o/[token]">["params"]; searchParams: PageProps<"/o/[token]">["searchParams"] }) {
   const { token } = await params;
@@ -56,42 +60,36 @@ async function OrderRoom({ params, searchParams }: { params: PageProps<"/o/[toke
   // Once a quote is accepted the conversation is about paying and collecting, not about what to order.
   const intake = quote?.status === "ACCEPTED" ? null : { spec: await requirementsForCustomer(db, inquiry.id), unanswered: (await unansweredMessageId(db, inquiry.id)) !== null };
 
+  const inquiryStatus: InquiryStatus = (INQUIRY_STATUSES as readonly string[]).includes(inquiry.status) ? (inquiry.status as InquiryStatus) : "NEW";
+  const quoteState = quote === null ? "NONE" : quote.status === "ACCEPTED" ? "ACCEPTED" : quote.expired ? "EXPIRED" : "PUBLISHED";
+  const journey = journeyOf({ inquiry: inquiryStatus, quote: quoteState, payment: payment?.status ?? null, job: job?.status ?? null, stalled: Boolean(intake?.unanswered) });
+
+  // With the order still being built, the conversation sits beside "Your order so far"; once it is accepted it stands alone.
+  const talk = intake ? (
+    <IntakePanels token={token} spec={intake.spec} status={inquiry.status} unanswered={intake.unanswered} messages={messages} shopName={inquiry.merchantName} />
+  ) : (
+    <Conversation messages={messages} shopName={inquiry.merchantName} />
+  );
+
   return (
     <>
-      <header className="flex flex-col gap-1">
-        <p className="text-sm text-muted-foreground">{inquiry.merchantName}</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Your request</h1>
-        <p className="text-sm">
-          Status: <span className="font-medium">{inquiry.status}</span>
-        </p>
-      </header>
+      <CustomerHeader shopName={inquiry.merchantName} journey={journey} />
 
-      {quote ? <QuoteCard quote={quote} hold={hold} accept={acceptQuoteAction.bind(null, token)} /> : null}
+      <KeepPage shopName={inquiry.merchantName} emailed={await linkEmailStatus(db, inquiry.id)} />
 
-      {payment ? <PaymentStatus view={payment} notice={notice} pay={payWithPayPalAction.bind(null, token)} /> : null}
+      {/* In the order the customer meets them. Before there is a price: the conversation, then the order so far, the boxes and the box to
+          write in. Once there is a price, what they have to do now comes first and the conversation follows. */}
+      {quote ? (
+        <>
+          <QuoteCard quote={quote} hold={hold} accept={acceptQuoteAction.bind(null, token)} />
+          {payment ? <PaymentStatus view={payment} notice={notice} totalMinor={quote.totalMinor} pay={payWithPayPalAction.bind(null, token)} /> : null}
+          {job ? <JobStatus view={job} /> : null}
+          {talk}
+        </>
+      ) : (
+        talk
+      )}
 
-      {job ? <JobStatus view={job} /> : null}
-
-      <section aria-label="Conversation" className="flex flex-col gap-3">
-        {messages.length === 0 ? (
-          <p className="text-muted-foreground">No messages yet.</p>
-        ) : (
-          messages.map((m) => (
-            <article key={m.id} className="rounded-lg border border-border p-3">
-              <p className="text-xs text-muted-foreground">
-                {m.role} · {formatTime(m.createdAt)}
-              </p>
-              <p className="mt-1 whitespace-pre-wrap text-sm">{m.body}</p>
-            </article>
-          ))
-        )}
-      </section>
-
-      {intake ? <IntakePanels token={token} spec={intake.spec} status={inquiry.status} unanswered={intake.unanswered} /> : null}
-
-      <p className="text-xs text-muted-foreground">
-        This page is private to anyone who has the link. Keep the link to yourself.
-      </p>
     </>
   );
 }

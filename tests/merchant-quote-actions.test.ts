@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const calls: string[] = [];
 const state = { signedIn: true, publish: { ok: true, value: { invalidatedPurchaseIds: [] as string[] } } as unknown, releaseThrows: false };
 
+vi.mock("@/lib/notifications/run", () => ({ notifySoon: vi.fn() }));
 vi.mock("next/cache", () => ({ refresh: vi.fn(() => void calls.push("refresh")) }));
 vi.mock("@/lib/access/require-merchant", () => ({
   requireMerchant: vi.fn(async () => {

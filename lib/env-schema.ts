@@ -37,6 +37,10 @@ const serverSchema = z.object({
   OPENROUTER_FALLBACK_MODEL: z.preprocess((v) => (v === "" ? undefined : v), z.string().regex(/^[A-Za-z0-9._/:~-]{1,100}$/).optional()),
   // Optional: "local-demo" swaps the intake model for a rule-based stand-in. Refused unless the database is local and the app is not on Vercel.
   INTAKE_MODEL: z.preprocess((v) => (v === "" ? undefined : v), z.literal("local-demo").optional()),
+  // Optional: email through Resend. Sending is off unless both the key and the sender are set; empty counts as unset. Never set in tests or CI.
+  RESEND_API_KEY: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(8).max(200).regex(/^\S+$/).optional()),
+  EMAIL_FROM: z.preprocess((v) => (v === "" ? undefined : v), z.string().max(200).regex(/^([^<>\r\n@]{1,80} <[^\s@<>]+@[^\s@<>]+>|[^\s@<>]+@[^\s@<>]+)$/).optional()),
+  EMAIL_REPLY_TO: z.preprocess((v) => (v === "" ? undefined : v), z.string().max(254).regex(/^[^\s@<>]+@[^\s@<>]+$/).optional()),
   // Optional: when set, a capture must have been paid to this PayPal merchant id (payments module).
   PAYPAL_PAYEE_MERCHANT_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().regex(/^[A-Za-z0-9]{1,32}$/).optional()),
 });

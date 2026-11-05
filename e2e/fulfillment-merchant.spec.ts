@@ -22,21 +22,28 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
 
   const cardFor = (page: Page, inquiryId: string) => page.getByRole("article", { name: new RegExp(`Job for request ${inquiryId.slice(0, 8)}`) });
 
+  /** Chooses the order's row in its grid, which opens its card below, and returns the card. */
+  const openCard = async (page: Page, inquiryId: string) => {
+    await page.getByRole("row", { name: new RegExp(inquiryId.slice(0, 8)) }).first().click();
+    return cardFor(page, inquiryId);
+  };
+
   test("accepting a payment makes the job, with its worksheet, and the merchant moves it to collected", async ({ page, browser }) => {
     const p = await authorizedPurchase(db, a, [{ code: "PRODUCTION_SLOT_CONFIRMATION", text: "Production slot to be confirmed." }]);
     await signIn(page, a);
 
     // The accept action itself asks for the job.
     await page.goto("/merchant/decisions");
+    await page.getByRole("row", { name: new RegExp(p.inquiryId.slice(0, 8)) }).first().click();
     const order = page.getByRole("article", { name: new RegExp(p.inquiryId.slice(0, 8)) });
     await order.getByLabel("Production slot to be confirmed.").check();
     await order.getByRole("button", { name: /Accept/ }).click();
     await expect.poll(async () => (await jobOf(db, p.purchaseId))?.status, { timeout: 15_000 }).toBe("QUEUED");
 
     await page.getByRole("link", { name: "Back" }).click();
-    await page.getByRole("link", { name: "Jobs" }).click();
+    await page.getByRole("link", { name: "Prepare orders" }).click();
     await expect(page).toHaveURL(/\/merchant\/jobs$/);
-    const card = cardFor(page, p.inquiryId);
+    const card = await openCard(page, p.inquiryId);
     await expect(card).toContainText("30 boxes");
     await expect(card).toContainText("Status: Queued");
     await expect(card).toContainText("Paid $1,080.00");
@@ -48,7 +55,7 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     // The customer follows along.
     const customer = await (await browser.newContext()).newPage();
     await customer.goto(`/o/${p.link}`);
-    await expect(customer.getByRole("region", { name: "Your order" })).toContainText("We are preparing your order");
+    await expect(customer.getByRole("region", { name: "Your order" })).toContainText("The shop is getting your order ready");
 
     await card.getByRole("button", { name: "Start preparing" }).click();
     await expect(card).toContainText("Status: Preparing");
@@ -61,7 +68,7 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     await expect(page.getByRole("region", { name: "Collected" })).toContainText(`Request ${p.inquiryId.slice(0, 8)}`);
     await customer.reload();
     await expect(customer.getByRole("region", { name: "Your order" })).toContainText("collected");
-    await expect(cardFor(page, p.inquiryId).getByRole("button")).toHaveCount(0);
+    await expect((await openCard(page, p.inquiryId)).getByRole("button").filter({ hasNotText: "Print pick list" })).toHaveCount(0); // no moves left (printing stays)
     expect((await jobOf(db, p.purchaseId))?.status).toBe("COLLECTED");
   });
 
@@ -70,7 +77,7 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     const jobId = await makeJob(db, p.purchaseId);
     await signIn(page, a);
     await page.goto("/merchant/jobs");
-    await cardFor(page, p.inquiryId).getByRole("button", { name: "Start preparing" }).dblclick();
+    await (await openCard(page, p.inquiryId)).getByRole("button", { name: "Start preparing" }).dblclick();
     await expect.poll(async () => (await jobOf(db, p.purchaseId))?.status, { timeout: 15_000 }).toBe("PREPARING");
     expect(await eventCount(db, jobId)).toBe(2);
   });
@@ -80,7 +87,7 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     await makeJob(db, p.purchaseId);
     await signIn(page, a);
     await page.goto("/merchant/jobs");
-    const card = cardFor(page, p.inquiryId);
+    const card = await openCard(page, p.inquiryId);
     await card.getByRole("button", { name: "Start preparing" }).click();
     await expect(card).toContainText("Status: Preparing");
 
@@ -96,7 +103,7 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     const customer = await (await browser.newContext()).newPage();
     await customer.goto(`/o/${p.link}`);
     const view = customer.getByRole("region", { name: "Your order" });
-    await expect(view).toContainText("delayed");
+    await expect(view).toContainText("taking longer than planned");
     await expect(view).not.toContainText("Ribbon");
     await expect(customer.getByText("Ribbon")).toHaveCount(0);
 
@@ -106,6 +113,42 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     await expect(card).toContainText("Status: Preparing");
   });
 
+  test("the pick list can be printed, and printing shows only the pick list", async ({ page }) => {
+    const p = await paidPurchase(db, a);
+    await makeJob(db, p.purchaseId);
+    // The browser's print dialog cannot be driven here, so print() is replaced by a recorder of what the page looked like when it was called.
+    await page.addInitScript(() => {
+      (window as unknown as { printed: unknown[] }).printed = [];
+      window.print = () => {
+        const marked = document.querySelectorAll("[data-printing]");
+        (window as unknown as { printed: unknown[] }).printed.push({ marked: marked.length, text: marked[0]?.textContent ?? "" });
+      };
+    });
+    await signIn(page, a);
+    await page.goto("/merchant/jobs");
+    const card = await openCard(page, p.inquiryId);
+    await card.getByRole("button", { name: "Print pick list" }).click();
+
+    const printed = await page.evaluate(() => (window as unknown as { printed: Array<{ marked: number; text: string }> }).printed);
+    expect(printed).toHaveLength(1);
+    expect(printed[0]!.marked).toBe(1); // exactly one list was marked while printing
+    expect(printed[0]!.text).toContain("30 × Desk organizer (ORGANIZER-DESK)");
+    expect(printed[0]!.text).not.toContain("Start preparing"); // not the buttons or the history
+    await expect(page.locator("[data-printing]")).toHaveCount(0); // and the mark is gone afterwards
+
+    // The print stylesheet: with the list marked and the page in print mode, only the list is visible.
+    await page.emulateMedia({ media: "print" });
+    await page.locator("[data-pick-list]").first().evaluate((el) => el.setAttribute("data-printing", ""));
+    // Buttons animate every property (transition-all), so a style can take a moment to settle on the screen; a printed page has no animation.
+    const visibility = (selector: string) => () => page.locator(selector).first().evaluate((el) => getComputedStyle(el).visibility);
+    await expect.poll(visibility("[data-printing] li")).toBe("visible");
+    await expect.poll(visibility("main h1")).toBe("hidden");
+    await expect.poll(visibility("[aria-label='Sandbox notice']")).toBe("hidden");
+    await expect.poll(() => page.locator("button", { hasText: "Start preparing" }).first().evaluate((el) => getComputedStyle(el).visibility)).toBe("hidden");
+    await expect(page.locator("[data-printing]")).toContainText(/Request [0-9a-f]{8} · 30 boxes · ready by/); // the printed list says which order it is for
+    await page.emulateMedia({ media: "screen" });
+  });
+
   test("a merchant sees only their own jobs", async ({ page }) => {
     const mine = await paidPurchase(db, a);
     const theirs = await paidPurchase(db, b);
@@ -113,8 +156,9 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     await makeJob(db, theirs.purchaseId);
     await signIn(page, a);
     await page.goto("/merchant/jobs");
-    await expect(cardFor(page, mine.inquiryId)).toBeVisible();
+    await expect(await openCard(page, mine.inquiryId)).toBeVisible();
     await expect(cardFor(page, theirs.inquiryId)).toHaveCount(0);
+    await expect(page.getByRole("row", { name: new RegExp(theirs.inquiryId.slice(0, 8)) })).toHaveCount(0); // not in the grid either
   });
 
   test("an empty list says so", async ({ page }) => {

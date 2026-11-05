@@ -18,6 +18,7 @@ const ALLOWED_KEYS: ReadonlySet<string> = new Set([
   "reservation_id",
   "payment_attempt_id",
   "product_ids",
+  "fields", // the names of what a catalog edit changed, never the values
   "provider_event_id",
   "event_type",
   "evidence",

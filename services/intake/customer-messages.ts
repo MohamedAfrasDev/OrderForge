@@ -4,14 +4,14 @@ import type { IntakeErrorCode } from "@/domain/intake";
 export function intakeFailureMessage(code: IntakeErrorCode): string {
   switch (code) {
     case "MESSAGE_TOO_LONG":
-      return "That message is too long. Please keep it under 4,000 characters.";
+      return "That message is too long. Keep it under 4,000 characters.";
     case "INVALID_INPUT":
-      return "Please check what you entered and try again.";
+      return "Check what you entered and try again.";
     case "LIMIT_REACHED":
-      return "This conversation has reached its limit, so the merchant will take over from here.";
+      return "This conversation has reached its limit, so the shop will take over from here.";
     case "MODEL_UNAVAILABLE":
     case "MODEL_OUTPUT_INVALID":
-      return "The assistant could not answer just now. Your message is kept. You can try again or ask the merchant to take over.";
+      return "The assistant could not answer just now. Your message is kept. You can try again or ask the shop to take over.";
     case "PROPOSAL_STALE":
       return "That option is no longer available as shown, so nothing was ordered. Send a message and the assistant will propose again.";
     case "ILLEGAL_TRANSITION":

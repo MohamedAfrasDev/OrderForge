@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { FIELD_NAMES, storedRequirementsSchema, type FieldName, type FieldStatus, type Proposal, type StoredRequirements } from "@/domain/intake";
+import { FIELD_NAMES, quickRepliesFor, storedRequirementsSchema, type BlockingField, type FieldName, type FieldStatus, type Proposal, type QuickReplies, type StoredRequirements } from "@/domain/intake";
 import type { VerifiedInquiryId } from "@/lib/access/inquiry-reads";
 import { CatalogLoadError, loadCatalogSnapshot } from "@/services/catalog/load-snapshot";
 import { latestRequirements, loadInquiry } from "./shared";
@@ -31,9 +31,16 @@ export type CustomerSpecView = {
   inquiryStatus: string;
   fields: CustomerSpecField[];
   question: string | null;
+  /** The line the open question is about, and the tappable answers code offers for it (labels only, no ids). Both null when no question is open. */
+  questionField: BlockingField | null;
+  quick: QuickReplies | null;
   proposal: Proposal | null;
   /** Names for the SKUs the proposal mentions, so the screen never shows a code. */
   productNames: Record<string, string>;
+  /** Each product's price in cents (the catalog's), so a suggested box can list what is in it. */
+  productPrices: Record<string, number>;
+  /** The box's slots by id: their plain label and how many of the product go in each box. */
+  slots: Record<string, { label: string; quantity: number }>;
 };
 
 /** The latest version of the verified inquiry's specification, or null until something has been recorded. */
@@ -48,24 +55,31 @@ export async function requirementsForCustomer(db: SupabaseClient, inquiryId: Ver
     inquiryStatus: inquiry.status,
     fields: fieldsOf(latest.stored),
     question: latest.stored.question?.text ?? null,
+    questionField: latest.stored.question?.field ?? null,
+    quick: latest.stored.question ? quickRepliesFor({ field: latest.stored.question.field }, latest.stored.fields) : null,
     proposal: latest.stored.proposal,
-    productNames: await productNames(db, inquiry.merchantId),
+    ...(await catalogFacts(db, inquiry.merchantId)),
   };
 }
 
-function fieldsOf(stored: StoredRequirements): CustomerSpecField[] {
+export function fieldsOf(stored: StoredRequirements): CustomerSpecField[] {
   return FIELD_NAMES.map((name) => {
     const f = stored.fields[name];
     return { name, label: LABELS[name], value: f.value, status: f.status, source: f.source === null ? null : f.source === "customer_edit" ? "edit" : "message" };
   });
 }
 
-/** A merchant whose catalog cannot be read gets no names, not a broken page: the screen then says "an item". */
-async function productNames(db: SupabaseClient, merchantId: string): Promise<Record<string, string>> {
+/** What a screen needs to list a box in words. A shop whose catalog cannot be read gets nothing here, not a broken page (an item then reads "an item"). */
+async function catalogFacts(db: SupabaseClient, merchantId: string): Promise<Pick<CustomerSpecView, "productNames" | "productPrices" | "slots">> {
   try {
-    return Object.fromEntries((await loadCatalogSnapshot(db, merchantId)).catalog.products.map((p) => [p.sku, p.name]));
+    const { catalog } = await loadCatalogSnapshot(db, merchantId);
+    return {
+      productNames: Object.fromEntries(catalog.products.map((p) => [p.sku, p.name])),
+      productPrices: Object.fromEntries(catalog.products.map((p) => [p.sku, p.unitPriceMinor])),
+      slots: Object.fromEntries(catalog.slots.map((s) => [s.id, { label: s.label, quantity: s.quantity }])),
+    };
   } catch (error) {
-    if (error instanceof CatalogLoadError) return {};
+    if (error instanceof CatalogLoadError) return { productNames: {}, productPrices: {}, slots: {} };
     throw error;
   }
 }

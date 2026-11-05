@@ -57,9 +57,9 @@ export type TurnResult =
 
 const fail = (code: IntakeErrorCode, cause?: string): TurnResult => ({ ok: false, code, ...(cause ? { cause } : {}) });
 
-const OUTAGE_NOTE = "The assistant could not answer just now. Your message is kept. You can try again or ask the merchant to take over.";
-const LIMIT_NOTE = "This conversation has reached its limit, so the merchant will take over from here.";
-const HANDOFF_REPLY = "I could not settle this on my own, so I have passed your request to the merchant. They can see our conversation and your requirements.";
+const OUTAGE_NOTE = "The assistant could not answer just now. Your message is kept. You can try again or ask the shop to take over.";
+const LIMIT_NOTE = "This conversation has reached its limit, so the shop will take over from here.";
+const HANDOFF_REPLY = "I could not settle this on my own, so I have passed your request to the shop. They can see our conversation and your requirements.";
 
 const jsonSchemaOf = (schema: z.ZodType): Record<string, unknown> => z.toJSONSchema(schema, { io: "input", unrepresentable: "any" }) as Record<string, unknown>;
 
@@ -119,12 +119,12 @@ async function conversationUpTo(db: SupabaseClient, inquiryId: string, messageId
 function proposalText(proposal: Proposal, productName: (sku: string) => string, boxCount: number): string {
   if (proposal.status === "VALID" && proposal.priced) {
     const parts = Object.entries(proposal.selections).map(([, sku]) => productName(sku));
-    return `Here is a box that fits your request: ${parts.join(", ")}. It comes to ${format(cents(proposal.priced.perBoxMinor))} per box, ${format(cents(proposal.priced.totalMinor))} for ${boxCount} boxes. You can use it, change your request, or ask the merchant to take over.`;
+    return `Here is a box that fits your request: ${parts.join(", ")}. It comes to ${format(cents(proposal.priced.perBoxMinor))} per box, ${format(cents(proposal.priced.totalMinor))} for ${boxCount} boxes. You can use it, change your request, or ask the shop to take over.`;
   }
   const reasons = [...new Set(proposal.blockers.map((b) => BLOCKER_WORDS[b as Blocker["code"]] ?? "it is not available as asked"))];
   const why = reasons.length > 0 ? ` (${reasons.join("; ")})` : "";
   if (proposal.alternatives.length === 0) {
-    return `I could not find a box that fits all of your requirements${why}. You can change a requirement, or ask the merchant to take over.`;
+    return `I could not find a box that fits all of your requirements${why}. You can change a requirement, or ask the shop to take over.`;
   }
   const lines = proposal.alternatives.map(
     (a, i) => `${i + 1}. Replace ${productName(a.fromSku)} with ${productName(a.toSku)}: ${format(cents(a.perBoxMinor))} per box, ${format(cents(a.totalMinor))} in total${a.explanation ? `. ${a.explanation}` : ""}`,

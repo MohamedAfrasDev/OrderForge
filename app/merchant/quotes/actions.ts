@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { merchantFailureMessage } from "@/services/quote/merchant-messages";
 import { publishQuote, withdrawQuote } from "@/services/quote/publish";
 import { releaseForInvalidatedPurchases } from "@/services/reservation/release";
+import { notifySoon } from "@/lib/notifications/run";
 
 export type ReviewState = { status: "idle" } | { status: "error"; message: string } | { status: "done"; message: string };
 
@@ -39,6 +40,7 @@ export async function publishDraftAction(_previous: ReviewState, formData: FormD
     }
   }
   refresh();
+  notifySoon();
   return result.ok ? { status: "done", message: "Published. The customer can now see and accept it." } : { status: "error", message: merchantFailureMessage(result.code) };
 }
 
@@ -55,5 +57,6 @@ export async function withdrawDraftAction(_previous: ReviewState, formData: Form
     { now: new Date().toISOString(), correlationId: newCorrelationId() },
   );
   refresh();
+  notifySoon();
   return result.ok ? { status: "done", message: "Withdrawn." } : { status: "error", message: merchantFailureMessage(result.code) };
 }

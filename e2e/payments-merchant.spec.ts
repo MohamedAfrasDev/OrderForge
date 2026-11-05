@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { adminClient, attemptOf, authorizedPurchase, createSeller, needsLocalSupabase, signIn, type Seller } from "./payments-support";
 
 const SLOT = { code: "PRODUCTION_SLOT_CONFIRMATION", text: "Production slot to be confirmed." };
@@ -21,15 +21,21 @@ test.describe("deciding on authorized orders (local Supabase + fake PayPal, mock
     b = await createSeller(db, "b");
   });
 
-  const cardFor = (page: import("@playwright/test").Page, inquiryId: string) => page.getByRole("article", { name: new RegExp(inquiryId.slice(0, 8)) });
+  const cardFor = (page: Page, inquiryId: string) => page.getByRole("article", { name: new RegExp(inquiryId.slice(0, 8)) });
+
+  /** Chooses the order's row in its grid, which opens its card below, and returns the card. */
+  const openCard = async (page: Page, inquiryId: string) => {
+    await page.getByRole("row", { name: new RegExp(inquiryId.slice(0, 8)) }).first().click();
+    return cardFor(page, inquiryId);
+  };
 
   test("the merchant confirms the listed condition and accepts: the payment is taken once, even on a double click", async ({ page }) => {
     const p = await authorizedPurchase(db, a, [SLOT]);
     await signIn(page, a);
-    await page.getByRole("link", { name: "Payment decisions" }).click();
+    await page.getByRole("link", { name: "Review orders" }).click();
     await expect(page).toHaveURL(/\/merchant\/decisions$/);
 
-    const card = cardFor(page, p.inquiryId);
+    const card = await openCard(page, p.inquiryId);
     await expect(card).toContainText("Total $1,080.00");
     await expect(card).toContainText("Production slot to be confirmed.");
 
@@ -57,7 +63,7 @@ test.describe("deciding on authorized orders (local Supabase + fake PayPal, mock
     await signIn(page, a);
     await page.goto("/merchant/decisions");
 
-    const card = cardFor(page, p.inquiryId);
+    const card = await openCard(page, p.inquiryId);
     await card.getByRole("button", { name: /Decline/ }).click();
     await expect(card.getByRole("alert")).toContainText("Write a reason for declining");
     expect((await attemptOf(db, p.purchaseId)).state).toBe("AUTHORIZED");
@@ -68,7 +74,7 @@ test.describe("deciding on authorized orders (local Supabase + fake PayPal, mock
 
     const customer = await (await browser.newContext()).newPage();
     await customer.goto(`/o/${p.link}`);
-    await expect(customer.getByRole("region", { name: "Payment" })).toContainText("you were not charged");
+    await expect(customer.getByRole("region", { name: "Payment" })).toContainText("you weren't charged");
     await expect(customer.getByRole("region", { name: "Payment" }).getByRole("button")).toHaveCount(0);
   });
 
@@ -77,8 +83,9 @@ test.describe("deciding on authorized orders (local Supabase + fake PayPal, mock
     const theirs = await authorizedPurchase(db, b);
     await signIn(page, a);
     await page.goto("/merchant/decisions");
-    await expect(cardFor(page, mine.inquiryId)).toBeVisible();
+    await expect(await openCard(page, mine.inquiryId)).toBeVisible();
     await expect(cardFor(page, theirs.inquiryId)).toHaveCount(0);
+    await expect(page.getByRole("row", { name: new RegExp(theirs.inquiryId.slice(0, 8)) })).toHaveCount(0); // not in the grid either
   });
 
   test("an empty list says so", async ({ page }) => {

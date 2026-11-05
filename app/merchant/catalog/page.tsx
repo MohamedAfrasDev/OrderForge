@@ -2,15 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireMerchant } from "@/lib/access/require-merchant";
-import { format } from "@/lib/money";
 import { createSessionClient } from "@/lib/supabase/server";
 import { CatalogLoadError, loadCatalogSnapshot } from "@/services/catalog/load-snapshot";
+import { AddProduct } from "./add-product";
+import { CatalogGrid, type ProductRow } from "./catalog-grid";
 
 export const metadata: Metadata = { title: "Catalog · OrderForge" };
 
 export default function MerchantCatalogPage() {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-12">
+    <main className="mx-auto flex w-full min-w-0 max-w-5xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6">
       <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
         <Catalog />
       </Suspense>
@@ -19,7 +20,7 @@ export default function MerchantCatalogPage() {
 }
 
 // Session and database reads are request-time data, so this streams inside <Suspense>.
-// Read-only: the merchant's own rows are read under row level security, and nothing here writes.
+// The merchant's own rows are read under row level security; changes go through the server actions in ./actions.
 async function Catalog() {
   const { merchant } = await requireMerchant();
   const db = await createSessionClient();
@@ -42,6 +43,23 @@ async function Catalog() {
   const { catalog, stock } = snapshot;
   const nameOf = new Map(catalog.products.map((p) => [p.sku, p.name]));
 
+  // On hand and held come from the stock rows (the merchant's own, under row level security); available is on hand minus held.
+  const stockRows = await db.from("stock").select("product_id, on_hand, reserved").in("product_id", catalog.products.map((p) => p.id));
+  if (stockRows.error) throw new Error(`load stock: ${stockRows.error.message}`);
+  const held = new Map((stockRows.data ?? []).map((s) => [s.product_id as string, { onHand: s.on_hand as number, held: s.reserved as number }]));
+  const rows: ProductRow[] = catalog.products.map((p) => ({
+    id: p.id,
+    sku: p.sku,
+    name: p.name,
+    category: p.category,
+    priceMinor: p.unitPriceMinor,
+    isFood: p.isFood,
+    active: p.active,
+    onHand: held.get(p.id)?.onHand ?? 0,
+    held: held.get(p.id)?.held ?? 0,
+    available: stock[p.id] ?? 0,
+  }));
+
   return (
     <>
       <PageHeader name={merchant.name} />
@@ -50,35 +68,15 @@ async function Catalog() {
         <h2 id="products-heading" className="text-lg font-semibold">
           Products
         </h2>
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-muted text-muted-foreground">
-              <tr>
-                <th scope="col" className="px-3 py-2 font-medium">SKU</th>
-                <th scope="col" className="px-3 py-2 font-medium">Name</th>
-                <th scope="col" className="px-3 py-2 font-medium">Category</th>
-                <th scope="col" className="px-3 py-2 font-medium">Price</th>
-                <th scope="col" className="px-3 py-2 font-medium">Food</th>
-                <th scope="col" className="px-3 py-2 text-right font-medium">Available</th>
-              </tr>
-            </thead>
-            <tbody>
-              {catalog.products.map((p) => (
-                <tr key={p.id} className="border-t border-border">
-                  <td className="px-3 py-2 font-mono text-xs">{p.sku}</td>
-                  <td className="px-3 py-2">
-                    {p.name}
-                    {!p.active && <span className="ml-2 text-xs text-muted-foreground">(inactive)</span>}
-                  </td>
-                  <td className="px-3 py-2">{p.category}</td>
-                  <td className="px-3 py-2">{format(p.unitPriceMinor)}</td>
-                  <td className="px-3 py-2">{p.isFood ? "Food" : ""}</td>
-                  <td className="px-3 py-2 text-right">{stock[p.id] ?? 0}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <p className="text-sm text-muted-foreground">Double-click a cell, or select it and press Enter, to change it. Prices are in dollars and cents.</p>
+        <CatalogGrid rows={rows} />
+      </section>
+
+      <section aria-labelledby="add-heading" className="flex flex-col gap-3">
+        <h2 id="add-heading" className="text-lg font-semibold">
+          Add a product
+        </h2>
+        <AddProduct slots={catalog.slots.map((s) => ({ id: s.id, label: s.label }))} />
       </section>
 
       <section aria-labelledby="template-heading" className="flex flex-col gap-3">

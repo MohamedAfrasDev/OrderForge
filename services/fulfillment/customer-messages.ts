@@ -2,17 +2,17 @@ import type { CustomerStatus, FulfillmentErrorCode } from "@/domain/fulfillment"
 
 const formatDay = (isoDay: string) => isoDay;
 
-/** What a customer reads about their job. Plain words: no ids, no notes, no internal statuses. */
+/** What a customer reads about their order once it is paid. Plain words: no ids, no notes, no internal statuses. */
 export function jobMessage(status: CustomerStatus, readyBy: string): string {
   switch (status) {
     case "PREPARING":
-      return `We are preparing your order. We aim to have it ready by ${formatDay(readyBy)}.`;
+      return `The shop is getting your order ready. They aim to have it ready by ${formatDay(readyBy)}.`;
     case "READY":
       return "Your order is ready for pickup.";
     case "COLLECTED":
       return "Your order has been collected. Thank you.";
     case "DELAYED":
-      return `Your order is delayed. The merchant will be in touch. It was due by ${formatDay(readyBy)}.`;
+      return `Your order is taking longer than planned. The shop will be in touch. It was due by ${formatDay(readyBy)}.`;
   }
 }
 

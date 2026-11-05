@@ -112,19 +112,25 @@ test.describe("stock holds (local Supabase)", () => {
 
   const articleFor = (page: Page, inquiryId: string) => page.getByRole("article", { name: new RegExp(inquiryId.slice(0, 8)) });
 
+  /** Chooses the order's row in its grid, which opens its card below, and returns the card. */
+  const openCard = async (page: Page, inquiryId: string) => {
+    await page.getByRole("row", { name: new RegExp(inquiryId.slice(0, 8)) }).first().click();
+    return articleFor(page, inquiryId);
+  };
+
   test("the customer sees how long the items are held, then that they are reserved once payment is under way", async ({ page }) => {
     const p = await acceptedPurchase(a);
     const reservationId = await reserve(p.purchaseId);
 
     await page.goto(`/o/${p.link}`);
-    const card = page.getByRole("region", { name: "Quote" });
-    await expect(card.getByRole("status")).toContainText("You accepted this exact quote");
+    const card = page.getByRole("region", { name: "Your price" });
+    await expect(card.getByRole("status")).toContainText("You accepted this exact price");
     await expect(card).toContainText(/Your items are held until \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\./);
 
     await beginOperation(db, reservationId, "authorize", ctx());
     await settleOperation(db, reservationId, "AUTHORIZED", ctx());
     await page.reload();
-    await expect(page.getByRole("region", { name: "Quote" })).toContainText("Your items are reserved for you.");
+    await expect(page.getByRole("region", { name: "Your price" })).toContainText("Your items are reserved for you.");
     await expect(page.getByText(/held until/)).toHaveCount(0);
   });
 
@@ -133,15 +139,15 @@ test.describe("stock holds (local Supabase)", () => {
     await reserve(p.purchaseId, new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString());
 
     await page.goto(`/o/${p.link}`);
-    await expect(page.getByRole("region", { name: "Quote" })).toContainText("The hold on your items has ended");
+    await expect(page.getByRole("region", { name: "Your price" })).toContainText("The hold on your items has ended");
     await expect(page.getByText(/held until/)).toHaveCount(0);
   });
 
   test("an accepted quote with no hold yet shows no hold line at all", async ({ page }) => {
     const p = await acceptedPurchase(a);
     await page.goto(`/o/${p.link}`);
-    const card = page.getByRole("region", { name: "Quote" });
-    await expect(card.getByRole("status")).toContainText("You accepted this exact quote");
+    const card = page.getByRole("region", { name: "Your price" });
+    await expect(card.getByRole("status")).toContainText("You accepted this exact price");
     await expect(card).not.toContainText(/held until|reserved for you|hold on your items/);
   });
 
@@ -162,17 +168,19 @@ test.describe("stock holds (local Supabase)", () => {
     await expect(page).toHaveURL(/\/merchant\/holds$/);
     await expect(page.getByRole("heading", { name: "Stock holds", level: 1 })).toBeVisible();
 
-    const plainCard = articleFor(page, plain.inquiryId);
+    const plainCard = await openCard(page, plain.inquiryId);
     await expect(plainCard).toContainText(/Held until \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC/);
     await expect(plainCard).toContainText("30 × A5 notebook (NOTEBOOK-A5)");
     await expect(plainCard).toContainText("30 × Desk organizer (ORGANIZER-DESK)");
 
     const attention = page.getByRole("region", { name: "Needs attention" });
+    await openCard(page, stuck.inquiryId);
     await expect(attention.getByRole("article", { name: new RegExp(stuck.inquiryId.slice(0, 8)) })).toContainText("timeout after 30s");
     await expect(attention.getByRole("article", { name: new RegExp(plain.inquiryId.slice(0, 8)) })).toHaveCount(0);
 
     await expect(articleFor(page, others.inquiryId)).toHaveCount(0);
+    await expect(page.getByRole("row", { name: new RegExp(others.inquiryId.slice(0, 8)) })).toHaveCount(0); // not in the grid either
     // Read-only: nothing to submit or type into on this page.
-    await expect(page.locator("main input:visible, main textarea:visible, main select:visible, main form:visible")).toHaveCount(0);
+    await expect(page.locator("main textarea:visible, main select:visible, main form:visible")).toHaveCount(0); // the grids' search boxes are the only fields
   });
 });
