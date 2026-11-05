@@ -14,7 +14,11 @@ export type DrainDeps = {
   /** How long one send may take before it counts as a failure. Defaults to 10 seconds. */
   timeoutMs?: number;
 };
-export type DrainContext = { now: string };
+export type DrainContext = {
+  now: string;
+  /** Send only this request's queued emails. The scheduled run leaves it out and looks at everything. */
+  inquiryId?: string;
+};
 export type DrainSummary = { sent: number; failed: number; skipped: number; retrying: number };
 
 /** The most emails one request ever gets, so a loop or a flood of events can never become a flood of mail. */
@@ -34,7 +38,9 @@ type Row = { id: string; inquiry_id: string; recipient: "customer" | "shop"; kin
  */
 export async function drainNotifications(db: SupabaseClient, deps: DrainDeps, ctx: DrainContext): Promise<DrainSummary> {
   const summary: DrainSummary = { sent: 0, failed: 0, skipped: 0, retrying: 0 };
-  const pending = await db.from("notifications").select("id, inquiry_id, recipient, kind, dedupe_key, attempts").eq("status", "PENDING").order("created_at", { ascending: true }).limit(BATCH);
+  let query = db.from("notifications").select("id, inquiry_id, recipient, kind, dedupe_key, attempts").eq("status", "PENDING");
+  if (ctx.inquiryId) query = query.eq("inquiry_id", ctx.inquiryId);
+  const pending = await query.order("created_at", { ascending: true }).limit(BATCH);
   if (pending.error) throw new Error(`drain: load queue: ${pending.error.message}`);
 
   for (const row of (pending.data ?? []) as Row[]) {

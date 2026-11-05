@@ -60,8 +60,12 @@ export async function readyDemoShop(db: SupabaseClient): Promise<Shop> {
   if (created.data.user) userId = created.data.user.id;
   else {
     // Already there (made by an earlier run or by the other journey spec a moment ago): find it by its address, never by who owns the store.
-    const listed = await db.auth.admin.listUsers({ perPage: 1000 });
-    userId = listed.data.users.find((u) => u.email === email)?.id;
+    // The local database collects test users from every run, so the one we want may be on a later page.
+    for (let page = 1; page <= 200 && !userId; page++) {
+      const listed = await db.auth.admin.listUsers({ page, perPage: 1000 });
+      userId = listed.data.users.find((u) => u.email === email)?.id;
+      if (listed.data.users.length < 1000) break;
+    }
     if (!userId) throw new Error(`shop user: ${created.error?.message}`);
     await db.auth.admin.updateUserById(userId, { password, email_confirm: true });
   }
@@ -108,12 +112,21 @@ export async function expectQueued(db: SupabaseClient, inquiryId: string, expect
  * PENDING and drained here with a recording fake. The fake is the only thing that "sends".
  */
 export async function replayWithFake(db: SupabaseClient, inquiryId: string) {
-  const back = await db.from("notifications").update({ status: "PENDING", attempts: 0, sent_at: null }).eq("inquiry_id", inquiryId);
-  if (back.error) throw new Error(`requeue: ${back.error.message}`);
   const port = createFakeEmail();
-  await drainNotifications(db, { port, accessSecret: process.env.E2E_ACCESS_LINK_SECRET!, appBaseUrl: "http://localhost:3100" }, { now: new Date().toISOString() });
+  const all = await db.from("notifications").select("id").eq("inquiry_id", inquiryId);
+  const total = (all.data ?? []).length;
+  // Other specs share this server, whose own background pass may turn a pending row into a skipped one a moment before this drain gets it.
+  // So: put back whatever has not been delivered here yet, send only this request's rows, and repeat until every row has gone through the fake.
+  for (let round = 0; round < 8 && port.delivered.length < total; round++) {
+    const done = new Set(port.delivered.map((m) => m.idempotencyKey));
+    const back = await db.from("notifications").update({ status: "PENDING", attempts: 0, sent_at: null }).eq("inquiry_id", inquiryId).not("id", "in", `(${[...done, "00000000-0000-0000-0000-000000000000"].join(",")})`);
+    if (back.error) throw new Error(`requeue: ${back.error.message}`);
+    await drainNotifications(db, { port, accessSecret: process.env.E2E_ACCESS_LINK_SECRET!, appBaseUrl: "http://localhost:3100" }, { now: new Date().toISOString(), inquiryId });
+  }
   return port;
 }
+
+const sorted = (list: string[]) => [...list].sort();
 
 const noSideways = async (page: Page) => expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
 
@@ -236,13 +249,13 @@ export async function wholeJourney(args: { page: Page; browser: Browser; db: Sup
   // 7. What would have been emailed, once each, in the customer's words (the fake is the only thing that "sends").
   const port = await replayWithFake(db, inquiryId);
   const mine = port.delivered;
-  expect(mine.map((m) => m.subject)).toEqual([
+  expect(mine.map((m) => m.subject).sort()).toEqual(sorted([
     "Your request to Demo Gift Boxes (simulated) is saved (sandbox demo)",
     "Demo Gift Boxes (simulated) prepared your price (sandbox demo)",
     "An order is waiting for your OK (sandbox demo)",
     "Demo Gift Boxes (simulated) accepted your order (sandbox demo)",
     "Your order is ready for pickup (sandbox demo)",
-  ]);
+  ]));
   expect(mine.filter((m) => m.to === email)).toHaveLength(4);
   expect(mine.filter((m) => m.to === shop.email)).toHaveLength(1);
   expect(new Set(mine.map((m) => m.idempotencyKey)).size).toBe(5); // once each
@@ -304,10 +317,10 @@ export async function handedOverJourney(args: { page: Page; browser: Browser; db
   await expectQueued(db, inquiryId, ["price_ready", "request_handed_over", "request_started"]);
 
   const port = await replayWithFake(db, inquiryId);
-  expect(port.delivered.map((m) => m.subject)).toEqual([
+  expect(port.delivered.map((m) => m.subject).sort()).toEqual(sorted([
     "Your request to Demo Gift Boxes (simulated) is saved (sandbox demo)",
     "A customer needs a reply (sandbox demo)",
     "Demo Gift Boxes (simulated) prepared your price (sandbox demo)",
-  ]);
+  ]));
   return { inquiryId };
 }

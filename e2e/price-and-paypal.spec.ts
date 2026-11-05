@@ -121,10 +121,7 @@ test.describe("the price, the PayPal box and keep this page (local Supabase, fak
     await page.reload();
     await expect(page.getByTestId("link-emailed")).toHaveCount(0); // skipped (no provider): no promise
 
-    await db.from("notifications").update({ status: "PENDING" }).eq("dedupe_key", row.dedupe_key);
-    await page.reload();
-    await expect(page.getByTestId("link-emailed")).toHaveText("We're emailing this link to the address you gave.");
-
+    // (The "on its way" wording is covered in the database test: here the server's own background pass would turn a pending row into a skipped one before the page loads.)
     await db.from("notifications").update({ status: "SENT", sent_at: new Date().toISOString() }).eq("dedupe_key", row.dedupe_key);
     await page.reload();
     await expect(page.getByTestId("link-emailed")).toHaveText("We also emailed this link to the address you gave.");
