@@ -71,8 +71,8 @@ PR 9 was merged before this, so the deployed code was briefly ahead of the hoste
 
 1. ~~Merge to `main`~~ (PR 9 merged 5 Nov by you).
 2. ~~Apply migration 0010 to the hosted project~~ (done 5 Nov, above).
-3. Set `RESEND_API_KEY`, `EMAIL_FROM` and (optionally) `EMAIL_REPLY_TO` on Vercel. Until a domain is verified in Resend, `EMAIL_FROM=onboarding@resend.dev` can deliver only to the Resend account owner's address; I need that address and the sender you want to use. Leave `INTAKE_MODEL` unset on Vercel.
-4. The first real email, to your own address only, recorded as real-email evidence.
+3. ~~Set the Resend variables on Vercel~~ (done by you 5 Nov; live after the second redeploy). Notes: `EMAIL_FROM` is the Resend test sender, so mail reaches only the Resend account owner's address. Until a domain is verified in Resend, `EMAIL_FROM=onboarding@resend.dev` can deliver only to the Resend account owner's address; I need that address and the sender you want to use. Leave `INTAKE_MODEL` unset on Vercel.
+4. ~~The first real email, to your own address~~ (done 5 Nov: sent through Resend from the live site and confirmed received by you; see `doc/evidence/product-pass-hosted.md`).
 5. One hosted run of the whole journey (real model, real PayPal sandbox, a real email to you), recorded in `doc/evidence/product-pass-hosted.md`.
 6. The ai-intake leftovers: the Gemma evaluation when its rate limit lifts, and the optional `PAYPAL_PAYEE_MERCHANT_ID`.
 7. Submission work (README, video, Devpost text, screenshots, a fresh-tester pass): no task list exists for it yet.
