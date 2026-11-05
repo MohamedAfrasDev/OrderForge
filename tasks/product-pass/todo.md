@@ -212,13 +212,21 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
 
 ## Phase F: prove it and close
 
-- [ ] **T15 The chained end-to-end runs and the 390 px checks**
+- [x] **T15 The chained end-to-end runs and the 390 px checks**
   - Acceptance: one browser run goes from `/` to "collected" with the stand-in model, the fake PayPal and the fake email provider (all labeled mocked): start with an email, the order builds, a tapped quick
     reply, a box chosen, the price read, accepted, PayPal, the shop accepts, prepared, collected; the strip and headline are right and the emails recorded at each step are the expected ones, once each. A
     second run covers the handed-over path: handed over, the shop builds a quote, the customer accepts. At 390 px the home page, store page, order room at every stage, the shop's Today and Build a quote
     have no horizontal scroll of the page and show their main button without zooming.
   - Verify: `npm run test:e2e -- e2e/journey.spec.ts e2e/journey-phone.spec.ts`
   - Files: `e2e/journey.spec.ts`, `e2e/journey-phone.spec.ts`, `e2e/journey-support.ts`
+  - Done 5 Nov 2026. As built (all mocked, local; nothing reaches a real model, PayPal or email provider): `journey-support.ts` holds the two journeys once, `journey.spec.ts` runs them at desktop width and `journey-phone.spec.ts` at 390 px with a layout check after every stage.
+    **Run 1, home page to collected:** `/` then "Try it as a customer"; the store form with an email; the stand-in model reads the request and asks one question; one tap on "20 boxes" answers it; "Choose this box"; the itemised price ($700.00); accept; "Approve on PayPal" (the redirect is checked, the buyer's approval is made at the fake); the shop signs in, Today shows an order waiting for its OK, the shop accepts it; it prepares, marks ready and records pickup; the customer's page is checked after each step. At each customer stage the headline and the single current step of the strip are asserted (We need one answer / Describe; Choose your box / Choose; Review your price / Review price; Approve your order on PayPal / Approve; Waiting for the shop to confirm / Shop confirms; Your order is being prepared / Pick up; ready for pickup; Collected with all six steps done).
+    **Emails:** after each step the notifications the server queued are asserted to be exactly the expected set, once each (saved link; price ready; order waiting for the shop's OK; accepted; ready for pickup). The server has no provider here, so it marks them SKIPPED; the test then puts them back to pending and drains them through a recording fake, and asserts the five subjects in order, 4 to the customer's address and 1 to the shop's login, five different idempotency keys, the amount lines ($700.00 for 20 boxes; PayPal took $700.00) and "sandbox demo" in every subject.
+    **Run 2, handed over:** the customer asks the shop to take over (email to the shop queued), the shop opens Requests, chooses the request, Build a quote (30 boxes, a product per part), sends it; the customer sees $1,080.00 and accepts it; three emails replayed through the fake (saved link, "A customer needs a reply", price ready).
+    **390 px:** at every one of those stages (home, store, each order stage, the shop's Today, an order to decide, a job to prepare, Build a quote) the page does not scroll sideways and its main action is on the screen.
+  - Needed and done on the way: the journeys start from the real demo store (`demo-gift-boxes`), so the test makes that local store a working shop with a fixed test-only shop login and large stock (the home page spec creates the same row bare). Two specs sharing it at the same time first logged each other out (each made a new owner); fixed with one fixed login found by its address. A grid list grows with every run, so the assertion checks the order's row, not the first card. Ran four times in a row, desktop and phone together, all green.
+  - Not covered: the drain is replayed in the test process, not inside the server (the server's own best-effort pass is shown by the queued rows); the PayPal sandbox page itself is not loaded; a real browser on a real phone has not been used.
+  - Gate: typecheck, lint and build clean; unit 1384; database 1326; E2E 133.
   - Depends on: T3, T4, T5, T7, T11.
 
 - [ ] **T16 Checkpoint**
