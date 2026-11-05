@@ -236,5 +236,6 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
   - Verify: `npm run typecheck && npm run lint && npm run test && npm run test:db && npm run test:e2e`
   - Files: `doc/checkpoints/product-pass-checkpoint.md`, `doc/evidence/product-pass-hosted.md`, `SPEC.md`, `doc/spec/SPEC-product-pass.md`, `tasks/product-pass/todo.md`
   - Done 5 Nov 2026 for everything that needs no hosted access. `doc/checkpoints/product-pass-checkpoint.md` reviews each success criterion against labeled evidence: 11 of 13 met, criterion 12 met except hosted migration 0010, criterion 13 (hosted run, real email) not done. Review found one real gap, "Keep this page" never said the link was emailed (deferred at T4, never built), and it was fixed with tests. CI is green on the last code commit (`a7bbadd`).
-  - Not done, each needing a fresh yes with read-only checks before and after: pull request and merge, hosted migration 0010, Resend variables on Vercel, the first real email to your own address, one hosted run (`doc/evidence/product-pass-hosted.md` does not exist yet).
+  - Since then (5 Nov): PR 9 merged by you; hosted migration 0010 applied after your yes, with checks before and after (recorded in the checkpoint).
+  - Not done, each needing a fresh yes with read-only checks before and after: Resend variables on Vercel, the first real email to your own address, one hosted run (`doc/evidence/product-pass-hosted.md` does not exist yet).
   - Depends on: T15.

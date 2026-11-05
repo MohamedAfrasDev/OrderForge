@@ -55,10 +55,22 @@ AG Grid Community 36.2.0 (MIT, no licence key) is on shop pages only (about 250 
 
 CI ran on every push of this branch. The run on the T11 commit failed once, on the template race above (a genuine bug, fixed). Every run since T12 is green. The last code commit (`a7bbadd`) is green.
 
+## Hosted migration 0010 (applied 5 Nov 2026, after your explicit yes)
+
+PR 9 was merged before this, so the deployed code was briefly ahead of the hosted schema (order pages read `notifications`; starting a request writes `customer_email`). Applied with `supabase db push --db-url` against the hosted project (ref `twkepbycivkmhrmurxwi`, the one in `.env`; the URL was read from `.env` and never printed). A dry run first listed exactly one pending migration, `0010_notifications.sql`. Checked read-only before and after. **hosted** evidence; the live site itself was not opened or tested.
+
+| Check | Before | After |
+|---|---|---|
+| Applied migrations | 0001 to 0009 | 0001 to 0010 |
+| `inquiries.customer_email` column | absent | present, with the `inquiries_customer_email_valid` check |
+| `notifications` table | absent | present, row level security on, no policy, one unique key (`dedupe_key`), no privileges for anon or authenticated |
+| Rows: inquiries / messages / purchases | 6 / 6 / 5 | 6 / 6 / 5 (unchanged) |
+| Inquiries with an email / notifications rows | n/a | 0 / 0 |
+
 ## Still to do (each needs your fresh explicit yes, with a read-only check before and after, recorded separately)
 
-1. Merge `spec-7-product-pass` to `main` (a pull request from this branch; `main` is already contained in it, 22 commits ahead).
-2. Apply migration 0010 to the hosted project (`twkepbycivkmhrmurxwi`): dry run first, read-only checks before and after (as for 0009).
+1. ~~Merge to `main`~~ (PR 9 merged 5 Nov by you).
+2. ~~Apply migration 0010 to the hosted project~~ (done 5 Nov, above).
 3. Set `RESEND_API_KEY`, `EMAIL_FROM` and (optionally) `EMAIL_REPLY_TO` on Vercel. Until a domain is verified in Resend, `EMAIL_FROM=onboarding@resend.dev` can deliver only to the Resend account owner's address; I need that address and the sender you want to use. Leave `INTAKE_MODEL` unset on Vercel.
 4. The first real email, to your own address only, recorded as real-email evidence.
 5. One hosted run of the whole journey (real model, real PayPal sandbox, a real email to you), recorded in `doc/evidence/product-pass-hosted.md`.
