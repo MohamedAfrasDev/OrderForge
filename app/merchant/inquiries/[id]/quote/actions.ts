@@ -3,6 +3,7 @@
 import { requireMerchant } from "@/lib/access/require-merchant";
 import { newCorrelationId } from "@/lib/correlation";
 import { format, cents } from "@/lib/money";
+import { notifySoon } from "@/lib/notifications/run";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildQuoteForInquiry } from "@/services/intake/merchant-quote";
 
@@ -30,6 +31,7 @@ export async function buildQuoteAction(_previous: BuildState, formData: FormData
     { quantity, selections, notes: { artwork: formData.get("artwork") === "on", productionSlot: formData.get("productionSlot") === "on" } },
     { now: new Date().toISOString(), correlationId: newCorrelationId() },
   );
+  if (result.ok) notifySoon();
   if (result.ok) return { status: "done", total: format(cents(result.value.totalMinor)), perBox: format(cents(result.value.perBoxMinor)), boxes: result.value.boxCount };
   switch (result.code) {
     case "CONFIGURATION_BLOCKED":

@@ -1,5 +1,6 @@
 import { getServerEnv } from "@/lib/env";
 import { handleReconcile } from "@/lib/cron/reconcile-handler";
+import { runNotifications } from "@/lib/notifications/run";
 import { createPaymentDeps } from "@/lib/payments/wiring";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createMissingJobs } from "@/services/fulfillment/create";
@@ -18,5 +19,7 @@ export async function POST(request: Request) {
     // Then the jobs: paid purchases the accept action did not get to (a capture settled out of doubt, a failed call).
     createMissingJobs: (context) => createMissingJobs(createAdminClient(), { ...context, actor: "system:cron" }),
     sweepReservations: (context) => sweepReservations(createAdminClient(), context),
+    // Last: the emails the state calls for. A problem here never fails the run.
+    notify: (context) => runNotifications(context.now),
   });
 }

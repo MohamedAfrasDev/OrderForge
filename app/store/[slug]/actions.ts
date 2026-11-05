@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { parseOptionalEmail } from "@/domain/notifications";
 import { authorizeCustomerToken } from "@/lib/access/customer-session";
 import { getIntakeModel } from "@/lib/ai/wiring";
+import { notifySoon } from "@/lib/notifications/run";
 import { newCorrelationId } from "@/lib/correlation";
 import { getServerEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -39,5 +40,6 @@ export async function startInquiryAction(slug: string, _previous: StartState, fo
       }
     }
   }
+  notifySoon();
   redirect(`/o/${accessToken}`);
 }

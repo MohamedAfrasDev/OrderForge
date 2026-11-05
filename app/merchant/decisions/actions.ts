@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createJobForPurchase } from "@/services/fulfillment/create";
 import { decide } from "@/services/payments/decide";
 import { decisionFailureMessage } from "@/services/payments/customer-messages";
+import { notifySoon } from "@/lib/notifications/run";
 
 export type DecisionState = { status: "idle" } | { status: "error"; message: string } | { status: "done"; message: string };
 
@@ -51,6 +52,7 @@ async function run(formData: FormData, decision: "accepted" | "declined"): Promi
     }
   }
   refresh();
+  notifySoon();
   if (result.ok) {
     return { status: "done", message: decision === "accepted" ? "Accepted. The payment was taken." : "Declined. The customer's authorization was cancelled and the stock released." };
   }

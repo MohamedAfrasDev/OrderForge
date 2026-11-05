@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { authorizeCustomerToken } from "@/lib/access/customer-session";
 import { newCorrelationId } from "@/lib/correlation";
+import { notifySoon } from "@/lib/notifications/run";
 import { createPaymentDeps } from "@/lib/payments/wiring";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { completeApproval } from "@/services/payments/checkout";
@@ -20,5 +21,6 @@ export async function GET(request: Request, ctx: { params: Promise<{ token: stri
     now: new Date().toISOString(),
     correlationId: newCorrelationId(),
   });
+  if (result.ok) notifySoon(); // the shop is told an order is waiting for their OK
   redirect(`/o/${token}?payment=${result.ok ? "DONE" : noticeForCode(result.code)}`);
 }

@@ -7,6 +7,7 @@ import { newCorrelationId } from "@/lib/correlation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { moveFailureMessage } from "@/services/fulfillment/customer-messages";
 import { moveJob } from "@/services/fulfillment/move";
+import { notifySoon } from "@/lib/notifications/run";
 
 export type MoveState = { status: "idle" } | { status: "error"; message: string } | { status: "done"; message: string };
 
@@ -35,5 +36,6 @@ export async function moveJobAction(_previous: MoveState, formData: FormData): P
     { now: new Date().toISOString(), correlationId: newCorrelationId() },
   );
   refresh();
+  notifySoon();
   return result.ok ? { status: "done", message: "Done." } : { status: "error", message: moveFailureMessage(result.code) };
 }

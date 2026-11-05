@@ -10,6 +10,7 @@ const state = {
   jobResult: { ok: true, value: { jobId: "job-1", status: "QUEUED", already: false } } as unknown,
 };
 
+vi.mock("@/lib/notifications/run", () => ({ notifySoon: vi.fn() }));
 vi.mock("next/cache", () => ({ refresh: vi.fn(() => void calls.push("refresh")) }));
 vi.mock("@/lib/access/require-merchant", () => ({
   requireMerchant: vi.fn(async () => {

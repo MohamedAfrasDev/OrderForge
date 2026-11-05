@@ -14,6 +14,7 @@ import { unansweredMessageId } from "@/services/intake/read";
 import { loadInquiry } from "@/services/intake/shared";
 import { postCustomerMessage } from "@/services/intake/start";
 import { runIntakeTurn } from "@/services/intake/turn";
+import { notifySoon } from "@/lib/notifications/run";
 
 export type IntakeState = { status: "idle" } | { status: "error"; message: string } | { status: "done" };
 
@@ -54,12 +55,14 @@ export async function sendMessageAction(token: string, _previous: IntakeState, f
   const posted = await postCustomerMessage(db, inquiryId, formData.get("message"), ctx());
   if (!posted.ok) {
     refresh();
+    notifySoon();
     return failed(posted.code);
   }
   // With the shop, the message is for them: the assistant stays out of it.
   const inquiry = await loadInquiry(db, inquiryId);
   const result = inquiry?.status === "REVIEW_REQUIRED" ? ({ status: "done" } as IntakeState) : await answer(inquiryId, posted.value.messageId);
   refresh();
+  notifySoon();
   return result;
 }
 
@@ -70,6 +73,7 @@ export async function retryTurnAction(token: string): Promise<IntakeState> {
   const messageId = await unansweredMessageId(createAdminClient(), inquiryId);
   const result = messageId ? await answer(inquiryId, messageId) : idle;
   refresh();
+  notifySoon();
   return result;
 }
 
@@ -79,6 +83,7 @@ export async function handOffAction(token: string): Promise<IntakeState> {
   if (!inquiryId) return NOT_FOUND;
   const result = await handOffToMerchant(createAdminClient(), inquiryId, "customer_request", ctx());
   refresh();
+  notifySoon();
   return result.ok ? { status: "done" } : failed(result.code);
 }
 
@@ -88,6 +93,7 @@ export async function chooseAction(token: string, _previous: IntakeState, formDa
   if (!inquiryId) return NOT_FOUND;
   const result = await chooseConfiguration(createAdminClient(), {}, inquiryId, formData.get("key"), ctx());
   refresh();
+  notifySoon();
   return result.ok ? { status: "done" } : failed(result.code);
 }
 
@@ -104,6 +110,7 @@ export async function editFieldAction(token: string, field: string, _previous: I
   if (!parsed.ok) return failed("INVALID_INPUT");
   const result = await runApply(inquiryId, { [field]: parsed.value });
   refresh();
+  notifySoon();
   return result;
 }
 
@@ -121,6 +128,7 @@ export async function quickReplyAction(token: string, field: string, index: numb
     result = failed("MODEL_UNAVAILABLE");
   }
   refresh();
+  notifySoon();
   return result;
 }
 

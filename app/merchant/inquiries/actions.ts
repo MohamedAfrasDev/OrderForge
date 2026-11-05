@@ -6,6 +6,7 @@ import { newCorrelationId } from "@/lib/correlation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { intakeFailureMessage } from "@/services/intake/customer-messages";
 import { replyAsMerchant } from "@/services/intake/merchant";
+import { notifySoon } from "@/lib/notifications/run";
 
 export type ReplyState = { status: "idle" } | { status: "error"; message: string } | { status: "done" };
 
@@ -18,5 +19,6 @@ export async function replyAction(_previous: ReplyState, formData: FormData): Pr
     correlationId: newCorrelationId(),
   });
   refresh();
+  notifySoon();
   return result.ok ? { status: "done" } : { status: "error", message: intakeFailureMessage(result.code) };
 }
