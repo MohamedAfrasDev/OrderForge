@@ -128,3 +128,22 @@
     @apply font-sans;
   }
 }
+
+/* Printing a job's pick list: while a list is marked data-printing (see app/merchant/jobs/print-button.tsx), only that list is on the page. */
+@media print {
+  body:has([data-printing]) * {
+    visibility: hidden;
+  }
+  body:has([data-printing]) [data-printing],
+  body:has([data-printing]) [data-printing] * {
+    visibility: visible;
+  }
+  body:has([data-printing]) [data-printing] {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    padding: 16px;
+    background: white;
+    color: black;
+  }
+}

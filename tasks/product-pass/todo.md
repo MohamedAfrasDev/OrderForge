@@ -199,12 +199,16 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
   - Gate: typecheck, lint and build clean; unit 1384; database 1326; E2E 127.
   - Depends on: T6. (Larger than five files.)
 
-- [ ] **T14 Print the pick list and three one-tap reply phrases**
+- [x] **T14 Print the pick list and three one-tap reply phrases**
   - Acceptance: the job's pick list has a Print action and a print stylesheet that shows only the list; the request reply box offers three starting phrases that fill the text box (client only, nothing
     sent until the shop sends it).
   - Verify: `npm run test:e2e -- e2e/fulfillment-merchant.spec.ts e2e/intake-merchant.spec.ts`
   - Files: `app/merchant/jobs/job-forms.tsx`, `app/globals.css`, `app/merchant/inquiries/reply-form.tsx`, the two specs
-  - Depends on: T6, T13 if done.
+  - Done 5 Nov 2026. As built: "Print pick list" sits beside the pick list heading (new `print-button.tsx`, not in `job-forms.tsx`, which is unchanged). It marks that one list `data-printing` while `window.print()` runs and removes the mark afterwards; the print stylesheet (`app/globals.css`, `@media print`) hides everything on the page except a marked list, and the list gains one printed-only line saying which request, how many boxes and the ready-by day. The reply box has three starting phrases ("Thanks, looking now", "Ask for number and date", "Yes, price to follow") that fill the box (a second one is added on a new line, not over the first); nothing is sent until the shop presses Send reply, they can be edited, they promise no time, and the box is empty again after sending.
+  - Tested in a real browser: `print()` is replaced by a recorder (the print dialog itself cannot be driven), which shows exactly one list marked, containing the pick list and none of the buttons, and the mark gone afterwards; with print media emulated, only the list (and its printed line) is visible. Not done: looking at a real printout or a PDF.
+  - Found on the way: buttons use `transition-all`, so a style such as `visibility` takes a moment to settle on screen; the test polls for it. A printed page has no animation. One existing assertion was adjusted in intent-preserving form: "no buttons left on a collected job" now means no move buttons (Print stays).
+  - Gate: typecheck, lint and build clean; unit 1384; database 1326; E2E 129.
+  - Depends on: T6, T13.
 
 ## Phase F: prove it and close
 

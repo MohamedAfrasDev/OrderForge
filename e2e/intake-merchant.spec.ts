@@ -81,6 +81,35 @@ test.describe("handed-over inquiries (local Supabase, stand-in model)", () => {
     await expect(customer.getByRole("article").filter({ hasText: "Which logo file will you send?" })).toContainText(/E2E Pay ia/);
   });
 
+  test("three starting phrases fill the reply box; nothing is sent until the shop sends it, and the shop can change the words", async ({ page, browser }) => {
+    const text = `phrases test ${Date.now()}`;
+    const customer = await (await browser.newContext()).newPage();
+    await customerHandsOver(customer, text);
+
+    await signIn(page, a);
+    await page.goto("/merchant/inquiries");
+    const mine = await openRequest(page, text);
+    const box = mine.getByLabel("Reply to the customer");
+    const phrases = mine.getByRole("group", { name: "Starting phrases" }).getByRole("button");
+    await expect(phrases).toHaveCount(3);
+    const before = await mine.getByRole("listitem").count();
+
+    await mine.getByRole("button", { name: "Ask for number and date" }).click();
+    await expect(box).toHaveValue("Could you tell me how many boxes you need, and by when?");
+    await mine.getByRole("button", { name: "Thanks, looking now" }).click(); // a second phrase is added after the first, not over it
+    await expect(box).toHaveValue("Could you tell me how many boxes you need, and by when?\nThanks for your request. I'm looking at it now.");
+    expect(await mine.getByRole("listitem").count()).toBe(before); // nothing sent yet
+    await customer.reload();
+    await expect(customer.getByText("how many boxes you need, and by when")).toHaveCount(0);
+
+    await box.fill("Yes, we can do that. Which logo file will you send?"); // the words can be changed
+    await mine.getByRole("button", { name: "Send reply" }).click();
+    await expect(mine.getByRole("listitem").filter({ hasText: "Which logo file will you send?" })).toBeVisible();
+    await expect(box).toHaveValue(""); // the next reply starts empty
+    await customer.reload();
+    await expect(customer.getByText("Which logo file will you send?")).toBeVisible();
+  });
+
   test("an inquiry handed over after a failure has nothing recorded, and the page says so", async ({ page, browser }) => {
     const text = `[[outage]] 12 boxes ${Date.now()}`;
     const customer = await (await browser.newContext()).newPage();

@@ -68,7 +68,7 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     await expect(page.getByRole("region", { name: "Collected" })).toContainText(`Request ${p.inquiryId.slice(0, 8)}`);
     await customer.reload();
     await expect(customer.getByRole("region", { name: "Your order" })).toContainText("collected");
-    await expect((await openCard(page, p.inquiryId)).getByRole("button")).toHaveCount(0);
+    await expect((await openCard(page, p.inquiryId)).getByRole("button").filter({ hasNotText: "Print pick list" })).toHaveCount(0); // no moves left (printing stays)
     expect((await jobOf(db, p.purchaseId))?.status).toBe("COLLECTED");
   });
 
@@ -111,6 +111,42 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     await expect(card.getByRole("button", { name: "Mark ready for pickup" })).toHaveCount(0);
     await card.getByRole("button", { name: "Resume (back to preparing)" }).click();
     await expect(card).toContainText("Status: Preparing");
+  });
+
+  test("the pick list can be printed, and printing shows only the pick list", async ({ page }) => {
+    const p = await paidPurchase(db, a);
+    await makeJob(db, p.purchaseId);
+    // The browser's print dialog cannot be driven here, so print() is replaced by a recorder of what the page looked like when it was called.
+    await page.addInitScript(() => {
+      (window as unknown as { printed: unknown[] }).printed = [];
+      window.print = () => {
+        const marked = document.querySelectorAll("[data-printing]");
+        (window as unknown as { printed: unknown[] }).printed.push({ marked: marked.length, text: marked[0]?.textContent ?? "" });
+      };
+    });
+    await signIn(page, a);
+    await page.goto("/merchant/jobs");
+    const card = await openCard(page, p.inquiryId);
+    await card.getByRole("button", { name: "Print pick list" }).click();
+
+    const printed = await page.evaluate(() => (window as unknown as { printed: Array<{ marked: number; text: string }> }).printed);
+    expect(printed).toHaveLength(1);
+    expect(printed[0]!.marked).toBe(1); // exactly one list was marked while printing
+    expect(printed[0]!.text).toContain("30 × Desk organizer (ORGANIZER-DESK)");
+    expect(printed[0]!.text).not.toContain("Start preparing"); // not the buttons or the history
+    await expect(page.locator("[data-printing]")).toHaveCount(0); // and the mark is gone afterwards
+
+    // The print stylesheet: with the list marked and the page in print mode, only the list is visible.
+    await page.emulateMedia({ media: "print" });
+    await page.locator("[data-pick-list]").first().evaluate((el) => el.setAttribute("data-printing", ""));
+    // Buttons animate every property (transition-all), so a style can take a moment to settle on the screen; a printed page has no animation.
+    const visibility = (selector: string) => () => page.locator(selector).first().evaluate((el) => getComputedStyle(el).visibility);
+    await expect.poll(visibility("[data-printing] li")).toBe("visible");
+    await expect.poll(visibility("main h1")).toBe("hidden");
+    await expect.poll(visibility("[aria-label='Sandbox notice']")).toBe("hidden");
+    await expect.poll(() => page.locator("button", { hasText: "Start preparing" }).first().evaluate((el) => getComputedStyle(el).visibility)).toBe("hidden");
+    await expect(page.locator("[data-printing]")).toContainText(/Request [0-9a-f]{8} · 30 boxes · ready by/); // the printed list says which order it is for
+    await page.emulateMedia({ media: "screen" });
   });
 
   test("a merchant sees only their own jobs", async ({ page }) => {

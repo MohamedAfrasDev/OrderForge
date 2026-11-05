@@ -7,6 +7,7 @@ import { cents, format } from "@/lib/money";
 import { createSessionClient } from "@/lib/supabase/server";
 import { listJobsForMerchant, type JobDetail } from "@/services/fulfillment/read";
 import { JobForms, type Move } from "./job-forms";
+import { PrintButton } from "./print-button";
 import { JobsGrid, type JobGridRow } from "./jobs-grid";
 
 export const metadata: Metadata = { title: "Jobs · OrderForge" };
@@ -62,8 +63,14 @@ function JobCard({ job }: { job: JobDetail }) {
         <p className="text-xs text-muted-foreground">Collected by the customer from you (pickup). Quote version {w.quote.version}.</p>
       </header>
 
-      <div>
-        <h4 className="text-sm font-medium">Pick list</h4>
+      <div data-pick-list>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h4 className="text-sm font-medium">Pick list</h4>
+          <PrintButton />
+        </div>
+        <p className="mt-1 hidden text-sm print:block">
+          Request {job.inquiryId.slice(0, 8)} · {w.boxCount} boxes · ready by {job.readyBy}
+        </p>
         <ul className="mt-1 list-disc pl-5 text-sm">
           {w.pick.map((p) => (
             <li key={p.sku}>
