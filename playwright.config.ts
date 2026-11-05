@@ -64,6 +64,10 @@ export default defineConfig({
       PAYPAL_SPIKE_BASE_URL: `http://127.0.0.1:${FAKE_PAYPAL_PORT}`,
       // The intake screens run against a rule-based stand-in for the model, never a real one (refused unless the database is local).
       INTAKE_MODEL: "local-demo",
+      // The test server never sends a real email, even if the real .env has a Resend key (empty counts as unset).
+      RESEND_API_KEY: "",
+      EMAIL_FROM: "",
+      EMAIL_REPLY_TO: "",
       // Dummy credentials: the test server must not carry the real ones from .env.
       PAYPAL_CLIENT_ID: "e2e-client-id",
       NEXT_PUBLIC_PAYPAL_CLIENT_ID: "e2e-client-id",

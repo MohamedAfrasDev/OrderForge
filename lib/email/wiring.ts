@@ -1,10 +1,19 @@
 import "server-only";
+import { getServerEnv } from "@/lib/env";
+import { resendConfigFrom } from "./config";
 import type { EmailPort } from "./port";
+import { createResendEmail } from "./resend";
+
+let port: EmailPort | null | undefined;
 
 /**
- * The email provider for this deployment, or null when none is configured: then nothing is sent and queued emails are marked SKIPPED.
- * Tests and CI never configure one. The real provider is added in its own task, behind the same port.
+ * The email provider for this deployment, or null when no real email may be sent: then nothing is sent and queued emails are marked SKIPPED.
+ * It is null without a key and a sender, and always null under test and in CI.
  */
 export function getEmailPort(): EmailPort | null {
-  return null;
+  if (port !== undefined) return port;
+  const env = getServerEnv();
+  const config = resendConfigFrom(env, { ci: Boolean(process.env.CI), test: process.env.NODE_ENV === "test" || Boolean(process.env.VITEST) });
+  port = config ? createResendEmail(config) : null;
+  return port;
 }

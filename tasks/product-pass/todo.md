@@ -171,7 +171,7 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
   - Gate: typecheck, lint and build clean; unit 1366; database 1326; E2E 127.
   - Depends on: T10.
 
-- [ ] **T12 The Resend provider and its guards (no real send without a yes)**
+- [x] **T12 The Resend provider and its guards (no real send without a yes)**
   - Acceptance: a real `EmailPort` calls `POST https://api.resend.com/emails` with `fetch`, a timeout and the notification id as the idempotency key; it refuses any other host, never puts the key in a
     result, a log or an error, and treats any non-success as a failure for the outbox to retry. `RESEND_API_KEY`, `EMAIL_FROM` and `EMAIL_REPLY_TO` are optional in the environment schema (empty counts as
     unset) and documented in `.env.example`; with no key the app sends nothing and the outbox marks rows `SKIPPED`; under test and in CI the real port is never constructed. Tested against a local fake HTTP
@@ -179,6 +179,10 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
     a separate step after a fresh yes and is recorded separately.
   - Verify: `npm run test -- tests/email && npm run typecheck`
   - Files: `lib/email/resend.ts`, `lib/env-schema.ts`, `.env.example`, `tests/email/resend.test.ts`
+  - Done 5 Nov 2026. As built: `lib/email/resend.ts` (`createResendEmail`: `POST /emails` with `fetch`, `Authorization` bearer, `Idempotency-Key` = notification id, JSON body with `from`, `to`, `subject`, `text`, `html`, optional `reply_to`; 10 second timeout; any non-2xx, timeout, dropped connection or refused redirect is `{ ok: false }`; the response body is never read; redirects are never followed so the key cannot travel). Host lock at construction: only `https://api.resend.com` (no port, no credentials) or a local fake on `http://127.0.0.1` / `http://localhost`; ten other shapes are refused, and the refusal does not carry the key. `lib/email/config.ts` (`resendConfigFrom`) is the pure rule for when a real provider may exist: a key and a sender, and never under test or CI; `lib/email/wiring.ts` uses it, so without them `getEmailPort()` is null and the outbox marks rows SKIPPED. `RESEND_API_KEY`, `EMAIL_FROM` (plain or "Name <addr>", no line breaks) and `EMAIL_REPLY_TO` are optional in the environment schema, empty counts as unset, malformed ones are named without their values; `.env.example` documents them. The e2e server blanks all three, so a real key in your `.env` can never make a test send.
+  - Proved against a local fake HTTP server only (no test can reach Resend): request shape, key only in the authorization header, 2xx ok, 400/401/403/422/429/500/502/503 failures, dropped connection, timeout, redirect not followed, nothing thrown or printed.
+  - **No real email has been sent, and none will be without your fresh yes.** The first real send (to your own address) is a T16 step: it needs `RESEND_API_KEY` and `EMAIL_FROM` set on a deployment, and until a domain is verified in Resend the test sender `onboarding@resend.dev` can deliver only to the Resend account owner's address.
+  - Gate: typecheck, lint and build clean; unit 1384; database 1326; E2E 127. One database test (payments-decide, "stores which conditions the merchant confirmed") timed out once in the full run after 167 s and passed alone and in the next full run; it is the known intermittent stall under Docker load, unrelated to email.
   - Depends on: T11.
 
 ## Phase E: the rest of the shop (both cuttable)

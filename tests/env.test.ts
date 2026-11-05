@@ -47,6 +47,28 @@ describe("parseServerEnv", () => {
     expect(err.message).not.toContain(SECRET);
   });
 
+  it("the email variables are optional, and empty counts as unset", () => {
+    const bare = parseServerEnv(validServer);
+    expect([bare.RESEND_API_KEY, bare.EMAIL_FROM, bare.EMAIL_REPLY_TO]).toEqual([undefined, undefined, undefined]);
+    const empty = parseServerEnv({ ...validServer, RESEND_API_KEY: "", EMAIL_FROM: "", EMAIL_REPLY_TO: "" });
+    expect([empty.RESEND_API_KEY, empty.EMAIL_FROM, empty.EMAIL_REPLY_TO]).toEqual([undefined, undefined, undefined]);
+  });
+
+  it("accepts a key, a sender (plain or with a name) and a reply address", () => {
+    for (const from of ["onboarding@resend.dev", "OrderForge Demo <onboarding@resend.dev>"]) {
+      const env = parseServerEnv({ ...validServer, RESEND_API_KEY: "re_abcdefgh12345678", EMAIL_FROM: from, EMAIL_REPLY_TO: "shop@example.com" });
+      expect(env).toMatchObject({ RESEND_API_KEY: "re_abcdefgh12345678", EMAIL_FROM: from, EMAIL_REPLY_TO: "shop@example.com" });
+    }
+  });
+
+  it("refuses malformed email settings by name, without showing their values", () => {
+    for (const [name, value] of [["RESEND_API_KEY", "short"], ["RESEND_API_KEY", "has a space in it 12345"], ["EMAIL_FROM", "not an address"], ["EMAIL_FROM", "Name <a@b.c>\r\nBcc: x@y.z"], ["EMAIL_REPLY_TO", "Name <a@b.c>"]] as const) {
+      const err = errorOf(() => parseServerEnv({ ...validServer, [name]: value }));
+      expect(err.variables, `${name}=${value}`).toEqual([name]);
+      expect(err.message).not.toContain(value);
+    }
+  });
+
   it("refuses PAYPAL_ENV=live", () => {
     const err = errorOf(() => parseServerEnv({ ...validServer, PAYPAL_ENV: "live" }));
     expect(err.variables).toEqual(["PAYPAL_ENV"]);
