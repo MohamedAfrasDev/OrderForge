@@ -187,12 +187,16 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
 
 ## Phase E: the rest of the shop (both cuttable)
 
-- [ ] **T13 The other shop lists as grids: Orders to confirm, Jobs, Stock holds, Quote review**
+- [x] **T13 The other shop lists as grids: Orders to confirm, Jobs, Stock holds, Quote review**
   - Acceptance: each page lists its rows in a grid (sortable, filterable, newest first) and opens the existing forms and actions in its detail area; nothing about a decision, a move or a withdrawal
     changes. The existing end-to-end specs for payments (merchant), fulfillment (merchant), quote review and stock holds pass with updated selectors only, plus a test that each grid shows only the
     signed-in shop's rows. The 9 Nov tripwire tests (payments, access) are rerun after this task.
   - Verify: `npm run test:e2e -- e2e/payments-merchant.spec.ts e2e/fulfillment-merchant.spec.ts e2e/quote-review.spec.ts e2e/reservation-holds.spec.ts`
   - Files: `app/merchant/{decisions,jobs,holds,quotes}/page.tsx`, the matching four specs (selectors)
+  - Done 5 Nov 2026. As built: each page keeps its sections (headings, regions and empty-state sentences unchanged) and each section's list is now a grid (`decisions-grid`, `jobs-grid`, `holds-grid`, `quotes-grid`: request, key figures, status; sortable, searchable) whose detail area is the existing card, with its forms, rendered by the server exactly as before. Choosing a row opens its card; the first row is open to begin with. No decision, move, publish or withdrawal changed: only the lists around the forms. The four specs gained an `openCard` helper (choose the order's row, then use the card as before) and a row-level isolation check (another shop's request is absent from the grid, not just its card); the stock holds spec's "nothing to type into" check now excludes the grids' search boxes, since it is the same intent (no form, no textarea, no select).
+  - Found on the way: the T8 template write could lose an update when two different products were added at the same instant (a database test failed once in the full run): the first add's read-back could run before the second add's write. It is now a real compare-and-set on the template value with a retry, and the test passed 11 times in a row and in two full runs afterwards.
+  - Tripwire: the payments and access tests were rerun in this task's full runs (database 1326, E2E 127, including `access.spec`, `payments-merchant`, `payments-*`) and pass.
+  - Gate: typecheck, lint and build clean; unit 1384; database 1326; E2E 127.
   - Depends on: T6. (Larger than five files.)
 
 - [ ] **T14 Print the pick list and three one-tap reply phrases**

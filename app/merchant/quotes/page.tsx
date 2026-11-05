@@ -5,13 +5,14 @@ import { requireMerchant } from "@/lib/access/require-merchant";
 import { cents, format } from "@/lib/money";
 import { createSessionClient } from "@/lib/supabase/server";
 import { listReviewDrafts } from "@/services/quote/review-queue";
+import { DraftsGrid, type DraftGridRow } from "./quotes-grid";
 import { ReviewForms } from "./review-forms";
 
 export const metadata: Metadata = { title: "Quote review · OrderForge" };
 
 export default function MerchantQuotesPage() {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-12">
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6">
       <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
         <Review />
       </Suspense>
@@ -41,51 +42,50 @@ async function Review() {
         </p>
       </header>
 
-      {drafts.length === 0 ? (
-        <p className="text-muted-foreground">Nothing is waiting for review.</p>
-      ) : (
-        <ul className="flex flex-col gap-6">
-          {drafts.map((d) => (
-            <li key={d.quoteId}>
-              <article
-                aria-label={`Quote draft version ${d.version} for request ${d.inquiryId.slice(0, 8)}`}
-                className="flex flex-col gap-4 rounded-lg border border-border p-4"
-              >
-                <header className="flex flex-col gap-1">
-                  <h2 className="text-lg font-semibold">
-                    Version {d.version} · request {d.inquiryId.slice(0, 8)}
-                  </h2>
-                  <p className="text-xs text-muted-foreground">Created {formatTime(d.createdAt)}</p>
-                  {d.needsDecision ? <p className="text-sm font-medium">Needs your decision</p> : null}
-                </header>
-
-                {d.readable ? (
-                  <p className="text-sm">
-                    {d.boxCount} boxes at {usd(d.perBoxMinor!)} per box, {usd(d.totalMinor)} total.
-                  </p>
-                ) : (
-                  <p role="alert" className="text-sm text-destructive">
-                    The stored quote cannot be read. It cannot be published; withdraw it.
-                  </p>
-                )}
-
-                {d.conditions.length > 0 ? (
-                  <ul className="list-disc pl-5 text-sm">
-                    {d.conditions.map((c, i) => (
-                      <li key={`${c.code}-${i}`}>
-                        {c.text}
-                        {c.code === "UNSUPPORTED_CUSTOMIZATION" ? " (not supported as it stands; needs your decision)" : ""}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-
-                <ReviewForms quoteId={d.quoteId} needsDecision={d.needsDecision} />
-              </article>
-            </li>
-          ))}
-        </ul>
-      )}
+      <DraftsGrid
+        rows={drafts.map((d): DraftGridRow => ({ id: d.quoteId, request: d.inquiryId.slice(0, 8), version: d.version, totalMinor: d.totalMinor, needsDecision: d.needsDecision ? "Yes" : "", created: d.createdAt }))}
+        details={Object.fromEntries(
+          drafts.map((d) => [
+            d.quoteId,
+            <article
+                key={d.quoteId}
+                            aria-label={`Quote draft version ${d.version} for request ${d.inquiryId.slice(0, 8)}`}
+                            className="flex flex-col gap-4 rounded-lg border border-border p-4"
+                          >
+                            <header className="flex flex-col gap-1">
+                              <h2 className="text-lg font-semibold">
+                                Version {d.version} · request {d.inquiryId.slice(0, 8)}
+                              </h2>
+                              <p className="text-xs text-muted-foreground">Created {formatTime(d.createdAt)}</p>
+                              {d.needsDecision ? <p className="text-sm font-medium">Needs your decision</p> : null}
+                            </header>
+            
+                            {d.readable ? (
+                              <p className="text-sm">
+                                {d.boxCount} boxes at {usd(d.perBoxMinor!)} per box, {usd(d.totalMinor)} total.
+                              </p>
+                            ) : (
+                              <p role="alert" className="text-sm text-destructive">
+                                The stored quote cannot be read. It cannot be published; withdraw it.
+                              </p>
+                            )}
+            
+                            {d.conditions.length > 0 ? (
+                              <ul className="list-disc pl-5 text-sm">
+                                {d.conditions.map((c, i) => (
+                                  <li key={`${c.code}-${i}`}>
+                                    {c.text}
+                                    {c.code === "UNSUPPORTED_CUSTOMIZATION" ? " (not supported as it stands; needs your decision)" : ""}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : null}
+            
+                            <ReviewForms quoteId={d.quoteId} needsDecision={d.needsDecision} />
+                          </article>
+          ]),
+        )}
+      />
     </>
   );
 }

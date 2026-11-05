@@ -112,6 +112,12 @@ test.describe("stock holds (local Supabase)", () => {
 
   const articleFor = (page: Page, inquiryId: string) => page.getByRole("article", { name: new RegExp(inquiryId.slice(0, 8)) });
 
+  /** Chooses the order's row in its grid, which opens its card below, and returns the card. */
+  const openCard = async (page: Page, inquiryId: string) => {
+    await page.getByRole("row", { name: new RegExp(inquiryId.slice(0, 8)) }).first().click();
+    return articleFor(page, inquiryId);
+  };
+
   test("the customer sees how long the items are held, then that they are reserved once payment is under way", async ({ page }) => {
     const p = await acceptedPurchase(a);
     const reservationId = await reserve(p.purchaseId);
@@ -162,17 +168,19 @@ test.describe("stock holds (local Supabase)", () => {
     await expect(page).toHaveURL(/\/merchant\/holds$/);
     await expect(page.getByRole("heading", { name: "Stock holds", level: 1 })).toBeVisible();
 
-    const plainCard = articleFor(page, plain.inquiryId);
+    const plainCard = await openCard(page, plain.inquiryId);
     await expect(plainCard).toContainText(/Held until \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC/);
     await expect(plainCard).toContainText("30 × A5 notebook (NOTEBOOK-A5)");
     await expect(plainCard).toContainText("30 × Desk organizer (ORGANIZER-DESK)");
 
     const attention = page.getByRole("region", { name: "Needs attention" });
+    await openCard(page, stuck.inquiryId);
     await expect(attention.getByRole("article", { name: new RegExp(stuck.inquiryId.slice(0, 8)) })).toContainText("timeout after 30s");
     await expect(attention.getByRole("article", { name: new RegExp(plain.inquiryId.slice(0, 8)) })).toHaveCount(0);
 
     await expect(articleFor(page, others.inquiryId)).toHaveCount(0);
+    await expect(page.getByRole("row", { name: new RegExp(others.inquiryId.slice(0, 8)) })).toHaveCount(0); // not in the grid either
     // Read-only: nothing to submit or type into on this page.
-    await expect(page.locator("main input:visible, main textarea:visible, main select:visible, main form:visible")).toHaveCount(0);
+    await expect(page.locator("main textarea:visible, main select:visible, main form:visible")).toHaveCount(0); // the grids' search boxes are the only fields
   });
 });

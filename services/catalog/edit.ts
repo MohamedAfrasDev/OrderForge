@@ -20,7 +20,7 @@ export type CatalogEditResult<T> = { ok: true; value: T } | { ok: false; code: C
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const UNIQUE_VIOLATION = "23505";
-const TEMPLATE_ATTEMPTS = 4;
+const TEMPLATE_ATTEMPTS = 8;
 
 type ProductRow = { id: string; merchant_id: string; sku: string; name: string; category: string; unit_price_minor: number; is_food: boolean; active: boolean };
 
@@ -142,20 +142,26 @@ export async function addProduct(db: SupabaseClient, actor: CatalogActor, input:
     throw new Error(`insert stock: ${stocked.error.message}`);
   }
 
-  // The template last. Two adds at once could each write a template without the other's product, so after writing, the template is read back and
-  // the write is repeated on the newest version until this product is in every part asked for.
+  // The template last. It is written with a compare-and-set on the value that was read, so two adds at once cannot overwrite each other:
+  // the one that lost sees no row updated, reads the newer template and tries again.
   for (let attempt = 0; attempt < TEMPLATE_ATTEMPTS; attempt++) {
-    const current = await loadTemplate(db, actor.merchantId);
-    if (!current) throw new Error("the box template disappeared");
-    const next = { slots: withSkuInSlots(current.slots, add.sku, add.slotIds) };
-    const written = await db.from("business_rules").update({ value: next }).eq("merchant_id", actor.merchantId).eq("key", "box_template");
+    const current = await db.from("business_rules").select("value").eq("merchant_id", actor.merchantId).eq("key", "box_template").maybeSingle();
+    if (current.error) throw new Error(`load template: ${current.error.message}`);
+    if (!current.data) throw new Error("the box template disappeared");
+    const parsed = boxTemplateRuleSchema.safeParse(current.data.value);
+    if (!parsed.success) throw new Error("the box template is not in the expected shape");
+    const next = { ...(current.data.value as object), slots: withSkuInSlots(parsed.data.slots, add.sku, add.slotIds) };
+    const written = await db
+      .from("business_rules")
+      .update({ value: next })
+      .eq("merchant_id", actor.merchantId)
+      .eq("key", "box_template")
+      .filter("value", "eq", JSON.stringify(current.data.value))
+      .select("id");
     if (written.error) throw new Error(`write template: ${written.error.message}`);
-    const check = await loadTemplate(db, actor.merchantId);
-    const there = check?.slots.filter((s) => add.slotIds.includes(s.id)).every((s) => s.allowedSkus.includes(add.sku));
-    if (there) {
-      await audit(auditInsertFor(db), { actor: `merchant:${actor.userId}`, action: "catalog.product_added", entity: "product", entityId: productId, correlationId: ctx.correlationId, data: { fields: ["sku", "name", "category", "priceMinor", "isFood", "onHand", "slotIds"] } });
-      return { ok: true, value: { productId } };
-    }
+    if ((written.data ?? []).length === 0) continue; // someone else changed the template first: read it again
+    await audit(auditInsertFor(db), { actor: `merchant:${actor.userId}`, action: "catalog.product_added", entity: "product", entityId: productId, correlationId: ctx.correlationId, data: { fields: ["sku", "name", "category", "priceMinor", "isFood", "onHand", "slotIds"] } });
+    return { ok: true, value: { productId } };
   }
   throw new Error("could not place the new product in the box template");
 }

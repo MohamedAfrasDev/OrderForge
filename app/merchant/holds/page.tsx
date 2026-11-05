@@ -3,13 +3,14 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { requireMerchant } from "@/lib/access/require-merchant";
 import { createSessionClient } from "@/lib/supabase/server";
+import { HoldsGrid, type HoldGridRow } from "./holds-grid";
 import { listHoldsForMerchant, type HoldRow } from "@/services/reservation/read";
 
 export const metadata: Metadata = { title: "Stock holds · OrderForge" };
 
 export default function MerchantHoldsPage() {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-12">
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6">
       <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
         <Holds />
       </Suspense>
@@ -18,6 +19,13 @@ export default function MerchantHoldsPage() {
 }
 
 const formatTime = (iso: string) => `${iso.slice(0, 16).replace("T", " ")} UTC`;
+
+const STATE_TEXT: Record<string, string> = {
+  HELD: "Held, waiting for payment",
+  PAYMENT_IN_FLIGHT: "Payment in progress",
+  AWAITING_CONFIRMATION: "Waiting for your decision",
+  REVIEW_REQUIRED: "Needs attention",
+};
 
 function describe(hold: HoldRow): string {
   switch (hold.state) {
@@ -61,6 +69,8 @@ async function Holds() {
   const holds = await listHoldsForMerchant(await createSessionClient(), merchant.id);
   const attention = holds.filter((h) => h.needsAttention);
   const current = holds.filter((h) => !h.needsAttention);
+  const gridRows = (list: HoldRow[]): HoldGridRow[] => list.map((h) => ({ id: h.reservationId, request: h.inquiryId.slice(0, 8), state: STATE_TEXT[h.state] ?? h.state, items: h.lines.length, changed: h.stateChangedAt }));
+  const detailsOf = (list: HoldRow[]) => Object.fromEntries(list.map((h) => [h.reservationId, <HoldCard key={h.reservationId} hold={h} />]));
 
   return (
     <>
@@ -80,34 +90,14 @@ async function Holds() {
         <h2 id="attention-heading" className="text-lg font-semibold">
           Needs attention
         </h2>
-        {attention.length === 0 ? (
-          <p className="text-muted-foreground">Nothing needs attention.</p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {attention.map((h) => (
-              <li key={h.reservationId}>
-                <HoldCard hold={h} />
-              </li>
-            ))}
-          </ul>
-        )}
+        <HoldsGrid label="Holds needing attention" emptyText="Nothing needs attention." rows={gridRows(attention)} details={detailsOf(attention)} />
       </section>
 
       <section aria-labelledby="current-heading" className="flex flex-col gap-3">
         <h2 id="current-heading" className="text-lg font-semibold">
           Current holds
         </h2>
-        {current.length === 0 ? (
-          <p className="text-muted-foreground">No stock is on hold.</p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {current.map((h) => (
-              <li key={h.reservationId}>
-                <HoldCard hold={h} />
-              </li>
-            ))}
-          </ul>
-        )}
+        <HoldsGrid label="Current holds" emptyText="No stock is on hold." rows={gridRows(current)} details={detailsOf(current)} />
       </section>
     </>
   );

@@ -6,12 +6,13 @@ import { cents, format } from "@/lib/money";
 import { createSessionClient } from "@/lib/supabase/server";
 import { HONOR_PERIOD_DAYS, listDecisionsForMerchant, type DecisionRow } from "@/services/payments/read";
 import { DecisionForms } from "./decision-forms";
+import { DecisionsGrid, type DecisionGridRow } from "./decisions-grid";
 
 export const metadata: Metadata = { title: "Payment decisions · OrderForge" };
 
 export default function MerchantDecisionsPage() {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-12">
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6">
       <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
         <Decisions />
       </Suspense>
@@ -61,6 +62,8 @@ async function Decisions() {
   const exceptions = rows.filter((r) => r.section === "exception");
   const waiting = rows.filter((r) => r.section === "waiting");
   const checking = rows.filter((r) => r.section === "checking");
+  const gridRows = (list: DecisionRow[]): DecisionGridRow[] => list.map((r) => ({ id: r.purchaseId, request: r.inquiryId.slice(0, 8), version: r.quoteVersion, totalMinor: r.totalMinor, since: r.authorizedAt ?? "" }));
+  const detailsOf = (list: DecisionRow[], body: (r: DecisionRow) => React.ReactNode) => Object.fromEntries(list.map((r) => [r.purchaseId, body(r)]));
 
   return (
     <>
@@ -79,70 +82,61 @@ async function Decisions() {
         <h2 id="exceptions-heading" className="text-lg font-semibold">
           Needs attention
         </h2>
-        {exceptions.length === 0 ? (
-          <p className="text-muted-foreground">Nothing needs attention.</p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {exceptions.map((r) => (
-              <li key={r.purchaseId}>
-                <Card row={r}>
-                  <p className="text-sm">
-                    <span className="font-medium">Not marked as paid.</span> {EXCEPTION_TEXT[r.exceptionReason ?? ""] ?? "PayPal's records did not match."} The stock stays held until someone
-                    resolves it in PayPal.
-                  </p>
-                </Card>
-              </li>
-            ))}
-          </ul>
-        )}
+        <DecisionsGrid
+          label="Orders needing attention"
+          emptyText="Nothing needs attention."
+          rows={gridRows(exceptions)}
+          details={detailsOf(exceptions, (r) => (
+            <Card row={r}>
+              <p className="text-sm">
+                <span className="font-medium">Not marked as paid.</span> {EXCEPTION_TEXT[r.exceptionReason ?? ""] ?? "PayPal's records did not match."} The stock stays held until someone resolves it in
+                PayPal.
+              </p>
+            </Card>
+          ))}
+        />
       </section>
 
       <section aria-labelledby="waiting-heading" className="flex flex-col gap-3">
         <h2 id="waiting-heading" className="text-lg font-semibold">
           Waiting for your decision
         </h2>
-        {waiting.length === 0 ? (
-          <p className="text-muted-foreground">No authorized orders are waiting.</p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {waiting.map((r) => (
-              <li key={r.purchaseId}>
-                <Card row={r}>
-                  {r.conditions.length > 0 ? (
-                    <div>
-                      <h4 className="text-sm font-medium">Conditions on this quote</h4>
-                      <ul className="mt-1 list-disc pl-5 text-sm">
-                        {r.conditions.map((c) => (
-                          <li key={c.code}>{c.text}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
-                  <DecisionForms purchaseId={r.purchaseId} conditions={r.conditions.filter((c) => c.needsConfirmation).map((c) => ({ code: c.code, text: c.text }))} />
-                </Card>
-              </li>
-            ))}
-          </ul>
-        )}
+        <DecisionsGrid
+          label="Orders waiting"
+          emptyText="No authorized orders are waiting."
+          rows={gridRows(waiting)}
+          details={detailsOf(waiting, (r) => (
+            <Card row={r}>
+              {r.conditions.length > 0 ? (
+                <div>
+                  <h4 className="text-sm font-medium">Conditions on this quote</h4>
+                  <ul className="mt-1 list-disc pl-5 text-sm">
+                    {r.conditions.map((c) => (
+                      <li key={c.code}>{c.text}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              <DecisionForms purchaseId={r.purchaseId} conditions={r.conditions.filter((c) => c.needsConfirmation).map((c) => ({ code: c.code, text: c.text }))} />
+            </Card>
+          ))}
+        />
       </section>
 
       <section aria-labelledby="checking-heading" className="flex flex-col gap-3">
         <h2 id="checking-heading" className="text-lg font-semibold">
           Being checked
         </h2>
-        {checking.length === 0 ? (
-          <p className="text-muted-foreground">Nothing is being checked.</p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {checking.map((r) => (
-              <li key={r.purchaseId}>
-                <Card row={r}>
-                  <p className="text-sm">A payment step is being carried out or confirmed with PayPal. It is never sent twice; this page updates when PayPal confirms.</p>
-                </Card>
-              </li>
-            ))}
-          </ul>
-        )}
+        <DecisionsGrid
+          label="Orders being checked"
+          emptyText="Nothing is being checked."
+          rows={gridRows(checking)}
+          details={detailsOf(checking, (r) => (
+            <Card row={r}>
+              <p className="text-sm">A payment step is being carried out or confirmed with PayPal. It is never sent twice; this page updates when PayPal confirms.</p>
+            </Card>
+          ))}
+        />
       </section>
     </>
   );

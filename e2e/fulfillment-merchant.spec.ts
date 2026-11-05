@@ -22,12 +22,19 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
 
   const cardFor = (page: Page, inquiryId: string) => page.getByRole("article", { name: new RegExp(`Job for request ${inquiryId.slice(0, 8)}`) });
 
+  /** Chooses the order's row in its grid, which opens its card below, and returns the card. */
+  const openCard = async (page: Page, inquiryId: string) => {
+    await page.getByRole("row", { name: new RegExp(inquiryId.slice(0, 8)) }).first().click();
+    return cardFor(page, inquiryId);
+  };
+
   test("accepting a payment makes the job, with its worksheet, and the merchant moves it to collected", async ({ page, browser }) => {
     const p = await authorizedPurchase(db, a, [{ code: "PRODUCTION_SLOT_CONFIRMATION", text: "Production slot to be confirmed." }]);
     await signIn(page, a);
 
     // The accept action itself asks for the job.
     await page.goto("/merchant/decisions");
+    await page.getByRole("row", { name: new RegExp(p.inquiryId.slice(0, 8)) }).first().click();
     const order = page.getByRole("article", { name: new RegExp(p.inquiryId.slice(0, 8)) });
     await order.getByLabel("Production slot to be confirmed.").check();
     await order.getByRole("button", { name: /Accept/ }).click();
@@ -36,7 +43,7 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     await page.getByRole("link", { name: "Back" }).click();
     await page.getByRole("link", { name: "Prepare orders" }).click();
     await expect(page).toHaveURL(/\/merchant\/jobs$/);
-    const card = cardFor(page, p.inquiryId);
+    const card = await openCard(page, p.inquiryId);
     await expect(card).toContainText("30 boxes");
     await expect(card).toContainText("Status: Queued");
     await expect(card).toContainText("Paid $1,080.00");
@@ -61,7 +68,7 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     await expect(page.getByRole("region", { name: "Collected" })).toContainText(`Request ${p.inquiryId.slice(0, 8)}`);
     await customer.reload();
     await expect(customer.getByRole("region", { name: "Your order" })).toContainText("collected");
-    await expect(cardFor(page, p.inquiryId).getByRole("button")).toHaveCount(0);
+    await expect((await openCard(page, p.inquiryId)).getByRole("button")).toHaveCount(0);
     expect((await jobOf(db, p.purchaseId))?.status).toBe("COLLECTED");
   });
 
@@ -70,7 +77,7 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     const jobId = await makeJob(db, p.purchaseId);
     await signIn(page, a);
     await page.goto("/merchant/jobs");
-    await cardFor(page, p.inquiryId).getByRole("button", { name: "Start preparing" }).dblclick();
+    await (await openCard(page, p.inquiryId)).getByRole("button", { name: "Start preparing" }).dblclick();
     await expect.poll(async () => (await jobOf(db, p.purchaseId))?.status, { timeout: 15_000 }).toBe("PREPARING");
     expect(await eventCount(db, jobId)).toBe(2);
   });
@@ -80,7 +87,7 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     await makeJob(db, p.purchaseId);
     await signIn(page, a);
     await page.goto("/merchant/jobs");
-    const card = cardFor(page, p.inquiryId);
+    const card = await openCard(page, p.inquiryId);
     await card.getByRole("button", { name: "Start preparing" }).click();
     await expect(card).toContainText("Status: Preparing");
 
@@ -113,8 +120,9 @@ test.describe("preparing paid orders (local Supabase + fake PayPal, mocked evide
     await makeJob(db, theirs.purchaseId);
     await signIn(page, a);
     await page.goto("/merchant/jobs");
-    await expect(cardFor(page, mine.inquiryId)).toBeVisible();
+    await expect(await openCard(page, mine.inquiryId)).toBeVisible();
     await expect(cardFor(page, theirs.inquiryId)).toHaveCount(0);
+    await expect(page.getByRole("row", { name: new RegExp(theirs.inquiryId.slice(0, 8)) })).toHaveCount(0); // not in the grid either
   });
 
   test("an empty list says so", async ({ page }) => {

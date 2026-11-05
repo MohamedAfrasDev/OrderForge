@@ -87,6 +87,12 @@ test.describe("quote review queue (local Supabase)", () => {
   }
 
   const articleFor = (page: Page, inquiryId: string) => page.getByRole("article", { name: new RegExp(inquiryId.slice(0, 8)) });
+
+  /** Chooses the order's row in its grid, which opens its card below, and returns the card. */
+  const openCard = async (page: Page, inquiryId: string) => {
+    await page.getByRole("row", { name: new RegExp(inquiryId.slice(0, 8)) }).first().click();
+    return articleFor(page, inquiryId);
+  };
   const statusOf = async (quoteId: string) => (await db.from("quote_versions").select("status").eq("id", quoteId).single()).data?.status;
 
   test("the merchant approves a held draft in their own words and the customer sees it", async ({ page }) => {
@@ -95,7 +101,7 @@ test.describe("quote review queue (local Supabase)", () => {
     await page.getByRole("link", { name: "Quote review" }).click();
     await expect(page).toHaveURL(/\/merchant\/quotes$/);
 
-    const card = articleFor(page, draft.inquiryId);
+    const card = await openCard(page, draft.inquiryId);
     await expect(card).toContainText("Needs your decision");
     await expect(card).toContainText("Gold foil lid.");
     await expect(card).toContainText("30 boxes at $36.00 per box, $1,080.00 total");
@@ -122,7 +128,7 @@ test.describe("quote review queue (local Supabase)", () => {
     const draft = await heldDraft(a);
     await signIn(page, a);
     await page.goto("/merchant/quotes");
-    const card = articleFor(page, draft.inquiryId);
+    const card = await openCard(page, draft.inquiryId);
     await card.getByLabel(/Your wording for the customer/).fill("   ");
     await card.getByRole("button", { name: "Approve and publish" }).click();
     await expect(card.getByRole("alert")).toContainText("Write the wording");
@@ -133,7 +139,7 @@ test.describe("quote review queue (local Supabase)", () => {
     const draft = await heldDraft(a);
     await signIn(page, a);
     await page.goto("/merchant/quotes");
-    const card = articleFor(page, draft.inquiryId);
+    const card = await openCard(page, draft.inquiryId);
 
     await card.getByRole("button", { name: "Withdraw quote" }).click();
     await expect(card.getByRole("alert")).toContainText("a reason");
@@ -151,13 +157,14 @@ test.describe("quote review queue (local Supabase)", () => {
     await signIn(page, a);
     await page.goto("/merchant/quotes");
 
-    await expect(articleFor(page, mine.inquiryId)).toBeVisible();
+    await expect(await openCard(page, mine.inquiryId)).toBeVisible();
     await expect(articleFor(page, theirs.inquiryId)).toHaveCount(0);
+    await expect(page.getByRole("row", { name: new RegExp(theirs.inquiryId.slice(0, 8)) })).toHaveCount(0); // not in the grid either
     await expect(page.getByText("Secret request of merchant B.")).toHaveCount(0);
 
     // Wait for hydration first: React would otherwise overwrite the edited value with the real one.
     await page.waitForLoadState("networkidle");
-    const card = articleFor(page, mine.inquiryId);
+    const card = await openCard(page, mine.inquiryId);
     const field = card.locator('input[name="quoteId"]').first();
     await field.evaluate((el, id) => ((el as HTMLInputElement).value = id), theirs.quoteId);
     await expect(field).toHaveValue(theirs.quoteId);
