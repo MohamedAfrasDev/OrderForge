@@ -66,6 +66,32 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     await expect(page.getByLabel("Describe the custom order you have in mind")).toHaveAttribute("maxlength", "4000");
   });
 
+  test("the store form has an optional email with a plain line on its use; a bad address is refused, and a good one is kept on the request", async ({ page }) => {
+    const store = await newStore();
+    await asNewVisitor(page);
+    await page.goto(`/store/${store.slug}`);
+    const email = page.getByLabel(/^Email/);
+    await expect(email).not.toHaveAttribute("required", "");
+    await expect(page.getByText("We'll only use it to email you the link to your request")).toBeVisible();
+
+    await page.getByLabel("Describe the custom order you have in mind").fill("20 boxes, no food");
+    await email.fill("not-an-address");
+    await email.evaluate((el: HTMLInputElement) => (el.type = "text")); // get past the browser's own check to reach ours
+    await page.getByRole("button", { name: "Start my request" }).click();
+    await expect(page.locator("form").getByRole("alert")).toContainText("That email address doesn't look right");
+    await expect(page).toHaveURL(/\/store\//);
+    // What was typed is still there: a typo in the address never costs the customer their message.
+    await expect(page.getByLabel("Describe the custom order you have in mind")).toHaveValue("20 boxes, no food");
+    await expect(email).toHaveValue("not-an-address");
+
+    await email.fill("  Sam.Lee@Example.com ");
+    await page.getByRole("button", { name: "Start my request" }).click();
+    await page.waitForURL(/\/o\//);
+    const merchant = await db.from("merchants").select("id").eq("slug", store.slug).single();
+    const saved = await db.from("inquiries").select("customer_email").eq("merchant_id", merchant.data!.id as string);
+    expect(saved.data).toEqual([{ customer_email: "sam.lee@example.com" }]);
+  });
+
   test("describe a request, answer one question, pick an alternative, and reach a quote that can be accepted", async ({ page }) => {
     const store = await newStore();
     await start(page, store.slug, "No food, our logo, under $40 per box");

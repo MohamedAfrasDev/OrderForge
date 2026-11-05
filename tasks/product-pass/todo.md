@@ -138,7 +138,7 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
 
 ## Phase D: email
 
-- [ ] **T10 Email data and pure rendering: migration 0010 (local), `domain/notifications`, the optional address**
+- [x] **T10 Email data and pure rendering: migration 0010 (local), `domain/notifications`, the optional address**
   - Acceptance: `supabase/migrations/0010_notifications.sql` adds `inquiries.customer_email` (nullable, lowercased, at most 254 characters, a format check) and the `notifications` table (id, inquiry id,
     recipient kind, event kind, dedupe key unique, status `PENDING` / `SENT` / `FAILED` / `SKIPPED`, attempts, timestamps; no message text; row level security on with no policy for the shop or the customer),
     applied to the local database only; migration tests cover the checks, the unique key and the access. `domain/notifications` is pure: `eventsToQueue(state)` lists the events whose state is true
@@ -148,6 +148,10 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
     email, validated; the store form shows the optional field with a plain line on what it is used for.
   - Verify: `npm run test -- tests/notifications && npm run test:db -- tests/db/notifications-schema.test.ts tests/db/intake-start.test.ts && npm run test:e2e -- e2e/intake-customer.spec.ts`
   - Files: `supabase/migrations/0010_notifications.sql`, `domain/notifications/{events,render,index}.ts`, `services/intake/start.ts`, `app/store/[slug]/{start-form,actions}.tsx`, `tests/notifications/*`, `tests/db/notifications-schema.test.ts`
+  - Done 5 Nov 2026. As built: migration `0010_notifications.sql` (`inquiries.customer_email` with a lowercase/format/254 check; `notifications` with the eight kinds, `PENDING/SENT/FAILED/SKIPPED`, attempts 0 to 10, a unique `dedupe_key`, `sent_at` set exactly when `SENT`, no message or address column, RLS on and all privileges revoked from anon and authenticated) applied to the **local** database only with `supabase migration up --local` (not hosted; that needs your yes at T16). `demo_reset` needed no change: it truncates with `cascade`. `domain/notifications`: `eventsToQueue(state)` (keys like `price_ready:<quote id>`; customer emails only when the customer gave an address; shop emails for a request with the shop and an order awaiting the shop's OK), `render(kind, data)` (subject, text, minimal HTML; wording drawn from the journey glossary where it exists; "sandbox demo" in subject and body; every inserted value escaped), `parseOptionalEmail`. `startInquiry` takes `{ email }` (invalid is refused before anything is stored; never audited or put in a message); the store form has the optional field with a plain line on what it is for.
+  - Found and fixed on the way: the store form lost what the customer had typed when an action returned an error (the browser clears an uncontrolled form once its action finishes), so a typo in the email would have wiped their message. The action now returns the typed values and the form shows them again (tested).
+  - Notes: the shop that owns an inquiry can read its `customer_email` under row level security, like the rest of its inquiry; the scan runs over every template with the link removed (the link is data, a long signed token) and over the subject; render takes no free text by type, so the "no customer free text" rule is structural.
+  - Gate: typecheck, lint and build clean; unit 1360; database 1311; E2E 127. Docker Desktop had stopped and was restarted before applying the migration.
   - Depends on: none. (Larger than five files because of the tests.)
 
 - [ ] **T11 The outbox: enqueue, drain, limits and failure handling, with a fake provider**

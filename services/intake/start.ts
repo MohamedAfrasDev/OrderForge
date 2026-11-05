@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { IntakeErrorCode, IntakeResult } from "@/domain/intake";
+import { parseOptionalEmail } from "@/domain/notifications";
 import { createCustomerLink } from "@/lib/access/customer-link";
 import { getPublicMerchant, type VerifiedInquiryId } from "@/lib/access/inquiry-reads";
 import { LIMITS, auditIntake, checkMessageBody, loadInquiry, transitionInquiry, type ServiceContext } from "./shared";
@@ -16,17 +17,21 @@ export type StartedInquiry = { inquiryId: string; accessToken: string };
 /**
  * A customer starts on a merchant's store page: the inquiry is created in NEW with their first message, and they get a signed
  * link that opens exactly that inquiry (valid for two weeks). The text is stored as written. The model is not involved.
+ * An email address is optional: empty means none, a malformed one is refused (`INVALID_INPUT`) before anything is stored. It is kept on
+ * the inquiry only, for emailing that customer about their own request; it is never audited or logged.
  */
-export async function startInquiry(db: SupabaseClient, deps: StartDeps, merchantSlug: string, firstMessage: unknown, ctx: ServiceContext): Promise<IntakeResult<StartedInquiry>> {
+export async function startInquiry(db: SupabaseClient, deps: StartDeps, merchantSlug: string, firstMessage: unknown, ctx: ServiceContext, options: { email?: unknown } = {}): Promise<IntakeResult<StartedInquiry>> {
   const checked = checkMessageBody(firstMessage);
   if (!checked.ok) return { ok: false, code: checked.code };
+  const address = parseOptionalEmail(options.email);
+  if (!address.ok) return { ok: false, code: "INVALID_INPUT" };
 
   const merchant = await getPublicMerchant(db, merchantSlug);
   if (!merchant) return { ok: false, code: "NOT_FOUND" };
   const merchantRow = await db.from("merchants").select("id").eq("slug", merchant.slug).single();
   if (merchantRow.error) throw new Error(`load merchant: ${merchantRow.error.message}`);
 
-  const inquiry = await db.from("inquiries").insert({ merchant_id: merchantRow.data.id }).select("id, access_version").single();
+  const inquiry = await db.from("inquiries").insert({ merchant_id: merchantRow.data.id, customer_email: address.email }).select("id, access_version").single();
   if (inquiry.error) throw new Error(`create inquiry: ${inquiry.error.message}`);
   const inquiryId = inquiry.data.id as string;
 

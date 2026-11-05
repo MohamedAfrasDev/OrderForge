@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { parseOptionalEmail } from "@/domain/notifications";
 import { authorizeCustomerToken } from "@/lib/access/customer-session";
 import { getIntakeModel } from "@/lib/ai/wiring";
 import { newCorrelationId } from "@/lib/correlation";
@@ -10,7 +11,8 @@ import { intakeFailureMessage } from "@/services/intake/customer-messages";
 import { startInquiry } from "@/services/intake/start";
 import { runIntakeTurn } from "@/services/intake/turn";
 
-export type StartState = { status: "idle" } | { status: "error"; message: string };
+/** On an error the typed values come back, because the browser clears an uncontrolled form once its action finishes. */
+export type StartState = { status: "idle" } | { status: "error"; message: string; values?: { message: string; email: string } };
 
 /**
  * A customer describes their order on a store page. The inquiry and its first message are stored first; then the assistant reads
@@ -19,8 +21,11 @@ export type StartState = { status: "idle" } | { status: "error"; message: string
 export async function startInquiryAction(slug: string, _previous: StartState, formData: FormData): Promise<StartState> {
   const db = createAdminClient();
   const ctx = { now: new Date().toISOString(), correlationId: newCorrelationId() };
-  const started = await startInquiry(db, { accessSecret: getServerEnv().ACCESS_LINK_SECRET }, slug, formData.get("message"), ctx);
-  if (!started.ok) return { status: "error", message: intakeFailureMessage(started.code) };
+  const typed = { message: String(formData.get("message") ?? ""), email: String(formData.get("email") ?? "") };
+  const email = parseOptionalEmail(formData.get("email"));
+  if (!email.ok) return { status: "error", message: "That email address doesn't look right. Check it, or leave it empty.", values: typed };
+  const started = await startInquiry(db, { accessSecret: getServerEnv().ACCESS_LINK_SECRET }, slug, formData.get("message"), ctx, { email: email.email });
+  if (!started.ok) return { status: "error", message: intakeFailureMessage(started.code), values: typed };
 
   const { accessToken, inquiryId } = started.value;
   const access = await authorizeCustomerToken(accessToken);
