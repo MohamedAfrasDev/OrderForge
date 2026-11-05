@@ -229,10 +229,12 @@ Status: spec APPROVED 4 Nov 2026 (defaults for all nine open questions; Resend c
   - Gate: typecheck, lint and build clean; unit 1384; database 1326; E2E 133.
   - Depends on: T3, T4, T5, T7, T11.
 
-- [ ] **T16 Checkpoint**
+- [x] **T16 Checkpoint** (local, mocked and CI parts; the hosted and real-email parts wait for a fresh yes)
   - Acceptance: every spec success criterion reviewed against current state with labeled evidence (mocked, local, CI, and later hosted and real-email); CI green on the last code commit; record in
     `doc/checkpoints/product-pass-checkpoint.md`; statuses updated in `SPEC.md` and this file. Applying 0010 to the hosted project, setting `RESEND_API_KEY`, `EMAIL_FROM` and `EMAIL_REPLY_TO` on Vercel, the first
     real email to your own address, and one hosted run of the full journey only after a fresh explicit yes each, with read-only checks before and after, recorded separately and labeled.
   - Verify: `npm run typecheck && npm run lint && npm run test && npm run test:db && npm run test:e2e`
   - Files: `doc/checkpoints/product-pass-checkpoint.md`, `doc/evidence/product-pass-hosted.md`, `SPEC.md`, `doc/spec/SPEC-product-pass.md`, `tasks/product-pass/todo.md`
+  - Done 5 Nov 2026 for everything that needs no hosted access. `doc/checkpoints/product-pass-checkpoint.md` reviews each success criterion against labeled evidence: 11 of 13 met, criterion 12 met except hosted migration 0010, criterion 13 (hosted run, real email) not done. Review found one real gap, "Keep this page" never said the link was emailed (deferred at T4, never built), and it was fixed with tests. CI is green on the last code commit (`a7bbadd`).
+  - Not done, each needing a fresh yes with read-only checks before and after: pull request and merge, hosted migration 0010, Resend variables on Vercel, the first real email to your own address, one hosted run (`doc/evidence/product-pass-hosted.md` does not exist yet).
   - Depends on: T15.
