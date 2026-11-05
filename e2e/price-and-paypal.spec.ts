@@ -106,6 +106,31 @@ test.describe("the price, the PayPal box and keep this page (local Supabase, fak
     expect(requests.filter((r) => !r.startsWith("GET"))).toEqual([]); // copying and the mail link send nothing
   });
 
+  test("keep this page says the link was emailed only when it was, and never shows the address", async ({ page }) => {
+    const link = await published();
+    const inquiryId = JSON.parse(Buffer.from(link.split(".")[0]!, "base64url").toString()).i as string;
+    const keep = page.getByRole("region", { name: "Keep this page" });
+
+    await page.goto(`/o/${link}`);
+    await expect(keep).toBeVisible();
+    await expect(page.getByTestId("link-emailed")).toHaveCount(0); // no address, nothing to say
+
+    await db.from("inquiries").update({ customer_email: "sam.private@example.com" }).eq("id", inquiryId);
+    const row = { inquiry_id: inquiryId, recipient: "customer", kind: "request_started", dedupe_key: `request_started:${inquiryId}` };
+    await db.from("notifications").insert({ ...row, status: "SKIPPED" });
+    await page.reload();
+    await expect(page.getByTestId("link-emailed")).toHaveCount(0); // skipped (no provider): no promise
+
+    await db.from("notifications").update({ status: "PENDING" }).eq("dedupe_key", row.dedupe_key);
+    await page.reload();
+    await expect(page.getByTestId("link-emailed")).toHaveText("We're emailing this link to the address you gave.");
+
+    await db.from("notifications").update({ status: "SENT", sent_at: new Date().toISOString() }).eq("dedupe_key", row.dedupe_key);
+    await page.reload();
+    await expect(page.getByTestId("link-emailed")).toHaveText("We also emailed this link to the address you gave.");
+    await expect(page.locator("body")).not.toContainText("sam.private@example.com");
+  });
+
   async function stayVisible(page: Page, name: string) {
     await expect(page.getByRole("region", { name })).toBeVisible();
   }

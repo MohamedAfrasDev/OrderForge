@@ -12,9 +12,10 @@ const noLinkYet = () => "";
 
 /**
  * "Keep this page": the link to the order, a way to copy it and a way to email it to themselves. It is built from the address
- * the customer is already on; the server sends and stores nothing. It says plainly that the link is the only way back.
+ * the customer is already on; this component sends and stores nothing. It says plainly that the link is the only way back, and, only when
+ * it is true, that the link was emailed to the address they gave (or is on its way).
  */
-export function KeepPage({ shopName }: { shopName: string }) {
+export function KeepPage({ shopName, emailed = null }: { shopName: string; emailed?: "sent" | "pending" | null }) {
   const link = useSyncExternalStore(subscribe, currentLink, noLinkYet);
   const [copied, setCopied] = useState(false);
   if (link === "") return null;
@@ -49,6 +50,11 @@ export function KeepPage({ shopName }: { shopName: string }) {
           Email it to me
         </a>
       </div>
+      {emailed ? (
+        <p data-testid="link-emailed" className="text-sm text-muted-foreground">
+          {emailed === "sent" ? "We also emailed this link to the address you gave." : "We're emailing this link to the address you gave."}
+        </p>
+      ) : null}
       <p aria-live="polite" className="sr-only">
         {copied ? "Link copied." : ""}
       </p>

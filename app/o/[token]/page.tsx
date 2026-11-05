@@ -5,6 +5,7 @@ import { Conversation } from "@/components/conversation";
 import { CustomerHeader } from "@/components/customer-header";
 import { JobStatus } from "@/components/job-status";
 import { KeepPage } from "@/components/keep-page";
+import { linkEmailStatus } from "@/services/notifications/read";
 import { INQUIRY_STATUSES, type InquiryStatus } from "@/domain/intake";
 import { journeyOf } from "@/domain/journey";
 import { PaymentStatus } from "@/components/payment-status";
@@ -74,7 +75,7 @@ async function OrderRoom({ params, searchParams }: { params: PageProps<"/o/[toke
     <>
       <CustomerHeader shopName={inquiry.merchantName} journey={journey} />
 
-      <KeepPage shopName={inquiry.merchantName} />
+      <KeepPage shopName={inquiry.merchantName} emailed={await linkEmailStatus(db, inquiry.id)} />
 
       {/* In the order the customer meets them. Before there is a price: the conversation, then the order so far, the boxes and the box to
           write in. Once there is a price, what they have to do now comes first and the conversation follows. */}
