@@ -55,13 +55,64 @@ async function ensureMerchantUser(db: SupabaseClient, env: Env, emailVar: string
   return existing.id;
 }
 
-/** Seeds every demo shop, each with its own owner login. `env` is where the owners' logins are read from (the process environment by default). */
-export async function runSeed(db: SupabaseClient, env: Env = process.env): Promise<void> {
-  // One login owning both shops would make the second shop's isolation meaningless, so refuse it before anything is written.
-  const emails = shops.map((s) => (env[s.owner.emailVar] ?? "").toLowerCase());
-  if (new Set(emails).size !== emails.length) throw new Error("Each demo shop needs a different owner: the owner emails must be different.");
+/** The demo shop slugs `--only=` accepts, in seed order. */
+export const SEED_SLUGS: string[] = shops.map((s) => s.merchant.slug);
 
-  for (const shop of shops) {
+/**
+ * The value of `--only=<slug>` on the command line, or undefined when it is absent (seed every shop). It must be given once, with a value,
+ * and name a demo shop: anything else throws before the database is touched, so a typo can never mean "seed everything".
+ */
+export function parseOnly(argv: string[]): string | undefined {
+  const given = argv.filter((a) => a === "--only" || a.startsWith("--only="));
+  if (given.length === 0) return undefined;
+  if (given.length > 1) throw new Error("Pass --only once.");
+  const value = given[0]!.startsWith("--only=") ? given[0]!.slice("--only=".length) : "";
+  if (!SEED_SLUGS.includes(value)) {
+    throw new Error(`--only must name a demo shop: one of ${SEED_SLUGS.join(", ")}${value ? ` (got "${value}")` : ""}.`);
+  }
+  return value;
+}
+
+/** How many orders exist for the shops a seed run would write to: one shop's with `--only`, otherwise all. Seeding resets stock, so any makes it unsafe. */
+export async function purchaseCount(db: SupabaseClient, only?: string): Promise<number> {
+  const ids = (only ? shops.filter((s) => s.merchant.slug === only) : shops).map((s) => s.merchant.id);
+  const result = check("purchases", await db.from("purchases").select("id", { count: "exact", head: true }).in("merchant_id", ids));
+  return result.count ?? 0;
+}
+
+/** The sign-in addresses (lowercase) of the owners of every shop except `slug`, from the database, so a login that already owns another shop is never reused or reset. */
+async function otherOwnerEmails(db: SupabaseClient, slug: string): Promise<string[]> {
+  const others = check("merchants", await db.from("merchants").select("owner_user_id").neq("slug", slug).not("owner_user_id", "is", null));
+  const emails: string[] = [];
+  for (const row of others.data ?? []) {
+    const user = check("get user", await db.auth.admin.getUserById(row.owner_user_id as string));
+    if (user.data.user?.email) emails.push(user.data.user.email.toLowerCase());
+  }
+  return emails;
+}
+
+/**
+ * Seeds the demo shops, each with its own owner login. `env` is where the owners' logins are read from (the process environment by default).
+ * With `options.only` it creates or completes just that one shop and its owner: the other shops' rows, stock and logins are not read for writing
+ * and not changed, and only that shop's login variables are needed.
+ */
+export async function runSeed(db: SupabaseClient, env: Env = process.env, options: { only?: string } = {}): Promise<void> {
+  const chosen = options.only === undefined ? shops : shops.filter((s) => s.merchant.slug === options.only);
+  if (chosen.length === 0) throw new Error(`Unknown demo shop "${options.only}". Choose one of ${SEED_SLUGS.join(", ")}.`);
+
+  if (options.only === undefined) {
+    // One login owning both shops would make the second shop's isolation meaningless, so refuse it before anything is written.
+    const emails = shops.map((s) => (env[s.owner.emailVar] ?? "").toLowerCase());
+    if (new Set(emails).size !== emails.length) throw new Error("Each demo shop needs a different owner: the owner emails must be different.");
+  }
+
+  for (const shop of chosen) {
+    if (options.only !== undefined) {
+      // Checked before the login is created or reset: an address that already owns another shop must not have its password changed here.
+      const wanted = (env[shop.owner.emailVar] ?? "").toLowerCase();
+      const taken = new Set([...shops.filter((s) => s !== shop).map((s) => (env[s.owner.emailVar] ?? "").toLowerCase()), ...(await otherOwnerEmails(db, shop.merchant.slug))]);
+      if (wanted && taken.has(wanted)) throw new Error("Each demo shop needs a different owner: the owner emails must be different.");
+    }
     const userId = await ensureMerchantUser(db, env, shop.owner.emailVar, shop.owner.passwordVar);
     check("merchants", await db.from("merchants").upsert({ ...shop.merchant, owner_user_id: userId }, { onConflict: "id" }));
     check("products", await db.from("products").upsert(shop.products, { onConflict: "id" }));
