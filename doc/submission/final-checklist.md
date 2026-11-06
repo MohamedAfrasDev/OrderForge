@@ -10,7 +10,7 @@ Source: the brief's checklist, which was copied from the official rules as read 
 - [ ] Public YouTube demo video under 3 minutes showing the project running, with no unlicensed music or trademarks. OPEN: script written in `video-script.md`; not recorded. Check the rules on third-party trademarks: PayPal's own sandbox page appears on screen.
 - [x] Project built or significantly updated between 1 October and 12 November 2026. Evidence: the first commit in the repository is dated 2026-11-01; `git log` shows work on every day from 1 to 6 Nov.
 - [x] English materials. Evidence: every document and page text in the repository is in English.
-- [ ] No secrets in the repository. OPEN: a pattern scan of all tracked files on 6 Nov 2026 found no key, token or password (it matched a fake link in a test and the hosted project reference in checkpoint documents, which is not a secret); rerun the scan on the final commit before submitting.
+- [ ] No secrets in the repository. OPEN: a pattern scan of all 529 tracked files on 6 Nov 2026 (commit `47841d2`) found no key, token or password (it matched placeholders in `.env.example`, fake values in tests and the hosted project reference in checkpoint documents, which is not a secret); rerun the scan on the final commit before submitting.
 - [x] README with environment-variable names, migration and seed commands, worker setup, a demo reset, sandbox buyer guidance and known limitations. Evidence: `tests/readme.test.ts` checks each of these on every run.
 - [ ] Sandbox-only status and simulated data labeled in the UI, the README and the video. OPEN: the UI banner and the README are checked by tests (`e2e/banner.spec.ts`, `tests/readme.test.ts`); the video is not recorded.
 - [x] One project can win one Grand Prize or one Honorable Mention, plus one Sponsor Prize: noted. Evidence: the AG Grid sponsor prize is the one this project is eligible for, because AG Grid Community is used for the shop's data grids.
@@ -24,6 +24,9 @@ Source: the brief's checklist, which was copied from the official rules as read 
 
 ## Before pressing submit
 
-- [ ] Merge the open pull request, redeploy, and open `/how-it-works` and the home page on the live site. OPEN: pull request 11 is open and CI passed on 6 Nov 2026; it is not merged or deployed.
-- [ ] Regenerate `doc/evidence/proof-points.md` (`npm run proof`) after the merge so it names the merged commit. OPEN: the committed copy names an earlier commit.
+- [ ] Merge the open pull request, redeploy, and open `/how-it-works`, the home page and `/api/agent/v1/openapi.json` on the live site. OPEN: pull request 11 is merged; pull request 12 (the submission pack and the agent API) is open, its checks had passed except one browser job that was still running on 6 Nov 2026; it is not merged or deployed.
+- [ ] Regenerate `doc/evidence/proof-points.md` (`npm run proof`) after the merge so it names the merged commit. OPEN: the committed copy names commit `47841d2` (generated 6 Nov 2026, 1604 unit, 1400 database and 153 browser tests passed); after the merge the merge commit is a different one.
 - [ ] One last full run of the hosted journey by someone who has not seen it, using only the README and the Devpost notes. OPEN: not done.
+- [ ] The second demo shop on the hosted site (an additive `--only` seed option, the two new variables on Vercel, a hosted seed, one hosted run). OPEN: needs your approval and your yes; see the checkpoint.
+- [ ] One run of the README's agent example against the hosted address. OPEN: the agent routes are not deployed until pull request 12 is merged.
+- [ ] Add a one-line description to the repository About section. OPEN: the description is empty.

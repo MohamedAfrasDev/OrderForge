@@ -17,6 +17,8 @@ The customer accepts that exact price. PayPal sets the money aside; the customer
 
 **The shop** opens one page that shows only what needs it: requests to answer, orders waiting for its OK, orders to prepare. It accepts or declines each order. Accept captures the payment and creates one preparation sheet from the accepted price; decline releases the hold and the stock. A request the assistant cannot finish is handed to the shop, which builds the price from the same catalog (it cannot type a price). The shop edits its own catalog and stock in a data grid.
 
+**An agent-facing request API** lets another AI agent ask a demo shop for a priced box with five fields (quantity, no food, logo, budget in cents, an optional pickup date) and read the answer back. Code chooses and prices the box with the same catalog engine, and no model is called. The agent gets a link for a person; only the person can choose the box, accept the exact price and approve the payment on PayPal. The API takes no price and no free text, its token can only read, and it is rate limited and capped per shop each day.
+
 **A second demo shop** (Demo Event Kits) has a different catalog, box template and stock limit, and its own owner. The same engine runs it, which shows the rules are data and not code written for one shop.
 
 ## How we built it
@@ -35,6 +37,7 @@ The customer accepts that exact price. PayPal sets the money aside; the customer
 | **OpenRouter** (AI models) | Reads the request into a strict schema; rewords one question; chooses one product per part of the box from a fixed list; ranks and explains the alternatives that code produced |
 | Models configured | `google/gemma-4-31b-it:free` first; `openai/gpt-oss-120b` (paid) only after a provider failure [confirm the models set on Vercel before submitting] |
 | **Claude Code** | The AI coding assistant used to write the specs, tests and code under the spec-first workflow in this repository |
+| Agent API | No model: a strict five-field request, a box chosen and priced by code, a read-only token; a person approves the payment |
 | Supabase, Vercel, Resend, AG Grid | Data and auth, hosting, email, data grids |
 
 **What the models cannot do.** They have no field or tool for a price, a quantity of goods, a discount or an order state. Their output is parsed with strict schemas and then validated by code; an answer that names a product outside the allowed list is rejected. Customer text is treated as data inside a fenced block, never as instructions. A local rule-based stand-in (not a model) runs the browser tests so no test calls a real model.
@@ -54,7 +57,7 @@ The customer accepts that exact price. PayPal sets the money aside; the customer
 - Verify an email domain so notifications reach any customer, not only the account owner.
 - Evaluate the free primary model once its provider allows it, and publish the report.
 - More shops on the same engine, and delivery as well as pickup.
-- [Optional, if built: an agent-facing request endpoint where a human still approves the payment.]
+- Run the agent API on the hosted site and publish its OpenAPI description to other agent builders.
 
 ## Proof
 

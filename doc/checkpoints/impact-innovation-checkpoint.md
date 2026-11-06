@@ -48,3 +48,47 @@ Local gates on the reviewed tree (all from one `npm run proof -- --with-e2e` run
 ## P3 decision (the agent endpoint)
 
 The gate in the plan (P1 and P2 checkpointed by the end of 8 Nov) is met two days early. **Recommendation: build the submission pack (T9) first, then P3 only if you still want it.** P3 is the only part that adds a public surface; its payoff is the "Best Use of Agentic Commerce" and Innovation story, its cost is four tasks and a new thing to keep safe. If you say go, T10 to T13 proceed in order with the same safeguards (no free text, no path to payment, rate limits); if you say no, they stay unticked and the cut is recorded.
+
+---
+
+# Update 6 Nov 2026, final: P3 (the agent request API) and the whole module (T14)
+
+Code reviewed: branch `impact-innovation` at `47841d2` (pull request 12 against `main`; pull request 11, which carried P1 and P2, is merged). Evidence labels as above. Nothing hosted was touched.
+
+## Verdict
+
+**All nine criteria are met locally.** Criteria 4 and 5 have their hosted halves open, criterion 7 has its hosted run open, and criterion 9's CI and final secret scan are recorded below. Everything that remains needs a decision or a login only the owner has.
+
+Final local gates, from one `npm run proof -- --with-e2e` run on `47841d2` (exit 0), generated into [doc/evidence/proof-points.md](../evidence/proof-points.md): **1604 unit, 1400 database and 153 browser tests passed, 0 failed, 0 skipped**; typecheck 0 errors, lint 0 problems, build succeeds.
+
+## Criteria added or changed
+
+| # | Criterion | Verdict | Evidence |
+|---|---|---|---|
+| 7 | If P3 ships: spec 3.3 steps K to Q pass; the endpoint's figures equal the web flow's; no code path reaches a payment function; no free-text field exists | Met locally | **K, L, M:** `e2e/agent-api.spec.ts` (describe a shop; 20 kits $33.50 a kit, $670.00 in cents; 50 kits blocked, mug at $29.50, $1,475.00) and `tests/db/agent-requests.test.ts` (figures equal a scripted-model web turn: 20 boxes $35.00 / $700.00; 30 boxes blocked, swap $36.00 / $1,080.00). **N:** a price, a total, free text, a string number, zero boxes, an impossible date: 400 with coded issues, nothing stored (`tests/agent/schema.test.ts`, the browser spec with a canary budget, `tests/db/agent-api.test.ts`). **O:** `e2e/agent-human-handoff.spec.ts`: the person opens `humanUrl`, chooses, accepts the exact price and is sent to PayPal; the payment attempt is 6700 cents, the price the agent was shown. **P:** every wrong token (none, wrong, another request's, expired, revoked, a customer link, in the address) is the same 404 body. **Q:** a burst gets a 429 with `Retry-After` and the refused request creates nothing; reads have their own limit; the daily cap of 200 per shop is tested in the database. **No path to payment:** `tests/agent/no-payment-path.test.ts` walks the import graph from every file of the API. **No free text:** the schema is a strict object of five fields; the first message of the conversation is built by code. **mocked** (no model, fake PayPal) and **local** |
+| 8 | Submission pack | Drafted, owner items open | `doc/submission/` (T9). Placeholders for the judges' logins and the Vercel model names; the video is not recorded |
+| 9 | Payment, approval and access suites green on the last commit, CI green, no secret in the repository | Met locally; CI recorded | Same suites, none skipped or weakened. **CI on `47841d2`:** typecheck/lint/test/build passed, database tests passed, the Vercel preview deployment completed, and the browser job passed on one of the two runs while the other was still running when this was written. **Secret scan of all 529 tracked files on 6 Nov:** the only matches are placeholders in `.env.example` and obviously fake values in tests (a fake customer link, a fake Resend-shaped key, a fake OpenRouter-shaped key); `.env` is gitignored |
+
+## What P3 added to the product's guarantees
+
+- An agent can ask for a priced box and read it back; it cannot choose a price, accept one, pay, publish a quote or read another request. This is enforced three ways: the strict schema (five fields), the read-only token under its own key, and the import-graph test.
+- Code chooses and prices the box with the catalog engine; no model is called for an agent request.
+- Limits: 10 creates a minute per address, 60 a minute per shop, 60 reads and 60 browses a minute per address (in memory per server instance), and 200 requests per shop per day (from the audit trail, no table). Every create and read leaves an audit line with the shop, a coded outcome and a short fingerprint of the token; no token, address or input is recorded.
+- No migration and no dependency were added by any part of this module.
+
+## Found while building P3
+
+1. **A real defect, found by the browser test and fixed (T13).** The assistant reply stored for an agent request was not linked to the message it answers, so the order room treated the request as unanswered: a stalled headline, and a "Try again" that would have run the assistant, and a real model, from the page. The reply now carries `reply_to`, with a database test. The unit and database tests had passed without noticing, which is why the browser test earns its place.
+2. A test-isolation lesson repeated (see "Found while checkpointing" above): specs that share the second shop use `ensureKitShop`, which creates rows only if missing and resets nothing; only the second-shop journey resets that shop's stock and login.
+3. Customer-facing text still says "boxes" for event kits, and the agent API's own field is called `boxCount`. A wording task, not a correctness one.
+
+## Needs your yes (none done)
+
+1. **Merge pull request 12** (it carries the submission pack and the whole agent API) and redeploy. Until then the live site has neither the agent routes nor the later commits.
+2. **The second shop on the hosted site** still needs the additive `--only` seed option (proposed above), the two new variables on Vercel, a hosted seed with `--confirm-host`, and one hosted run of the second shop with the real model, the real PayPal sandbox and a real email to your address.
+3. **The agent API on the hosted site:** after the deploy, one run of the README's example against the hosted address. It needs no new variable (it uses the existing access secret and base address). The limits are in memory per server instance, so a hosted instance counts its own requests.
+4. The Devpost items in `doc/submission/final-checklist.md`: logins, model names, the video, the paste, the final rules check.
+
+## Decision for you: how to describe P3 in the submission
+
+The Devpost text now describes the agent API. It is a small, honest feature (five fields in, a code-priced box out, a person pays), so the text does not oversell it; the video script does not include it. If you want it in the video, it fits as five seconds in the "proof and a second shop" beat.

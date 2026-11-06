@@ -2,7 +2,7 @@
 
 Module id: `impact-innovation` · Depends on: `product-pass` and every module before it (all built) · Index: [../../SPEC.md](../../SPEC.md) · Brief: [../OrderForge Build Brief v1.1.md](../OrderForge%20Build%20Brief%20v1.1.md)
 
-Status: **APPROVED 6 Nov 2026 (defaults for all seven open questions)**. Task list: [tasks/impact-innovation/](../../tasks/impact-innovation/todo.md), awaiting approval. Findings while writing the tasks (6 Nov): (1) `demo_reset` truncates `merchants` and every table, so it already handles two shops and **needs no migration** (open question 5 is closed: no migration 0011 for it); (2) the shop's "kind of product" has no column, so the intake prompt reads it from a new `shop_profile` business rule (`{ "productKind": "..." }`, seed data, no schema change); (3) with the default for open question 4, P3 needs no migration either. So **no migration is planned in this module**.
+Status: **APPROVED 6 Nov 2026 (defaults for all seven open questions)**. Task list: [tasks/impact-innovation/](../../tasks/impact-innovation/todo.md) (approved; T1 to T14 built and checkpointed locally on 6 Nov, see [the checkpoint](../checkpoints/impact-innovation-checkpoint.md)). Findings while writing the tasks (6 Nov): (1) `demo_reset` truncates `merchants` and every table, so it already handles two shops and **needs no migration** (open question 5 is closed: no migration 0011 for it); (2) the shop's "kind of product" has no column, so the intake prompt reads it from a new `shop_profile` business rule (`{ "productKind": "..." }`, seed data, no schema change); (3) with the default for open question 4, P3 needs no migration either. So **no migration is planned in this module**.
 
 ## 1. Objective
 
