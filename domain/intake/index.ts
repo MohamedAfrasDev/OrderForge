@@ -3,7 +3,9 @@ export { amountsOfAlternative, rankAlternatives, rankingSchema } from "./alterna
 export type { RankedAlternative, RankingInput } from "./alternatives";
 export { extractionSchema, parseExtraction } from "./extraction";
 export { PROMPT_VERSION, buildPrompt, proposeJsonSchema, proposeSchema } from "./prompts";
-export type { AlternativeForPrompt, ConversationEntry, Prompt, PromptContext, PromptMessage } from "./prompts";
+export type { AlternativeForPrompt, ConversationEntry, Prompt, PromptContext, PromptMessage, ShopForPrompt } from "./prompts";
+export { DEFAULT_PRODUCT_KIND, parseShopProfile, shopProfileSchema } from "./shop";
+export type { ShopProfile } from "./shop";
 export { acceptExplanation, acceptQuestion, askSchema, fallbackQuestion } from "./questions";
 export type { ParsedExtraction } from "./extraction";
 export { blockingFields, confirmedBoxCount, emptyRequirements, mergeRequirements, toCatalogRequirements } from "./requirements";

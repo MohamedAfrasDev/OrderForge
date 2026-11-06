@@ -1,24 +1,27 @@
 # OrderForge
 
-OrderForge turns one vague custom-order request into an approved, PayPal-authorized order that a merchant confirms and then
-prepares from an exact worksheet. Built for the PayPal AI Hackathon 2026.
+Custom and small-batch orders agreed by message go wrong in three ways: the price drifts from what the customer agreed, the customer pays for stock that isn't there, or a retry means they are charged twice. OrderForge turns one vague request into an order the customer approved on PayPal and the shop confirmed, and checks each of those three things in code.
 
-> **Sandbox only. Synthetic data.** Everything here runs against the **PayPal sandbox** with made-up merchants, products and
-> buyers. No real money moves, and the app shows a "Sandbox · simulated data" banner on every page.
+The idea: the model reads the request and suggests a box, but it never does the money. Code checks stock and works out every price in whole cents, and PayPal sets money aside for one exact price. The shop's yes or no then decides whether the customer is charged or the hold is released.
 
-**Hosted demo:** https://order-forge.afras.dev (demo login: see the submission notes) · License: [MIT](LICENSE)
+> **Sandbox only. Synthetic data.** Everything runs against the **PayPal sandbox** with made-up shops, products and buyers. Nothing real is charged, and every page shows a "Sandbox · simulated data" banner.
+
+**Hosted demo:** https://order-forge.afras.dev · **Why it is safe:** https://order-forge.afras.dev/how-it-works · **Proof:** [doc/evidence/proof-points.md](doc/evidence/proof-points.md) (regenerate with `npm run proof`) · License: [MIT](LICENSE) · Built for the PayPal AI Hackathon 2026.
+
+The customer flow needs no login. The shop side signs in at `/merchant/login`; the sandbox login for the judges is in the Devpost submission notes.
 
 ## Status
 
-The **foundation** module is complete and verified; the product modules on top of it are specified but not built yet.
-Nothing below claims demand, time saved or accuracy: none has been measured.
+No claim about speed, demand or accuracy is made anywhere in this project, because none has been measured. The numbers that exist (test counts, evaluation results) are in the proof file with the method beside them.
 
 | Area | State |
 |---|---|
 | Foundation: schema, row level security, seed, merchant login, customer links, rate limits, audit | Done, tested |
 | PayPal client, webhook verification, reconciliation job, health route | Done, tested |
-| PayPal authorize, capture and void on the **real sandbox** (hosted site, US sandbox accounts) | Done, evidence in [doc/evidence](doc/evidence/foundation-real-sandbox.md) |
-| Catalog engine, quotes, reservations, payment state machine, fulfillment, AI intake | Specified in [SPEC.md](SPEC.md), not built yet |
+| PayPal authorize, capture and void on the **real sandbox** (hosted site, US sandbox accounts) | Done, evidence in [doc/evidence](doc/evidence/foundation-real-sandbox.md) and [payments](doc/evidence/payments-real-sandbox.md) |
+| Catalog engine, quotes with merchant review, stock reservation, payments, fulfillment | Built and checkpointed, see [doc/checkpoints](doc/checkpoints) |
+| AI intake (OpenRouter, strict schemas, code-decided questions) | Built; evaluated on real models, see [eval/intake/reports](eval/intake/reports) and [the write-up](doc/evidence/ai-intake-real-model.md) |
+| Customer order room, shop pages, email notifications, AG Grid data grids | Built; whole journey run on the hosted site, see [doc/evidence/product-pass-hosted.md](doc/evidence/product-pass-hosted.md) |
 
 Specs live in [SPEC.md](SPEC.md) (capability map) and [doc/spec](doc/spec); task lists in [tasks](tasks).
 
@@ -47,7 +50,7 @@ npm run dev                   # http://localhost:3000
 For a local stack, set these in `.env` from the output of `supabase status`:
 `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (anon key) and
 `SUPABASE_SERVICE_ROLE_KEY` (service role key). Also set `DEMO_MERCHANT_PASSWORD` to a password of **at least 12
-characters**; it is the merchant login for `merchant@demo.test`. The PayPal values can stay as placeholders until you call
+characters**; it is the merchant login for `merchant@demo.test`. The second demo shop has its own login: set `DEMO_MERCHANT2_PASSWORD` the same way (its email is `merchant2@demo.test`). The PayPal values can stay as placeholders until you call
 PayPal for real.
 
 Then open `/merchant/login`, sign in, and open `/merchant/dev/paypal` for the PayPal spike (see below).
@@ -64,6 +67,8 @@ Then open `/merchant/login`, sign in, and open `/merchant/dev/paypal` for the Pa
 | `npm run test:e2e` | Browser tests (Playwright) against a production build wired to the **local** Supabase and a local fake PayPal |
 | `npm run seed` | Creates the demo merchant, login, products, stock and rules, including the `box_template` rule (the five box slots and which SKUs each allows) that the catalog engine reads. It resets stock to the fixture levels, so it refuses to run once any purchase exists (use `demo:reset`, or `--reset-stock-despite-orders` if you really mean it) |
 | `npm run demo:reset` | Wipes application data and re-seeds (see "Demo reset") |
+| `npm run proof` | Runs the unit and database suites (needs the local Supabase), reads the AI evaluation reports and writes [doc/evidence/proof-points.md](doc/evidence/proof-points.md). Add `-- --with-e2e` to include the browser tests |
+| `npm run eval:intake` | Plays the AI evaluation scenarios against a live model (needs `OPENROUTER_API_KEY`; costs a little for a paid model) |
 | `npm run paypal:spike` | Authorize then capture / void, with evidence (see "PayPal spike") |
 | `npm run paypal:fake` | A local fake PayPal for demos and tests |
 
@@ -84,10 +89,15 @@ Copy `.env.example` to `.env`. **`.env` is gitignored and must never be committe
 | `PAYPAL_CLIENT_ID`, `NEXT_PUBLIC_PAYPAL_CLIENT_ID` | no / yes | Sandbox REST app client id (same value in both) |
 | `PAYPAL_CLIENT_SECRET` | **secret** | Sandbox REST app secret |
 | `PAYPAL_WEBHOOK_ID` | **secret** | The short id of the webhook you registered (not its URL) |
-| `OPENROUTER_API_KEY` | **secret** | Model access (used by the AI intake module, not built yet) |
+| `OPENROUTER_API_KEY` | **secret** | Model access for the AI intake |
+| `OPENROUTER_MODEL`, `OPENROUTER_FALLBACK_MODEL` | no | Optional. Primary (a free `:free` model) and fallback (low-cost paid, asked only after a provider failure) |
+| `INTAKE_MODEL` | no | Optional. `local-demo` swaps in a rule-based stand-in; refused with a hosted database or on Vercel |
+| `PAYPAL_PAYEE_MERCHANT_ID` | no | Optional. When set, a capture paid to any other merchant id is treated as a financial mismatch |
+| `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO` | **secret** / no / no | Optional email through Resend. Sending is off unless the key and sender are both set; tests and CI never send |
 | `ACCESS_LINK_SECRET` | **secret** | Signs customer links; 16+ random characters |
 | `CRON_SECRET` | **secret** | Bearer token for `/api/cron/reconcile`; 16+ random characters; must equal the Supabase Vault `cron_secret` |
-| `DEMO_MERCHANT_EMAIL`, `DEMO_MERCHANT_PASSWORD` | **secret** | Seed script only; password 12+ characters |
+| `DEMO_MERCHANT_EMAIL`, `DEMO_MERCHANT_PASSWORD` | **secret** | Seed script only; the owner login of the first demo shop; password 12+ characters |
+| `DEMO_MERCHANT2_EMAIL`, `DEMO_MERCHANT2_PASSWORD` | **secret** | Seed script only; the owner login of the second demo shop (Demo Event Kits); must be a different email; password 12+ characters |
 | `PAYPAL_SPIKE_BASE_URL` | no | Optional. Points the spike at a local fake (`http://127.0.0.1:...` only) |
 
 ## Accounts and hosted setup
@@ -96,7 +106,7 @@ Copy `.env.example` to `.env`. **`.env` is gitignored and must never be committe
 
 1. Create a project. Note its **project ref** (the subdomain of its URL).
 2. Dashboard, **Connect**, choose **Session pooler** (not "Direct connection": that host is IPv6-only and fails on most
-   home networks). Copy the string, replace the password placeholder **including its brackets**, and save it as
+   home networks). Copy the string, replace the password placeholder **including its brackets**, and store it as
    `SUPABASE_DB_URL`. Use a database password of letters and digits (reset it under Project Settings, Database).
 3. Copy the project URL, anon key and service-role key into `.env`.
 4. Apply the migrations to the hosted project:
@@ -127,7 +137,7 @@ Copy `.env.example` to `.env`. **`.env` is gitignored and must never be committe
 3. In that app, Webhooks, **Add Webhook**: URL `https://YOUR-DOMAIN/api/webhooks/paypal`, with these events:
    `CHECKOUT.ORDER.APPROVED`, `PAYMENT.AUTHORIZATION.CREATED`, `PAYMENT.AUTHORIZATION.VOIDED`,
    `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.PENDING`, `PAYMENT.CAPTURE.DECLINED`, `PAYMENT.CAPTURE.REFUNDED`,
-   `PAYMENT.CAPTURE.REVERSED`. Save it and copy the **Webhook ID** (a short uppercase code), not the URL.
+   `PAYMENT.CAPTURE.REVERSED`. Create it, then copy the **Webhook ID** (a short uppercase code), not the URL.
 4. Put `PAYPAL_CLIENT_ID`, `NEXT_PUBLIC_PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` and `PAYPAL_WEBHOOK_ID` in `.env`.
 
 **Sandbox buyer guidance.** When PayPal's checkout asks you to log in, use the **US Personal sandbox account**, never a real
@@ -141,7 +151,7 @@ with a test balance.
    repo ships a [.vercelignore](.vercelignore) that prevents it. Check your build log for the lines
    `Environments: .env` or `Detected .env file`: they must not appear.
 3. Enter the environment variables from the table above in Vercel (Project Settings, Environment Variables), **except**
-   `SUPABASE_DB_URL` and the `DEMO_MERCHANT_*` pair. Mark secrets as sensitive. Set `APP_BASE_URL` to your public address.
+   `SUPABASE_DB_URL` and the `DEMO_MERCHANT_*` and `DEMO_MERCHANT2_*` pairs. Mark secrets as sensitive. Set `APP_BASE_URL` to your public address.
 4. Deploy. The first CLI deploy of a new project becomes a **production** deployment.
 5. After any change to a variable or the domain, redeploy: new values only apply to new deployments.
 
@@ -184,8 +194,9 @@ unit tests and build; database tests against a local Supabase; and the browser t
 
 ## Known limitations
 
-- **Foundation only.** Customer intake, the AI agent, quoting, stock reservation, the payment state machine and
-  preparation jobs are specified, not built.
+- **Scope of v1:** one seeded gift-box shop, USD only, full payment, customer pickup, one PayPal sandbox merchant. Intake takes typed text only, no uploads.
+- **Free models are unreliable.** In the evaluation reports the free primary model was rate limited or timed out on many turns; the paid fallback answered them. Nothing in the code trusts a model's output either way.
+- **Email:** until a domain is verified at Resend, the test sender delivers only to the Resend account owner's own address.
 - **Webhooks are delayed and arrive out of order** (8 to 25 seconds; `PAYMENT.AUTHORIZATION.CREATED` can arrive after
   `PAYMENT.CAPTURE.COMPLETED`). Treat them as hints and confirm state by asking PayPal.
 - **Authorization expiry was not observed.** PayPal holds an authorization up to 29 days; the sandbox behaviour needs that
