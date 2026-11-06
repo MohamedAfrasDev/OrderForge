@@ -20,6 +20,12 @@ export default function Home() {
         <Actions />
       </Suspense>
 
+      <p className="text-sm">
+        <Link href="/demo" className="font-medium text-foreground underline underline-offset-4">
+          See the complete flow
+        </Link>
+      </p>
+
       <p className="max-w-lg text-sm text-muted-foreground">
         Custom orders agreed by message often end with a price that drifted, stock that isn&apos;t there, or a double charge. OrderForge checks each of those in code, not in the chat.{" "}
         <Link href="/how-it-works" className="font-medium text-foreground underline underline-offset-4">
