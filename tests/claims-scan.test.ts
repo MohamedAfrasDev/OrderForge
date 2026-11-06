@@ -6,6 +6,7 @@ import { forbiddenIn } from "@/domain/journey";
 import { claimsIn } from "@/lib/claims";
 import { allText, HOW_IT_WORKS } from "@/app/how-it-works/content";
 import { demoText } from "@/app/demo/content";
+import { homeText } from "@/app/home-content";
 import { developersText } from "@/lib/developers/content";
 
 describe("claimsIn", () => {
@@ -73,7 +74,15 @@ describe("the how-it-works page text", () => {
   });
 });
 
-describe("the /demo and /developers page text", () => {
+describe("the home, /demo and /developers page text", () => {
+  it("the home page makes no unmeasured claim, uses the customer vocabulary and says sandbox", () => {
+    const text = homeText();
+    expect(claimsIn(text)).toEqual([]);
+    expect(forbiddenIn(text)).toEqual([]);
+    expect(text).toMatch(/sandbox/i);
+    expect(text).toMatch(/AI proposes\.\s+Code prices\.\s+PayPal holds\.\s+The shop decides\./);
+  });
+
   it.each([["/demo", demoText()], ["/developers", developersText()]])("%s makes no unmeasured claim and says sandbox and synthetic", (_page, text) => {
     expect(text.length).toBeGreaterThan(500);
     expect(claimsIn(text)).toEqual([]);

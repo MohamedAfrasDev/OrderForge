@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { expect, test } from "@playwright/test";
 import { createCustomerLink } from "../lib/access/customer-link";
+import { forbiddenIn } from "../domain/journey";
+import { claimsIn } from "../lib/claims";
 import { DEMO_STORE_SLUG } from "../lib/demo-store";
 import { adminClient, needsLocalSupabase } from "./payments-support";
 
@@ -50,6 +52,37 @@ test.describe("the home page (local Supabase)", () => {
     await customer.click();
     await expect(page).toHaveURL(new RegExp(`/store/${DEMO_STORE_SLUG}$`));
     await expect(page.getByRole("heading", { name: storeName })).toBeVisible();
+  });
+
+  test("states the problem and the four-part line, and draws the order's path in four steps", async ({ page }) => {
+    await page.goto("/");
+    for (const part of ["AI proposes.", "Code prices.", "PayPal holds.", "The shop decides."]) await expect(page.getByText(part, { exact: true })).toBeVisible();
+    await expect(page.getByText("a price that drifted, stock that isn't there, or a double charge")).toBeVisible();
+    const steps = page.getByRole("region", { name: "How an order moves" }).getByRole("listitem");
+    await expect(steps).toHaveCount(4);
+    await expect(steps.nth(0)).toContainText("AI proposes");
+    await expect(steps.nth(1)).toContainText("Code prices");
+    await expect(steps.nth(2)).toContainText("nothing is charged yet");
+    await expect(steps.nth(3)).toContainText("The shop decides");
+  });
+
+  test("offers the customer flow first, the complete flow second and shop sign in third, and the complete flow opens", async ({ page }) => {
+    await page.goto("/");
+    const links = ["Try it as a customer", "See the complete flow", "Shop sign in"].map((name) => page.getByRole("link", { name, exact: true }));
+    const boxes = await Promise.all(links.map((l) => l.boundingBox()));
+    expect(boxes[0]!.x).toBeLessThan(boxes[1]!.x);
+    expect(boxes[1]!.x).toBeLessThan(boxes[2]!.x);
+    await links[1].click();
+    await expect(page).toHaveURL(/\/demo$/);
+  });
+
+  test("the words on screen make no unmeasured claim and use no system word", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("link", { name: "Try it as a customer" })).toBeVisible();
+    const text = await page.locator("main").innerText();
+    expect(claimsIn(text)).toEqual([]);
+    // The store names come from the database and the page's own words are scanned by the unit test; the vocabulary rule is checked here on the whole page.
+    expect(forbiddenIn(text)).toEqual([]);
   });
 
   test("offers the second demo store by name under the main action, and it opens", async ({ page }) => {

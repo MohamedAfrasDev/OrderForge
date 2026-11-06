@@ -18,7 +18,10 @@ export function HomeActions({ store, others = [] }: { store: Store | null; other
             Try it as a customer
           </Link>
         ) : null}
-        <Link href="/merchant" className={cn(buttonVariants({ size: "lg", variant: store ? "outline" : "default" }))}>
+        <Link href="/demo" className={cn(buttonVariants({ size: "lg", variant: "outline" }))}>
+          See the complete flow
+        </Link>
+        <Link href="/merchant" className={cn(buttonVariants({ size: "lg", variant: store ? "ghost" : "default" }))}>
           Shop sign in
         </Link>
       </div>
