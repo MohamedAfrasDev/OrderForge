@@ -5,7 +5,7 @@ Written 5 Nov 2026 against branch `spec-7-product-pass` (T0 to T15 built, one ga
 a real service); **CI** = GitHub Actions on the pushed commit; **hosted** = the deployed app and hosted Supabase; **real-email** = a real message through Resend.
 Only **local**, **mocked** and **CI** evidence exists today. **Nothing hosted and no real email has been done**: each needs your fresh explicit yes (see "Still to do").
 
-## Result: 11 of 13 criteria met (local, mocked, CI); criterion 12 is met except hosted migration 0010, and criterion 13 (hosted run, real email) is not done: both wait for your yes
+## Result: 13 of 13 criteria met (local, mocked, CI, hosted, real-email), with one finding: the shop's order-waiting email needs a Resend domain or the account owner's address as the shop login
 
 | # | Success criterion (spec §8) | Status | Evidence |
 |---|---|---|---|
@@ -20,7 +20,7 @@ Only **local**, **mocked** and **CI** evidence exists today. **Nothing hosted an
 | 9 | Emails queued once per event, sent through the port, retried then FAILED without touching any order step, no customer free text, no test sends a real email | Met (mocked) | `tests/db/notifications-outbox.test.ts` (once however often or in parallel; three attempts then FAILED; throwing and slow providers; the cap of 8; a provider that always fails changes nothing through pay, accept, prepare, collect), `tests/notifications/*`, `tests/notify-step.test.ts`, `tests/email/resend.test.ts` (local fake HTTP server only), `tests/env.test.ts`. The real provider is never built under test or CI, and the e2e server blanks the three variables. mocked |
 | 10 | Whole journey from `/` to collected, and the handed-over journey to an accepted quote, with the recorded emails checked | Met | `e2e/journey.spec.ts` (five emails, once each, right recipients and amounts; three for the handed-over path). Ran 4 times in a row and in six full-suite runs after the last fix. mocked |
 | 11 | No horizontal scroll at 390 px on the listed pages; a wrong or revoked link gets the calm 404 | Met | `e2e/journey-phone.spec.ts` (home, store, every order stage, Today, an order to decide, a job, Build a quote), `e2e/shop-catalog.spec.ts`, `e2e/catalog-page.spec.ts`, `e2e/home.spec.ts` (forged, expired, garbage and revoked links are indistinguishable, a real 404). local, mocked |
-| 12 | Typecheck, lint, unit, database and E2E green locally and in CI; payment and access tests stay green; migration 0010 applied locally and, after a fresh yes, to hosted with checks before and after | Partly met | Local: typecheck, lint, build clean; unit 1384; database 1329; E2E 134. CI green on the last code commit. Payment and access tests are in those runs. Migration 0010 is applied **locally only**; hosted 0010 waits for your yes. |
+| 12 | Typecheck, lint, unit, database and E2E green locally and in CI; payment and access tests stay green; migration 0010 applied locally and, after a fresh yes, to hosted with checks before and after | Met | Local: typecheck, lint, build clean; unit 1384; database 1329; E2E 134. CI green on the last code commit. Payment and access tests are in those runs. Migration 0010 applied locally, and to hosted on 5 Nov after your yes with checks before and after (section below). |
 | 13 | The hosted run (real model, real PayPal sandbox, a real email to your own address) after merge and deploy, only after a fresh yes, recorded separately | Not done | Waits for your yes. |
 
 ## Numbers (after the last code commit)
@@ -55,13 +55,25 @@ AG Grid Community 36.2.0 (MIT, no licence key) is on shop pages only (about 250 
 
 CI ran on every push of this branch. The run on the T11 commit failed once, on the template race above (a genuine bug, fixed). Every run since T12 is green. The last code commit (`a7bbadd`) is green.
 
+## Hosted migration 0010 (applied 5 Nov 2026, after your explicit yes)
+
+PR 9 was merged before this, so the deployed code was briefly ahead of the hosted schema (order pages read `notifications`; starting a request writes `customer_email`). Applied with `supabase db push --db-url` against the hosted project (ref `twkepbycivkmhrmurxwi`, the one in `.env`; the URL was read from `.env` and never printed). A dry run first listed exactly one pending migration, `0010_notifications.sql`. Checked read-only before and after. **hosted** evidence; the live site itself was not opened or tested.
+
+| Check | Before | After |
+|---|---|---|
+| Applied migrations | 0001 to 0009 | 0001 to 0010 |
+| `inquiries.customer_email` column | absent | present, with the `inquiries_customer_email_valid` check |
+| `notifications` table | absent | present, row level security on, no policy, one unique key (`dedupe_key`), no privileges for anon or authenticated |
+| Rows: inquiries / messages / purchases | 6 / 6 / 5 | 6 / 6 / 5 (unchanged) |
+| Inquiries with an email / notifications rows | n/a | 0 / 0 |
+
 ## Still to do (each needs your fresh explicit yes, with a read-only check before and after, recorded separately)
 
-1. Merge `spec-7-product-pass` to `main` (a pull request from this branch; `main` is already contained in it, 22 commits ahead).
-2. Apply migration 0010 to the hosted project (`twkepbycivkmhrmurxwi`): dry run first, read-only checks before and after (as for 0009).
-3. Set `RESEND_API_KEY`, `EMAIL_FROM` and (optionally) `EMAIL_REPLY_TO` on Vercel. Until a domain is verified in Resend, `EMAIL_FROM=onboarding@resend.dev` can deliver only to the Resend account owner's address; I need that address and the sender you want to use. Leave `INTAKE_MODEL` unset on Vercel.
-4. The first real email, to your own address only, recorded as real-email evidence.
-5. One hosted run of the whole journey (real model, real PayPal sandbox, a real email to you), recorded in `doc/evidence/product-pass-hosted.md`.
+1. ~~Merge to `main`~~ (PR 9 merged 5 Nov by you).
+2. ~~Apply migration 0010 to the hosted project~~ (done 5 Nov, above).
+3. ~~Set the Resend variables on Vercel~~ (done by you 5 Nov; live after the second redeploy). Notes: `EMAIL_FROM` is the Resend test sender, so mail reaches only the Resend account owner's address. Until a domain is verified in Resend, `EMAIL_FROM=onboarding@resend.dev` can deliver only to the Resend account owner's address; I need that address and the sender you want to use. Leave `INTAKE_MODEL` unset on Vercel.
+4. ~~The first real email, to your own address~~ (done 5 Nov: sent through Resend from the live site and confirmed received by you; see `doc/evidence/product-pass-hosted.md`).
+5. ~~One hosted run of the whole journey~~ (done 5 Nov: real model, real PayPal sandbox, real emails; recorded in `doc/evidence/product-pass-hosted.md`). One of the five emails, the shop's order-waiting email, FAILED because the Resend test sender reaches only the account owner's address.
 6. The ai-intake leftovers: the Gemma evaluation when its rate limit lifts, and the optional `PAYPAL_PAYEE_MERCHANT_ID`.
 7. Submission work (README, video, Devpost text, screenshots, a fresh-tester pass): no task list exists for it yet.
 
