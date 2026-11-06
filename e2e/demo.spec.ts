@@ -4,6 +4,7 @@ import { expect, test } from "@playwright/test";
 import { forbiddenIn } from "../domain/journey";
 import { demoScript } from "../domain/demo/scripts";
 import { claimsIn } from "../lib/claims";
+import { readyDemoShop } from "./journey-support";
 import { adminClient, needsLocalSupabase } from "./payments-support";
 import { ensureKitShop } from "./second-shop-support";
 
@@ -16,10 +17,12 @@ test.beforeEach(async ({ page }) => {
 
 test.skip(needsLocalSupabase, "needs a local Supabase stack: run `supabase start`");
 
-// The second shop is seeded on the local stack (left in place: it is harmless). A shop that is not on a site gets no button, which is
-// covered by the demo-store tests; here both exist so both buttons can be pressed.
+// Both demo shops are made ready on the local stack (and left in place: they are harmless). CI starts from an empty database, so neither can be
+// assumed. A shop that is not on a site gets no button, which the demo-store tests cover; here both exist so both buttons can be pressed.
 test.beforeAll(async () => {
-  await ensureKitShop(adminClient());
+  const db = adminClient();
+  await readyDemoShop(db);
+  await ensureKitShop(db);
 });
 
 const gift = demoScript("demo-gift-boxes", "welcome-20")!;
@@ -76,8 +79,12 @@ test("posts to /demo are limited per address (each reaches the model); viewing t
 
 test("the words on screen make no unmeasured claim, use no system word and print no password", async ({ page }) => {
   await page.goto("/demo");
-  const text = await page.locator("main").innerText();
+  // The shop list streams in after the rest of the page: wait for it, or the scan could read a page without it.
+  await expect(page.getByRole("button", { name: "20 welcome kits" })).toBeVisible();
+  let text = await page.locator("main").innerText();
   expect(claimsIn(text)).toEqual([]);
+  // The prepared messages are quoted customer text ("please" is natural there); the vocabulary rule is for the page's own words.
+  for (const quoted of await page.locator("main blockquote").allInnerTexts()) text = text.split(quoted).join("");
   expect(forbiddenIn(text)).toEqual([]);
   expect(text).not.toMatch(/password:|passwd|secret|token/i);
 });
