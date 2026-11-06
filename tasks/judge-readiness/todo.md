@@ -64,6 +64,7 @@ Each task: acceptance, verify, files (about five or fewer), dependencies. Tick o
   - Verify: the home page on the live site and the agent API's store list match the claims; `rg -i "event kit" doc/submission README.md` consistent with the outcome.
   - Files: `doc/evidence/second-shop-hosted.md` or the edited submission files, `doc/submission/final-checklist.md`
   - Depends on: T1, T8.
+  - **Progress 6 Nov 2026 (T9 stays open):** with your yes and the two login variables in `.env`, `npm run seed -- --only=demo-event-kits --confirm-host=<host>` ran once on the hosted project: both shops now appear on the live home page and in the agent API's store list. One real-model customer journey on Demo Event Kits was run in the browser to the price review ($33.50 / $670.00 for 20, then the stock block and the mug swap at $29.50 / $1,475.00 for 50), recorded in `doc/evidence/second-shop-hosted.md`. **Still open:** accept the price, approve on PayPal (sandbox buyer sign-in) and the kit shop owner's accept or decline, which need your logins; until recorded, no claim of a complete second-shop journey on the hosted site. `DEMO_MERCHANT2_*` was not added to Vercel: only the seed script reads them.
 
 - [ ] **T10 Provenance labels**
   - Acceptance: the customer glossary gains three labels, "From your message", "You confirmed", "Calculated by us", mapped from the existing requirement statuses and quote lines, with a unit test on the mapping; not colour alone.
