@@ -96,7 +96,7 @@ Status: spec APPROVED 6 Nov 2026 (defaults); task list awaiting approval. Tick a
 
 ## Phase C: the submission pack (P4)
 
-- [ ] **T9 Devpost text, video script, screenshot list, final checklist**
+- [x] **T9 Devpost text, video script, screenshot list, final checklist**
   - Acceptance: `doc/submission/devpost-text.md` (inspiration; what it does; how it was built; challenges; what is next; the problem and idea from the framing; a "Tools used" section naming the model(s) and how they are used, PayPal
     Orders v2 / Payments v2 / webhooks and where, Supabase, Vercel, Resend, AG Grid and what each does; sandbox and synthetic-data labels; no unmeasured claim, scanned by the T2 test). `video-script.md`: timed beats totalling at most 2:45
     (the messy request, the visible specification, the stock-limited quantity becoming invalid and re-priced by code, the exact quote, PayPal setting the money aside, the shop's yes and no, the duplicate-capture test on screen, the proof
@@ -105,6 +105,7 @@ Status: spec APPROVED 6 Nov 2026 (defaults); task list awaiting approval. Tick a
   - Verify: `npm run test -- tests/claims-scan.test.ts` (extended to `doc/submission/`), and you read the four files
   - Files: `doc/submission/{devpost-text,video-script,screenshots,final-checklist}.md`, `tests/claims-scan.test.ts` (extend)
   - Depends on: T8.
+  - **Done 6 Nov 2026** (drafts; nothing is posted or uploaded): `doc/submission/{devpost-text,video-script,screenshots,final-checklist}.md`. 14 new checks in `tests/claims-scan.test.ts` (full unit suite 1487 passing): all four files pass the claims scan; the Devpost text has the required sections, names every tool and says the free primary model was not evaluated; the video script has contiguous timed beats ending at 2:45 and shows the stock limit, the exact price, the hold, the shop's decision, the repeated-click test and the proof file; every checklist line is ticked with evidence or marked OPEN with a reason; 12 screenshots listed. **Open items only you can fill:** the sandbox buyer and demo shop logins (placeholders in `devpost-text.md`), the model names configured on Vercel (the table lists the code's defaults), whether to keep the "Claude Code" tools line, and the recording itself. Checklist items marked OPEN: demo credentials, text pasted, video recorded, final secret scan on the last commit, merge and redeploy, a fresh-tester run. One rule to read before recording: the video must not carry third-party trademarks without permission, and PayPal's own sandbox page appears in it.
 
 ## Phase D: the agent-facing endpoint (P3) , only if T8 says go (end of 8 Nov); otherwise leave unticked
 
