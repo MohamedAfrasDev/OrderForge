@@ -117,7 +117,7 @@ async function conversationUpTo(db: SupabaseClient, inquiryId: string, messageId
 }
 
 /** What this turn tells the customer when a box is proposed or blocked: code's words and code's figures. */
-function proposalText(proposal: Proposal, productName: (sku: string) => string, boxCount: number): string {
+export function proposalText(proposal: Proposal, productName: (sku: string) => string, boxCount: number): string {
   if (proposal.status === "VALID" && proposal.priced) {
     const parts = Object.entries(proposal.selections).map(([, sku]) => productName(sku));
     return `Here is a box that fits your request: ${parts.join(", ")}. It comes to ${format(cents(proposal.priced.perBoxMinor))} per box, ${format(cents(proposal.priced.totalMinor))} for ${boxCount} boxes. You can use it, change your request, or ask the shop to take over.`;
