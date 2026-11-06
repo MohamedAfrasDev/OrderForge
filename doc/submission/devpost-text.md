@@ -35,7 +35,7 @@ The customer accepts that exact price. PayPal sets the money aside; the customer
 |---|---|
 | **PayPal developer platform (sandbox)** | Orders v2 authorize; Payments v2 capture and void; webhook verification; the sandbox buyer approves on PayPal's own page |
 | **OpenRouter** (AI models) | Reads the request into a strict schema; rewords one question; chooses one product per part of the box from a fixed list; ranks and explains the alternatives that code produced |
-| Models configured | `google/gemma-4-31b-it:free` first; `openai/gpt-oss-120b` (paid) only after a provider failure [confirm the models set on Vercel before submitting] |
+| Models configured | `openai/gpt-oss-120b` (paid) is the only model on the hosted site; no free model and no second model. If it fails, the customer is handed to the shop. (Set on Vercel production 6 Nov 2026.) |
 | **Claude Code** | The AI coding assistant used to write the specs, tests and code under the spec-first workflow in this repository |
 | Agent API | No model: a strict five-field request, a box chosen and priced by code, a read-only token; a person approves the payment |
 | Supabase, Vercel, Resend, AG Grid | Data and auth, hosting, email, data grids |

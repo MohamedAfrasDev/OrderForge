@@ -25,6 +25,8 @@ Task T1 of `judge-readiness` · Date: 6 Nov 2026 · Label: **hosted, read-only**
 
 ## Model configuration on the live site
 
+> **Update 6 Nov 2026 (T4):** this section describes the state at the baseline. `OPENROUTER_MODEL=openai/gpt-oss-120b` has since been set on production (fallback unset), so that model is now the only one. Soak results: `doc/evidence/model-soak.md` (not a pass: one request over 20 s) and `doc/evidence/model-soak-run2.md` (pass).
+
 Production environment variable NAMES (`vercel env ls`; values are encrypted and were not read): `RESEND_API_KEY`, `EMAIL_FROM`, `PAYPAL_WEBHOOK_ID`, `PAYPAL_CLIENT_SECRET`, `NEXT_PUBLIC_PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_ID`, `APP_BASE_URL`, `CRON_SECRET`, `ACCESS_LINK_SECRET`, `OPENROUTER_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `PAYPAL_ENV`, `SANDBOX_MODE`.
 
 - **Finding 3: `OPENROUTER_MODEL` and `OPENROUTER_FALLBACK_MODEL` are not set**, so the code defaults apply (`lib/ai/openrouter.ts` lines 4 and 6): primary `google/gemma-4-31b-it:free`, fallback `openai/gpt-oss-120b`, each attempt with a 20 s timeout. The recorded evaluation (`doc/evidence/ai-intake-real-model.md`) shows Gemma returned HTTP 429 on all 22 messages. So a judge's request can wait up to one full timeout on a rate-limited free model before the paid fallback answers. T4 sets the paid model as primary.
