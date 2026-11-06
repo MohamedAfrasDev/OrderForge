@@ -144,7 +144,7 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     await spec(page).getByLabel("Number of boxes").fill("22"); // 24 steel bottles are in stock, so 22 still fits
     await spec(page).getByRole("button", { name: "Save", exact: true }).click();
     await expect(proposals).toContainText("$770.00 for 22 boxes");
-    await expect(spec(page)).toContainText("You set this");
+    await expect(spec(page)).toContainText("You confirmed");
     await expect(page.getByText("You changed your order")).toBeVisible();
   });
 
@@ -239,7 +239,7 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     const proposals = page.getByRole("region", { name: "Proposals" });
     await expect(proposals).toContainText("$35.00 per box · $700.00 for 20 boxes");
     await expect(spec(page).getByRole("button", { name: /Number of boxes/ })).toContainText("20");
-    await expect(spec(page).getByRole("button", { name: /Number of boxes/ })).toContainText("You set this");
+    await expect(spec(page).getByRole("button", { name: /Number of boxes/ })).toContainText("You confirmed");
     await expect(page.getByRole("region", { name: "Open question" })).toHaveCount(0);
     await expect(page.getByText("You changed your order")).toBeVisible(); // a quiet note, not something they typed
   });
@@ -274,6 +274,6 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     await spec(page).getByLabel("Budget per box").fill("45.50");
     await spec(page).getByRole("button", { name: "Save", exact: true }).click();
     await expect(spec(page).getByRole("button", { name: /Budget per box/ })).toContainText("$45.50");
-    await expect(spec(page).getByRole("button", { name: /Budget per box/ })).toContainText("You set this");
+    await expect(spec(page).getByRole("button", { name: /Budget per box/ })).toContainText("You confirmed");
   });
 });

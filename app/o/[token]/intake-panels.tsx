@@ -1,4 +1,5 @@
 import { Conversation } from "@/components/conversation";
+import { PROVENANCE_LABELS, provenanceOfField } from "@/domain/journey";
 import { cents, format } from "@/lib/money";
 import type { CustomerSpecField, CustomerSpecView } from "@/services/intake/read";
 import { chooseAction, editFieldAction, handOffAction, quickReplyAction, retryTurnAction, sendMessageAction } from "./intake-actions";
@@ -44,7 +45,8 @@ function note(f: CustomerSpecField): string {
   if (display(f) === null) return "";
   if (f.status === "conflicted") return "Which one is right?";
   if (f.status === "needs_confirmation") return "Is this right?";
-  return f.source === "edit" ? "You set this" : "From your message";
+  const where = provenanceOfField(f);
+  return where ? PROVENANCE_LABELS[where].label : "";
 }
 
 /** The value to start the editor with, in the form its box takes (dollars for money, yes or no for a choice). */
