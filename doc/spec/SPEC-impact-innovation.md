@@ -2,7 +2,7 @@
 
 Module id: `impact-innovation` · Depends on: `product-pass` and every module before it (all built) · Index: [../../SPEC.md](../../SPEC.md) · Brief: [../OrderForge Build Brief v1.1.md](../OrderForge%20Build%20Brief%20v1.1.md)
 
-Status: **APPROVED 6 Nov 2026 (defaults for all seven open questions)**. Task list: [tasks/impact-innovation/](../../tasks/impact-innovation/todo.md), awaiting approval. Findings while writing the tasks (6 Nov): (1) `demo_reset` truncates `merchants` and every table, so it already handles two shops and **needs no migration** (open question 5 is closed: no migration 0011 for it); (2) the shop's "kind of product" has no column, so the intake prompt reads it from a new `shop_profile` business rule (`{ "productKind": "..." }`, seed data, no schema change); (3) with the default for open question 4, P3 needs no migration either. So **no migration is planned in this module**.
+Status: **APPROVED 6 Nov 2026 (defaults for all seven open questions)**. Task list: [tasks/impact-innovation/](../../tasks/impact-innovation/todo.md) (approved; T1 to T14 built and checkpointed locally on 6 Nov, see [the checkpoint](../checkpoints/impact-innovation-checkpoint.md)). Findings while writing the tasks (6 Nov): (1) `demo_reset` truncates `merchants` and every table, so it already handles two shops and **needs no migration** (open question 5 is closed: no migration 0011 for it); (2) the shop's "kind of product" has no column, so the intake prompt reads it from a new `shop_profile` business rule (`{ "productKind": "..." }`, seed data, no schema change); (3) with the default for open question 4, P3 needs no migration either. So **no migration is planned in this module**.
 
 ## 1. Objective
 
@@ -42,7 +42,7 @@ Why now: the product is built and verified end to end on the hosted site (`doc/e
 6. **The home page lists the demo stores** instead of one hard-coded `DEMO_STORE_SLUG`. A store that does not exist on a deployment is not shown (no dead link), as today.
 7. **`demo:reset` and `seed` must handle two merchants.** The `demo_reset` RPC and the seed's "refuse if orders exist" guard are checked in the first task; if `demo_reset` assumes one merchant, fixing it is part of P2 (a migration only if it is a SQL function that must change; that would make P2 an ask-first item, see boundaries).
 8. **P3 never lets an agent pay, approve or confirm.** The agent can create a request with structured, confirmed requirements and read priced proposals. The order room link it receives is the existing customer credential; a human opens it, accepts the exact quote and approves on PayPal's own page. The merchant decision is unchanged.
-9. **P3 reuses the existing services** (create inquiry, `editRequirements` with source `customer_edit`, the intake pipeline's proposal step, `createQuoteDraft`/`publishQuote` only via the existing merchant-review gate). No second pricing path exists. Exact function names are confirmed when the task list is written.
+9. **P3 reuses the existing services** (create inquiry, `editRequirements` with source `customer_edit`, the catalog engine's own validation and alternatives, `createQuoteDraft`/`publishQuote` only via the existing merchant-review gate). No second pricing path exists. Exact function names are confirmed when the task list is written.
 10. **P3 is read-only toward the money.** It cannot publish a quote on its own unless the shop's existing review gate allows it; by default a request from an agent ends in "with the shop" exactly like a handed-over human request.
 11. **Video and text are written for the 3-minute limit.** The script is timed to 2:45 and rehearsed against the hosted site. The demo shown is the hosted one.
 12. **This module ends by 9 Nov.** The brief's 9 Nov tripwire (payment or access tests failing stops all feature work) applies; 10 Nov is polish and README; 11 Nov is video; 12 Nov is final checks only.
@@ -71,6 +71,8 @@ Why now: the product is built and verified end to end on the hosted site (`doc/e
 
 ### 3.3 P3: the agent-facing request endpoint (cuttable)
 
+**How the box is chosen (T10).** For each part of the box, in the shop's template order, code takes the first allowed product that is active and, when the request says no food, not food; if none qualifies it takes the first allowed product and lets the engine report why it cannot be used. The engine (`validateConfiguration`) then validates and prices it; when it is blocked, `proposeAlternatives` supplies the options. Both are the same functions the web flow uses, so for the same inputs the figures are the web flow's (a test compares them). The first message of the conversation is built by code from the validated values ("Request sent through the agent interface: 20 boxes, no food, logo needed, budget up to $40.00 per box."), never from agent text. The human who opens the returned link sees the proposal in the normal order room and chooses, accepts and pays there.
+
 A small versioned API so another AI agent can use a shop on a person's behalf. It exists to make "agentic commerce" literal without weakening any rule.
 
 ```
@@ -81,7 +83,7 @@ POST /api/agent/v1/stores/{slug}/requests structured requirements -> a request
 GET  /api/agent/v1/requests/{id}          status and proposals (token in the Authorization header)
 ```
 
-`POST` takes only the intake fields with their values (`boxCount`, `noFood`, `logoRequired`, `maxPricePerBoxMinor`, optional `requestedPickupDate`), strictly validated by Zod with no extra keys. The service stores them as the customer's own confirmed answers, runs the existing proposal step, and returns: the request id, a **request token** (only a hash is stored, like the existing customer access token), the order-room URL for a human, and the proposals the code produced with every price as integer cents computed by code. It returns coded blockers (for example `INSUFFICIENT_STOCK`, `OVER_BUDGET`) instead of prose.
+`POST` takes only the intake fields with their values (`boxCount`, `noFood`, `logoRequired`, `maxPricePerBoxMinor`, optional `requestedPickupDate`), strictly validated by Zod with no extra keys. The service stores them as the customer's own confirmed answers, proposes a box **in code, with no model call** (decided 6 Nov while writing T10: an API call should be fast and deterministic, and a model adds nothing to a request that is already structured), and returns: the request id, a **request token** (a signed, expiring, read-only token under its own key, so a customer link is not valid as one and the reverse; nothing is stored, and bumping the request's access version revokes it, like the customer link), the order-room URL for a human, and the proposals the code produced with every price as integer cents computed by code. It returns coded blockers (for example `INSUFFICIENT_STOCK`, `OVER_BUDGET`) instead of prose.
 
 What it cannot do, by construction: set or suggest a price, approve a quote, create a PayPal order, capture, void, read another request, list requests, or read any merchant data. Its only link to payment is the URL a human opens.
 

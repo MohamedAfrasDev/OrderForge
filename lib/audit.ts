@@ -26,6 +26,9 @@ const ALLOWED_KEYS: ReadonlySet<string> = new Set([
   "model_id",
   "prompt_version",
   "run",
+  "store", // the shop an agent request was made to (a public slug)
+  "outcome", // a coded result such as ok, not_found, INVALID_INPUT
+  "agent_ref", // the first 8 hex characters of the SHA-256 of an agent token: enough to match a log line, useless as a credential
 ]);
 
 const SECRET_KEY = /secret|token|password|authorization|api[_-]?key|credential/i;

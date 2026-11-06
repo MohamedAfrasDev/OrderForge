@@ -7,7 +7,11 @@ import type { Shop } from "./journey-support";
 
 export const KIT_BOTTLE_STOCK = 40;
 
-export async function readyKitShop(db: SupabaseClient): Promise<Shop> {
+/**
+ * The second shop's rows, made only if they are missing. It changes nothing that exists (no stock reset, no login), so a spec that only needs the
+ * shop to be there can call it while another spec is using the shop.
+ */
+export async function ensureKitShop(db: SupabaseClient): Promise<{ merchantId: string; slug: string; name: string }> {
   const made = await db.from("merchants").upsert({ slug: merchant2.slug, name: merchant2.name }, { onConflict: "slug", ignoreDuplicates: true });
   if (made.error) throw new Error(`merchant: ${made.error.message}`);
   const merchant = await db.from("merchants").select("id, name").eq("slug", merchant2.slug).single();
@@ -34,6 +38,11 @@ export async function readyKitShop(db: SupabaseClient): Promise<Shop> {
     );
     if (rules.error) throw new Error(`rules: ${rules.error.message}`);
   }
+  return { merchantId, slug: merchant2.slug, name: merchant.data.name as string };
+}
+
+export async function readyKitShop(db: SupabaseClient): Promise<Shop> {
+  const { merchantId } = await ensureKitShop(db);
   // The same stock every run, so the run never depends on what an earlier one used: plenty of everything, and exactly 40 insulated bottles.
   const all = await db.from("products").select("id, sku").eq("merchant_id", merchantId);
   for (const p of all.data ?? []) {
@@ -58,5 +67,5 @@ export async function readyKitShop(db: SupabaseClient): Promise<Shop> {
   }
   const owned = await db.from("merchants").update({ owner_user_id: userId }).eq("id", merchantId);
   if (owned.error) throw new Error(`owner: ${owned.error.message}`);
-  return { merchantId, email, password, slug: merchant2.slug, name: merchant.data.name as string };
+  return { merchantId, email, password, slug: merchant2.slug, name: merchant2.name };
 }

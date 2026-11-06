@@ -100,6 +100,24 @@ Copy `.env.example` to `.env`. **`.env` is gitignored and must never be committe
 | `DEMO_MERCHANT2_EMAIL`, `DEMO_MERCHANT2_PASSWORD` | **secret** | Seed script only; the owner login of the second demo shop (Demo Event Kits); must be a different email; password 12+ characters |
 | `PAYPAL_SPIKE_BASE_URL` | no | Optional. Points the spike at a local fake (`http://127.0.0.1:...` only) |
 
+## For agents
+
+An AI agent can ask a demo shop for a priced box and read it back. It cannot choose a price, accept one or pay: a person opens the returned `humanUrl`, chooses the box, accepts the exact price and approves the payment on PayPal's own page. Sandbox only, synthetic data. The description of every route is at `/api/agent/v1/openapi.json`.
+
+```bash
+BASE=http://localhost:3000   # the hosted site serves the same routes at https://order-forge.afras.dev once the version that contains them is deployed
+curl -s "$BASE/api/agent/v1/stores"
+curl -s "$BASE/api/agent/v1/stores/demo-event-kits"
+curl -s -X POST "$BASE/api/agent/v1/stores/demo-event-kits/requests" -H 'content-type: application/json' -d '{"boxCount":20,"noFood":true,"logoRequired":true,"maxPricePerBoxMinor":4000}'
+# the answer holds request.id, humanUrl (give it to a person) and requestToken (read-only)
+curl -s "$BASE/api/agent/v1/requests/REQUEST_ID" -H "authorization: Bearer REQUEST_TOKEN"
+```
+
+- **Five fields only:** `boxCount`, `noFood`, `logoRequired`, `maxPricePerBoxMinor` (cents) and an optional `requestedPickupDate`. A price, a total, free text or any other key is refused with a 400 and nothing is stored.
+- **Code prices the box.** Every amount in an answer is an integer number of cents computed from the shop's catalog and stock; no model is called.
+- **The token only reads.** Send it in the `Authorization` header, never in the address. A wrong, expired, revoked or customer-link token gets the same 404.
+- **Limits:** 10 requests a minute per address and 200 a day per shop; past a limit the answer is a 429 with `Retry-After`.
+
 ## Accounts and hosted setup
 
 ### 1. Supabase

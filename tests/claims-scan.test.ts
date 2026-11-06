@@ -1,5 +1,6 @@
 // Words that claim a benefit nobody measured are banned from the pages and documents written for visitors and judges.
 // This file tests the scanner itself, then scans the how-it-works page's text. Later tasks add the README and the submission pack.
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { forbiddenIn } from "@/domain/journey";
 import { claimsIn } from "@/lib/claims";
@@ -67,5 +68,64 @@ describe("the how-it-works page text", () => {
   it("explains the PayPal step the way the order room does", () => {
     expect(text).toMatch(/sets? (the )?money aside/i);
     expect(text).toMatch(/only if the shop accepts/i);
+  });
+});
+
+// ---- the submission pack (doc/submission) -----------------------------------------------------------------------------------------
+const PACK = ["devpost-text.md", "video-script.md", "screenshots.md", "final-checklist.md"] as const;
+const read = (name: string) => readFileSync(`doc/submission/${name}`, "utf8").replace(/\r\n/g, "\n");
+
+describe("the submission pack", () => {
+  it.each(PACK)("%s exists", (name) => {
+    expect(existsSync(`doc/submission/${name}`)).toBe(true);
+  });
+
+  it.each(PACK)("%s makes no unmeasured claim", (name) => {
+    const text = read(name);
+    // The checklist quotes the rules about trademarks and licenses; it is scanned as well, with no exceptions.
+    expect(claimsIn(text), name).toEqual([]);
+  });
+
+  it("devpost-text.md has the sections Devpost asks for, says sandbox and synthetic, and names the tools and how each is used", () => {
+    const t = read("devpost-text.md");
+    for (const h of ["## Inspiration", "## What it does", "## How we built it", "## Tools used", "## Challenges", "## What's next", "## Try it"]) expect(t, h).toContain(h);
+    expect(t).toMatch(/sandbox/i);
+    expect(t).toMatch(/synthetic/i);
+    for (const tool of ["OpenRouter", "PayPal", "Supabase", "Vercel", "Resend", "AG Grid", "Claude Code"]) expect(t, tool).toContain(tool);
+    expect(t).toContain("doc/evidence/proof-points.md");
+  });
+
+  it("devpost-text.md is honest about the model evaluation: it says the free primary was not evaluated", () => {
+    expect(read("devpost-text.md")).toMatch(/not (been )?evaluated|was rate limited/i);
+  });
+
+  it("video-script.md has contiguous timed beats that end at or before 2:45", () => {
+    const beats = [...read("video-script.md").matchAll(/^## (\d):(\d\d)[-–](\d):(\d\d) /gm)].map((m) => [Number(m[1]) * 60 + Number(m[2]), Number(m[3]) * 60 + Number(m[4])] as const);
+    expect(beats.length).toBeGreaterThanOrEqual(8);
+    expect(beats[0]![0]).toBe(0);
+    for (let i = 0; i < beats.length; i++) {
+      expect(beats[i]![1], `beat ${i + 1} ends after it starts`).toBeGreaterThan(beats[i]![0]);
+      if (i > 0) expect(beats[i]![0], `beat ${i + 1} starts where the last ended`).toBe(beats[i - 1]![1]);
+    }
+    expect(beats.at(-1)![1]).toBeLessThanOrEqual(165);
+  });
+
+  it("video-script.md shows the stock limit, the exact price, the hold, the shop's decision, the repeated-click test and the proof file, and says what is real and what is sandbox", () => {
+    const t = read("video-script.md");
+    for (const must of [/\$35\.00/, /\$700\.00/, /24/, /\$1,080\.00/, /sets? (the )?money aside/i, /accept/i, /decline/i, /five simultaneous/i, /proof-points/, /sandbox/i, /synthetic/i]) expect(t, String(must)).toMatch(must);
+  });
+
+  it("final-checklist.md: every line is ticked with evidence or marked OPEN with a reason, and it says to recheck the rules", () => {
+    const lines = read("final-checklist.md").split("\n").filter((l) => /^- \[[ x]\] /.test(l));
+    expect(lines.length).toBeGreaterThanOrEqual(10);
+    for (const l of lines) {
+      if (l.startsWith("- [ ] ")) expect(l, l).toMatch(/OPEN:/);
+      else expect(l, l).toMatch(/Evidence:/);
+    }
+    expect(read("final-checklist.md")).toMatch(/recheck the official rules/i);
+  });
+
+  it("screenshots.md lists at least six captioned shots", () => {
+    expect([...read("screenshots.md").matchAll(/^\d+\. \*\*/gm)].length).toBeGreaterThanOrEqual(6);
   });
 });
