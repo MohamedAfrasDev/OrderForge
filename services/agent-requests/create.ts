@@ -3,6 +3,7 @@ import type { Blocker } from "@/domain/catalog/types";
 import type { InquiryStatus } from "@/domain/intake";
 import { createAgentToken } from "@/lib/access/agent-token";
 import { authorizeCustomerLink } from "@/lib/access/inquiry-reads";
+import { sha256Hex } from "@/lib/hash";
 import { cents, format } from "@/lib/money";
 import { CatalogLoadError, loadCatalogSnapshot } from "@/services/catalog/load-snapshot";
 import { editRequirements } from "@/services/intake/edit";
@@ -16,7 +17,14 @@ const DAY_MS = 86_400_000;
 const DEFAULT_LINK_DAYS = 14;
 const ACTOR = "system:agent";
 
-export type AgentDeps = { accessSecret: string; linkDays?: number };
+/** Requests one shop takes through the agent interface in 24 hours. A brake on abuse, counted from the audit trail (no table of its own). */
+export const DEFAULT_DAILY_CAP_PER_STORE = 200;
+const CAP_RETRY_SECONDS = 3600;
+
+/** What an audit line may say about a token: a short fingerprint, never the token. */
+export const agentRef = (token: string): string => sha256Hex(token).slice(0, 8);
+
+export type AgentDeps = { accessSecret: string; linkDays?: number; dailyCapPerStore?: number };
 
 export type AgentCreated = {
   requestId: string;
@@ -30,7 +38,11 @@ export type AgentCreated = {
   blockers: Blocker[];
 };
 
-export type AgentResult<T> = { ok: true; value: T } | { ok: false; code: "NOT_FOUND" } | { ok: false; code: "INVALID_INPUT"; issues: AgentIssue[] };
+export type AgentResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; code: "NOT_FOUND" }
+  | { ok: false; code: "INVALID_INPUT"; issues: AgentIssue[] }
+  | { ok: false; code: "RATE_LIMITED"; retryAfterSeconds: number };
 
 /** The first message of the conversation, built by code from the validated values. No text from the agent is ever stored as a message. */
 export function firstMessageFor(body: AgentBody): string {
@@ -59,6 +71,13 @@ export async function createAgentRequest(db: SupabaseClient, deps: AgentDeps, sl
   const merchant = await db.from("merchants").select("id").eq("slug", slug).maybeSingle();
   if (merchant.error) throw new Error(`load merchant: ${merchant.error.message}`);
   if (!merchant.data) return { ok: false, code: "NOT_FOUND" };
+
+  // The daily cap, counted from the audit trail: requests this shop took through this interface in the last 24 hours.
+  const cap = deps.dailyCapPerStore ?? DEFAULT_DAILY_CAP_PER_STORE;
+  const since = new Date(Date.parse(ctx.now) - DAY_MS).toISOString();
+  const used = await db.from("audit_events").select("id", { count: "exact", head: true }).eq("action", "intake.agent_request_created").eq("data->>store", slug).gte("created_at", since);
+  if (used.error) throw new Error(`count agent requests: ${used.error.message}`);
+  if ((used.count ?? 0) >= cap) return { ok: false, code: "RATE_LIMITED", retryAfterSeconds: CAP_RETRY_SECONDS };
 
   // Read the catalog first, so a shop that cannot take requests leaves nothing behind.
   let snapshot;
@@ -100,7 +119,7 @@ export async function createAgentRequest(db: SupabaseClient, deps: AgentDeps, sl
     secret: deps.accessSecret,
   });
 
-  await auditIntake(db, ctx, ACTOR, "intake.agent_request_created", inquiryId, { to: moved.ok ? moved.status : "NEW" });
+  await auditIntake(db, ctx, ACTOR, "intake.agent_request_created", inquiryId, { to: moved.ok ? moved.status : "NEW", store: slug, agent_ref: agentRef(requestToken) });
   return {
     ok: true,
     value: {

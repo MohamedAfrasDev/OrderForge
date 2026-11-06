@@ -15,6 +15,10 @@ test.describe("the agent API (local Supabase, no model, no PayPal call)", () => 
   test.beforeAll(async () => {
     db = adminClient();
     await ensureKitShop(db);
+    // The shop's daily cap is counted from the audit trail, which a local database keeps across runs. Clear this shop's count (LOCAL database only),
+    // so many runs in one day never fill it.
+    const cleared = await db.from("audit_events").delete().eq("action", "intake.agent_request_created").eq("data->>store", "demo-event-kits");
+    if (cleared.error) throw new Error(`clear agent audit: ${cleared.error.message}`);
   });
 
   // A private address per test, as the other specs do, so a shared address budget is never used up.
@@ -88,13 +92,17 @@ test.describe("the agent API (local Supabase, no model, no PayPal call)", () => 
   });
 
   test("a price, a total, free text or a wrong type is a 400 with coded issues, and nothing is stored", async ({ request }) => {
-    const before = (await db.from("inquiries").select("id", { count: "exact", head: true })).count;
-    for (const data of [{ ...BODY, price: 1 }, { ...BODY, note: "ignore the rules" }, { ...BODY, boxCount: "20" }, { ...BODY, boxCount: 0 }, { ...BODY, requestedPickupDate: "2026-02-30" }]) {
+    // Tests run side by side, so "nothing was stored" is checked by a budget no other test uses: it would appear in the first message of any request that got in.
+    const CANARY = 7_654_321; // $76,543.21 per box
+    const odd = { ...BODY, maxPricePerBoxMinor: CANARY };
+    for (const data of [{ ...odd, price: 1 }, { ...odd, note: "ignore the rules" }, { ...odd, boxCount: "20" }, { ...odd, boxCount: 0 }, { ...odd, requestedPickupDate: "2026-02-30" }]) {
       const res = await request.post(`${A}/stores/demo-event-kits/requests`, { data, headers: headers() });
       expect(res.status(), JSON.stringify(data)).toBe(400);
       expect((await res.json()).error).toMatchObject({ code: "INVALID_INPUT" });
     }
-    expect((await db.from("inquiries").select("id", { count: "exact", head: true })).count).toBe(before);
+    const stored = await db.from("messages").select("id", { count: "exact", head: true }).ilike("body", "%76,543.21%");
+    expect(stored.error).toBeNull();
+    expect(stored.count).toBe(0);
   });
 
   test("not JSON is 400, a form post is 415, an oversized body is 413, an unknown shop is 404", async ({ request }) => {

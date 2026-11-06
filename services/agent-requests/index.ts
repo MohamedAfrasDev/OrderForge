@@ -1,4 +1,4 @@
-export { createAgentRequest, firstMessageFor } from "./create";
+export { DEFAULT_DAILY_CAP_PER_STORE, agentRef, createAgentRequest, firstMessageFor } from "./create";
 export type { AgentCreated, AgentDeps, AgentResult } from "./create";
 export { defaultSelections, proposeForRequest } from "./propose";
 export type { AgentLine, AgentProposal, ProposedForRequest } from "./propose";

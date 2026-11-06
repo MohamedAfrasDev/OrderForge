@@ -1,6 +1,7 @@
 import { MAX_AGENT_BOXES } from "@/services/agent-requests/schema";
 import type { AgentCreated, AgentResult } from "@/services/agent-requests/create";
 import type { AgentRequestView } from "@/services/agent-requests/read";
+import type { AgentLimits, LimitKind } from "./limits";
 import { openApiDocument } from "./schemas";
 
 // The HTTP layer of the agent API: parse, call the service, map coded results to JSON and a status. No business rule lives here. Pure of
@@ -19,7 +20,7 @@ export type AgentApiService = {
   read(requestId: string, token: string | undefined): Promise<AgentResult<AgentRequestView>>;
 };
 
-export type AgentApiDeps = { service: AgentApiService; baseUrl: string };
+export type AgentApiDeps = { service: AgentApiService; baseUrl: string; limits?: AgentLimits };
 
 const HEADERS = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } as const;
 
@@ -27,7 +28,14 @@ function json(status: number, body: unknown, extra: Record<string, string> = {})
   return Response.json(body, { status, headers: { ...HEADERS, ...extra } });
 }
 
-const error = (status: number, code: string, issues?: Array<{ field: string; code: string }>) => json(status, { error: { code, ...(issues ? { issues } : {}) } });
+const error = (status: number, code: string, issues?: Array<{ field: string; code: string }>, extra: Record<string, string> = {}) => json(status, { error: { code, ...(issues ? { issues } : {}) } }, extra);
+const tooMany = (retryAfterSeconds: number) => error(429, "RATE_LIMITED", undefined, { "Retry-After": String(retryAfterSeconds) });
+
+/** The limit check every handler starts with, before any body is read or token checked. A refusal is the whole response. */
+function limited(deps: AgentApiDeps, kind: LimitKind, request: Request, slug?: string): Response | null {
+  const verdict = deps.limits?.check(kind, request, slug);
+  return verdict && !verdict.allowed ? tooMany(verdict.retryAfterSeconds) : null;
+}
 export const notFound = () => error(404, "NOT_FOUND");
 
 const BEARER = /^Bearer ([A-Za-z0-9._~-]{1,600})$/;
@@ -45,7 +53,9 @@ const FIELDS = [
   { name: "requestedPickupDate", type: "string (YYYY-MM-DD)", required: false, description: "The earliest pickup day wanted." },
 ];
 
-export async function handleListStores(deps: AgentApiDeps): Promise<Response> {
+export async function handleListStores(deps: AgentApiDeps, request?: Request): Promise<Response> {
+  const slow = request ? limited(deps, "list", request) : null;
+  if (slow) return slow;
   const stores = await deps.service.listStores();
   return json(200, {
     stores: stores.map((s) => ({
@@ -56,7 +66,9 @@ export async function handleListStores(deps: AgentApiDeps): Promise<Response> {
   });
 }
 
-export async function handleDescribeStore(deps: AgentApiDeps, slug: string): Promise<Response> {
+export async function handleDescribeStore(deps: AgentApiDeps, slug: string, request?: Request): Promise<Response> {
+  const slow = request ? limited(deps, "describe", request) : null;
+  if (slow) return slow;
   const store = await deps.service.describeStore(slug);
   if (!store) return notFound();
   return json(200, {
@@ -76,6 +88,8 @@ export async function handleDescribeStore(deps: AgentApiDeps, slug: string): Pro
 }
 
 export async function handleCreateRequest(deps: AgentApiDeps, request: Request, slug: string): Promise<Response> {
+  const slow = limited(deps, "create", request, slug);
+  if (slow) return slow;
   if (!(request.headers.get("content-type") ?? "").toLowerCase().startsWith("application/json")) return error(415, "UNSUPPORTED_MEDIA_TYPE");
   const declared = Number(request.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) return error(413, "PAYLOAD_TOO_LARGE");
@@ -90,7 +104,11 @@ export async function handleCreateRequest(deps: AgentApiDeps, request: Request, 
   }
 
   const out = await deps.service.create(slug, body);
-  if (!out.ok) return out.code === "INVALID_INPUT" ? error(400, "INVALID_INPUT", out.issues) : notFound();
+  if (!out.ok) {
+    if (out.code === "INVALID_INPUT") return error(400, "INVALID_INPUT", out.issues);
+    if (out.code === "RATE_LIMITED") return tooMany(out.retryAfterSeconds);
+    return notFound();
+  }
 
   const v = out.value;
   return json(201, {
@@ -102,6 +120,8 @@ export async function handleCreateRequest(deps: AgentApiDeps, request: Request, 
 }
 
 export async function handleReadRequest(deps: AgentApiDeps, request: Request, requestId: string): Promise<Response> {
+  const slow = limited(deps, "read", request);
+  if (slow) return slow;
   const out = await deps.service.read(requestId, bearerToken(request));
   if (!out.ok) return notFound();
   const v = out.value;
