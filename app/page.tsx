@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { Suspense } from "react";
-import { findDemoStore } from "@/lib/demo-store";
+import { findDemoStores } from "@/lib/demo-store";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { HomeActions } from "./home-actions";
 
@@ -19,6 +20,13 @@ export default function Home() {
         <Actions />
       </Suspense>
 
+      <p className="max-w-lg text-sm text-muted-foreground">
+        Custom orders agreed by message often end with a price that drifted, stock that isn&apos;t there, or a double charge. OrderForge checks each of those in code, not in the chat.{" "}
+        <Link href="/how-it-works" className="font-medium text-foreground underline underline-offset-4">
+          How it stays safe
+        </Link>
+      </p>
+
       <ol className="grid w-full max-w-2xl gap-3 text-left text-sm sm:grid-cols-3">
         {STEPS.map((step, i) => (
           <li key={step} className="flex gap-3 rounded-lg border border-border p-3">
@@ -35,5 +43,6 @@ export default function Home() {
 
 // Reading the database is request-time data, so this streams inside <Suspense>.
 async function Actions() {
-  return <HomeActions store={await findDemoStore(createAdminClient())} />;
+  const [first = null, ...others] = await findDemoStores(createAdminClient());
+  return <HomeActions store={first} others={others} />;
 }

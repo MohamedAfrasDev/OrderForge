@@ -30,6 +30,9 @@ test.describe("the home page (local Supabase)", () => {
     const found = await db.from("merchants").select("name").eq("slug", DEMO_STORE_SLUG).single();
     if (found.error) throw new Error(found.error.message);
     storeName = found.data.name as string;
+    // The second demo store, made the same way (and left in place: it is harmless).
+    const second = await db.from("merchants").upsert({ slug: "demo-event-kits", name: "Demo Event Kits (simulated)" }, { onConflict: "slug", ignoreDuplicates: true });
+    if (second.error) throw new Error(second.error.message);
   });
 
   test("says what it is in one sentence, offers the customer flow first and shop sign in second", async ({ page }) => {
@@ -47,6 +50,18 @@ test.describe("the home page (local Supabase)", () => {
     await customer.click();
     await expect(page).toHaveURL(new RegExp(`/store/${DEMO_STORE_SLUG}$`));
     await expect(page.getByRole("heading", { name: storeName })).toBeVisible();
+  });
+
+  test("offers the second demo store by name under the main action, and it opens", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("link", { name: "Try it as a customer" })).toHaveCount(1); // still one main action
+    const other = page.getByRole("link", { name: /Demo Event Kits/ });
+    await expect(other).toHaveAttribute("href", "/store/demo-event-kits");
+    const [main, quiet] = await Promise.all([page.getByRole("link", { name: "Try it as a customer" }).boundingBox(), other.boundingBox()]);
+    expect(main!.y).toBeLessThan(quiet!.y); // the main action stays on top
+    await other.click();
+    await expect(page).toHaveURL(/\/store\/demo-event-kits$/);
+    await expect(page.getByRole("heading", { name: /Demo Event Kits/ })).toBeVisible();
   });
 
   test("at phone width the page does not scroll sideways, the main button is on screen, and the sandbox banner stays slim", async ({ page }) => {

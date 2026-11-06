@@ -32,6 +32,7 @@ import type { ModelKind, ModelPort, ModelResult, ParseOutcome } from "@/lib/ai";
 import type { VerifiedInquiryId } from "@/lib/access/inquiry-reads";
 import { cents, format } from "@/lib/money";
 import { loadCatalogSnapshot } from "@/services/catalog/load-snapshot";
+import { loadShopProfile } from "@/services/catalog/load-profile";
 import { LIMITS, appendRequirements, auditIntake, latestRequirements, loadInquiry, transitionInquiry, type ServiceContext } from "./shared";
 import { createToolDispatcher, type ToolContext } from "./tools";
 
@@ -164,6 +165,7 @@ export async function runIntakeTurn(db: SupabaseClient, deps: TurnDeps, inquiryI
   }
 
   const snapshot = await loadCatalogSnapshot(db, inquiry.merchantId);
+  const shop = await loadShopProfile(db, inquiry.merchantId);
   const today = ctx.now.slice(0, 10);
   const latest = await latestRequirements(db, inquiryId);
   const current = latest?.stored ?? emptyStored();
@@ -196,7 +198,7 @@ export async function runIntakeTurn(db: SupabaseClient, deps: TurnDeps, inquiryI
   // 1. Read the message.
   const read = await ask<Extraction>(
     "extract",
-    buildPrompt("extract", { conversation: conversation.entries, current: current.fields, catalog: catalogForModel(snapshot.catalog), today }),
+    buildPrompt("extract", { conversation: conversation.entries, current: current.fields, catalog: catalogForModel(snapshot.catalog), today, shop }),
     jsonSchemaOf(extractionSchema),
     (raw): ParsedExtraction => parseExtraction(raw),
   );
@@ -224,7 +226,7 @@ export async function runIntakeTurn(db: SupabaseClient, deps: TurnDeps, inquiryI
   } else if (first !== undefined) {
     // 3a. Ask the one question code chose. The model may reword it; the fixed wording is always there.
     const fallback = fallbackQuestion(first);
-    const worded = await ask("ask", buildPrompt("ask", { field: first, fallback, current: fields, conversation: conversation.entries }), jsonSchemaOf(askSchema), (raw) => {
+    const worded = await ask("ask", buildPrompt("ask", { field: first, fallback, current: fields, conversation: conversation.entries, shop }), jsonSchemaOf(askSchema), (raw) => {
       const parsed = askSchema.safeParse(raw);
       return parsed.success ? { ok: true, value: parsed.data } : { ok: false, errors: parsed.error.issues.map((i) => i.message) };
     });
@@ -241,7 +243,7 @@ export async function runIntakeTurn(db: SupabaseClient, deps: TurnDeps, inquiryI
     if (!view.ok) throw new Error("read_catalog refused");
     const allowed = new Map(view.result.slots.map((s) => [s.id, new Set(s.allowedSkus)]));
 
-    const proposed = await ask("propose", buildPrompt("propose", { catalog: view.result, requirements: fields, boxCount, today }), proposeJsonSchema(view.result.slots), (raw) => {
+    const proposed = await ask("propose", buildPrompt("propose", { catalog: view.result, requirements: fields, boxCount, today, shop }), proposeJsonSchema(view.result.slots), (raw) => {
       const parsed = proposeSchema.safeParse(raw);
       if (!parsed.success) return { ok: false, errors: parsed.error.issues.map((i) => i.message) };
       const errors = selectionErrors(parsed.data.selections, allowed);
@@ -265,7 +267,7 @@ export async function runIntakeTurn(db: SupabaseClient, deps: TurnDeps, inquiryI
       const blockers = [...new Set(checked.result.blockers.map((b) => b.code))];
       let alternatives: Proposal["alternatives"] = [];
       if (found.length > 0) {
-        const ranking = await ask("rank", buildPrompt("rank", { requirements: fields, alternatives: found.map((a, index) => forPrompt(a, index)) }), jsonSchemaOf(rankingSchema), (raw) => {
+        const ranking = await ask("rank", buildPrompt("rank", { requirements: fields, alternatives: found.map((a, index) => forPrompt(a, index)), shop }), jsonSchemaOf(rankingSchema), (raw) => {
           const parsed = rankingSchema.safeParse(raw);
           return parsed.success ? { ok: true, value: parsed.data } : { ok: false, errors: parsed.error.issues.map((i) => i.message) };
         });

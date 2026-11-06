@@ -1,7 +1,7 @@
 // Shared helpers for the seed and demo-reset scripts. Run with Node's --env-file and
 // --experimental-strip-types (see package.json), so keep this file to erasable TypeScript.
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { businessRules, merchant, MERCHANT_ID, products, stock } from "../supabase/seed/fixtures.ts";
+import { shops } from "../supabase/seed/fixtures.ts";
 
 function need(name: string): string {
   const value = process.env[name];
@@ -34,11 +34,14 @@ function check<R extends { error: { message: string } | null }>(label: string, r
   return result;
 }
 
-async function ensureMerchantUser(db: SupabaseClient): Promise<string> {
-  const email = need("DEMO_MERCHANT_EMAIL");
-  const password = need("DEMO_MERCHANT_PASSWORD");
-  if (password.length < 12 || password.startsWith("replace-with")) {
-    throw new Error("DEMO_MERCHANT_PASSWORD must be set to a real value of at least 12 characters.");
+type Env = Record<string, string | undefined>;
+
+async function ensureMerchantUser(db: SupabaseClient, env: Env, emailVar: string, passwordVar: string): Promise<string> {
+  const email = env[emailVar];
+  const password = env[passwordVar];
+  if (!email) throw new Error(`Missing environment variable: ${emailVar}`);
+  if (!password || password.length < 12 || password.startsWith("replace-with")) {
+    throw new Error(`${passwordVar} must be set to a real value of at least 12 characters.`);
   }
 
   const created = await db.auth.admin.createUser({ email, password, email_confirm: true });
@@ -52,13 +55,18 @@ async function ensureMerchantUser(db: SupabaseClient): Promise<string> {
   return existing.id;
 }
 
-export async function runSeed(db: SupabaseClient): Promise<void> {
-  const userId = await ensureMerchantUser(db);
+/** Seeds every demo shop, each with its own owner login. `env` is where the owners' logins are read from (the process environment by default). */
+export async function runSeed(db: SupabaseClient, env: Env = process.env): Promise<void> {
+  // One login owning both shops would make the second shop's isolation meaningless, so refuse it before anything is written.
+  const emails = shops.map((s) => (env[s.owner.emailVar] ?? "").toLowerCase());
+  if (new Set(emails).size !== emails.length) throw new Error("Each demo shop needs a different owner: the owner emails must be different.");
 
-  check("merchants", await db.from("merchants").upsert({ ...merchant, owner_user_id: userId }, { onConflict: "id" }));
-  check("products", await db.from("products").upsert(products, { onConflict: "id" }));
-  check("stock", await db.from("stock").upsert(stock, { onConflict: "product_id" }));
-  check("business_rules", await db.from("business_rules").upsert(businessRules, { onConflict: "merchant_id,key" }));
-
-  console.log(`Seeded merchant ${MERCHANT_ID}: ${products.length} products, ${businessRules.length} rules.`);
+  for (const shop of shops) {
+    const userId = await ensureMerchantUser(db, env, shop.owner.emailVar, shop.owner.passwordVar);
+    check("merchants", await db.from("merchants").upsert({ ...shop.merchant, owner_user_id: userId }, { onConflict: "id" }));
+    check("products", await db.from("products").upsert(shop.products, { onConflict: "id" }));
+    check("stock", await db.from("stock").upsert(shop.stock, { onConflict: "product_id" }));
+    check("business_rules", await db.from("business_rules").upsert(shop.rules, { onConflict: "merchant_id,key" }));
+    console.log(`Seeded ${shop.merchant.slug} (${shop.merchant.id}): ${shop.products.length} products, ${shop.rules.length} rules.`);
+  }
 }

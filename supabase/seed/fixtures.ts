@@ -72,3 +72,97 @@ export const businessRules = [
   { merchant_id: MERCHANT_ID, key: "production_lead_days", value: { days: 7 } },
   { merchant_id: MERCHANT_ID, key: "fulfilment", value: { method: "customer_pickup" } },
 ];
+
+// The first shop's profile: who it makes things for. The intake prompt names the shop and its kind from this rule.
+const giftBoxProfile = { merchant_id: MERCHANT_ID, key: "shop_profile", value: { productKind: "gift box" } };
+
+// ---------------------------------------------------------------------------------------------------------------------
+// The second demo shop: event welcome kits. Same requirement fields as the first (quantity, no food, logo, budget, date),
+// different catalog, template and prices, so the engine is shown to be driven by data. The insulated bottle has 40 in stock,
+// so 50 kits cannot include it and the engine proposes the enamel mug.
+//   20 kits with the bottle: 900 + 250 + 1500 + 300 + 400 = 3350 a kit, 67000 in total
+//   50 kits with the mug:    900 + 250 + 1100 + 300 + 400 = 2950 a kit, 147500 in total
+// ---------------------------------------------------------------------------------------------------------------------
+
+export const MERCHANT2_ID = "00000000-0000-4000-8000-000000000002";
+
+export const merchant2 = {
+  id: MERCHANT2_ID,
+  slug: "demo-event-kits",
+  name: "Demo Event Kits (simulated)",
+  currency: "USD",
+};
+
+export const PRODUCT2_IDS = {
+  tote: "00000000-0000-4000-8000-0000000000b1",
+  lanyard: "00000000-0000-4000-8000-0000000000b2",
+  bottle: "00000000-0000-4000-8000-0000000000b3",
+  mug: "00000000-0000-4000-8000-0000000000b4",
+  stickers: "00000000-0000-4000-8000-0000000000b5",
+  packaging: "00000000-0000-4000-8000-0000000000b6",
+} as const;
+
+const base2 = { merchant_id: MERCHANT2_ID };
+
+export const products2: Product[] = [
+  { ...base2, id: PRODUCT2_IDS.tote, sku: "TOTE-CANVAS", name: "Canvas tote bag", category: "bags", unit_price_minor: 900, is_food: false, attributes: {} },
+  { ...base2, id: PRODUCT2_IDS.lanyard, sku: "LANYARD-PRINT", name: "Printed lanyard", category: "badges", unit_price_minor: 250, is_food: false, attributes: { customization: "logo" } },
+  { ...base2, id: PRODUCT2_IDS.bottle, sku: "BOTTLE-INSULATED", name: "Insulated bottle", category: "drinkware", unit_price_minor: 1500, is_food: false, attributes: {} },
+  { ...base2, id: PRODUCT2_IDS.mug, sku: "MUG-ENAMEL", name: "Enamel mug", category: "drinkware", unit_price_minor: 1100, is_food: false, attributes: {} },
+  { ...base2, id: PRODUCT2_IDS.stickers, sku: "STICKERS-PACK", name: "Sticker pack", category: "stationery", unit_price_minor: 300, is_food: false, attributes: {} },
+  { ...base2, id: PRODUCT2_IDS.packaging, sku: "PACK-KIT", name: "Kit mailer box", category: "packaging", unit_price_minor: 400, is_food: false, attributes: {} },
+];
+
+export const stock2 = [
+  { product_id: PRODUCT2_IDS.tote, on_hand: 300, reserved: 0 },
+  { product_id: PRODUCT2_IDS.lanyard, on_hand: 400, reserved: 0 },
+  { product_id: PRODUCT2_IDS.bottle, on_hand: 40, reserved: 0 },
+  { product_id: PRODUCT2_IDS.mug, on_hand: 200, reserved: 0 },
+  { product_id: PRODUCT2_IDS.stickers, on_hand: 600, reserved: 0 },
+  { product_id: PRODUCT2_IDS.packaging, on_hand: 300, reserved: 0 },
+];
+
+export const boxTemplate2 = {
+  slots: [
+    { id: "tote", label: "Tote bag", quantity: 1, allowedSkus: ["TOTE-CANVAS"] },
+    { id: "lanyard", label: "Lanyard", quantity: 1, allowedSkus: ["LANYARD-PRINT"], customization: "logo" },
+    { id: "drink", label: "Drinkware", quantity: 1, allowedSkus: ["BOTTLE-INSULATED", "MUG-ENAMEL"] },
+    { id: "stickers", label: "Stickers", quantity: 1, allowedSkus: ["STICKERS-PACK"] },
+    { id: "packaging", label: "Packaging", quantity: 1, allowedSkus: ["PACK-KIT"] },
+  ],
+};
+
+export const businessRules2 = [
+  { merchant_id: MERCHANT2_ID, key: "box_template", value: boxTemplate2 },
+  { merchant_id: MERCHANT2_ID, key: "logo_print", value: { formats: ["png", "svg"], min_width_px: 600 } },
+  { merchant_id: MERCHANT2_ID, key: "production_lead_days", value: { days: 7 } },
+  { merchant_id: MERCHANT2_ID, key: "fulfilment", value: { method: "customer_pickup" } },
+  { merchant_id: MERCHANT2_ID, key: "shop_profile", value: { productKind: "event welcome kit" } },
+];
+
+export type Shop = {
+  merchant: { id: string; slug: string; name: string; currency: string };
+  products: Product[];
+  stock: Array<{ product_id: string; on_hand: number; reserved: number }>;
+  rules: Array<{ merchant_id: string; key: string; value: unknown }>;
+  /** The environment variables holding this shop owner's demo login. */
+  owner: { emailVar: string; passwordVar: string };
+};
+
+/** Every demo shop, in the order the seed creates them. The first is the original gift-box shop, unchanged. */
+export const shops: Shop[] = [
+  {
+    merchant,
+    products,
+    stock,
+    rules: [...businessRules, giftBoxProfile],
+    owner: { emailVar: "DEMO_MERCHANT_EMAIL", passwordVar: "DEMO_MERCHANT_PASSWORD" },
+  },
+  {
+    merchant: merchant2,
+    products: products2,
+    stock: stock2,
+    rules: businessRules2,
+    owner: { emailVar: "DEMO_MERCHANT2_EMAIL", passwordVar: "DEMO_MERCHANT2_PASSWORD" },
+  },
+];

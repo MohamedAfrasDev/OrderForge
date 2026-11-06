@@ -32,4 +32,38 @@ describe("the home page's actions", () => {
   it("uses the customer's vocabulary", () => {
     for (const store of [{ slug: "demo-gift-boxes", name: "Demo" }, null]) expect(forbiddenIn(textOf(html(store)))).toEqual([]);
   });
+
+  describe("with more than one demo store", () => {
+    const first = { slug: "demo-gift-boxes", name: "Demo Gift Boxes (simulated)" };
+    const second = { slug: "demo-event-kits", name: "Demo Event Kits (simulated)" };
+    const htmlWith = (store: { slug: string; name: string } | null, others: Array<{ slug: string; name: string }>) =>
+      renderToStaticMarkup(createElement(HomeActions, { store, others }));
+
+    it("keeps one main action, the first store, and offers the others by name as quieter links", () => {
+      const markup = htmlWith(first, [second]);
+      expect((markup.match(/Try it as a customer/g) ?? []).length).toBe(1);
+      expect(markup).toContain('href="/store/demo-gift-boxes"');
+      expect(markup).toContain('href="/store/demo-event-kits"');
+      expect(textOf(markup)).toContain("Demo Event Kits (simulated)");
+      expect(markup.indexOf("/store/demo-gift-boxes")).toBeLessThan(markup.indexOf("/store/demo-event-kits"));
+      expect(markup.indexOf("Shop sign in")).toBeGreaterThan(markup.indexOf("Try it as a customer"));
+    });
+
+    it("says the stores are demos with simulated data", () => {
+      expect(textOf(htmlWith(first, [second]))).toMatch(/simulated/i);
+    });
+
+    it("shows no link to a store that is not given (no dead link)", () => {
+      expect(htmlWith(first, [])).not.toContain("demo-event-kits");
+    });
+
+    it("never puts a store's name in a link or lets it inject markup", () => {
+      const markup = htmlWith(first, [{ slug: "demo-event-kits", name: '"><script>alert(1)</script>' }]);
+      expect(markup).not.toContain("<script>");
+    });
+
+    it("uses the customer's vocabulary", () => {
+      expect(forbiddenIn(textOf(htmlWith(first, [second])))).toEqual([]);
+    });
+  });
 });

@@ -15,6 +15,7 @@
     "seed": "node --env-file=.env --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed.ts",
     "demo:reset": "node --env-file=.env --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/demo-reset.ts",
     "paypal:spike": "node --env-file=.env --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/paypal-spike.ts",
+    "proof": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/proof.ts",
     "paypal:fake": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tests/support/fake-paypal-cli.ts"
   },
   "dependencies": {
