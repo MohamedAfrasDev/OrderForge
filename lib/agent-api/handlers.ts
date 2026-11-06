@@ -45,7 +45,8 @@ export function bearerToken(request: Request): string | undefined {
   return BEARER.exec(request.headers.get("authorization") ?? "")?.[1];
 }
 
-const FIELDS = [
+/** The field descriptions the store description serves. Exported so the /developers page shows the same words. */
+export const FIELDS = [
   { name: "boxCount", type: "integer", required: true, min: 1, max: MAX_AGENT_BOXES, description: "How many boxes." },
   { name: "noFood", type: "boolean", required: true, description: "True if the order must contain no food." },
   { name: "logoRequired", type: "boolean", required: true, description: "True if the customer's logo must be on the order." },

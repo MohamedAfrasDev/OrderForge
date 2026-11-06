@@ -37,6 +37,12 @@ export default function Home() {
           </li>
         ))}
       </ol>
+
+      <footer className="text-sm text-muted-foreground">
+        <Link href="/developers" className="font-medium text-foreground underline underline-offset-4">
+          For agent developers
+        </Link>
+      </footer>
     </main>
   );
 }
