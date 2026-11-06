@@ -7,7 +7,7 @@ import { sha256Hex } from "@/lib/hash";
 import { cents, format } from "@/lib/money";
 import { CatalogLoadError, loadCatalogSnapshot } from "@/services/catalog/load-snapshot";
 import { editRequirements } from "@/services/intake/edit";
-import { appendMessage, appendRequirements, auditIntake, transitionInquiry, type ServiceContext } from "@/services/intake/shared";
+import { appendRequirements, auditIntake, transitionInquiry, type ServiceContext } from "@/services/intake/shared";
 import { startInquiry } from "@/services/intake/start";
 import { proposalText } from "@/services/intake/turn";
 import { proposeForRequest, type AgentProposal } from "./propose";
@@ -107,7 +107,19 @@ export async function createAgentRequest(db: SupabaseClient, deps: AgentDeps, sl
   const proposed = proposeForRequest({ body, catalog: snapshot.catalog, stock: snapshot.stock, today: ctx.now.slice(0, 10) });
   await appendRequirements(db, inquiryId, (latest) => ({ schema: latest!.stored.schema, fields: latest!.stored.fields, proposal: proposed.stored, question: null }), null);
   const names = new Map(snapshot.catalog.products.map((p) => [p.sku, p.name]));
-  await appendMessage(db, inquiryId, "assistant", proposalText(proposed.stored, (sku) => names.get(sku) ?? sku, body.boxCount), ctx);
+  // The reply is linked to the message it answers, as the assistant's replies are, so the order room does not treat the request as unanswered
+  // (it would show a stalled header and offer to run the assistant again).
+  const first = await db.from("messages").select("id, created_at").eq("inquiry_id", inquiryId).eq("role", "customer").order("created_at").limit(1).single();
+  if (first.error) throw new Error(`load first message: ${first.error.message}`);
+  const replyAt = new Date(Math.max(Date.parse(ctx.now), Date.parse(first.data.created_at as string) + 1)).toISOString();
+  const reply = await db.from("messages").insert({
+    inquiry_id: inquiryId,
+    role: "assistant",
+    body: proposalText(proposed.stored, (sku) => names.get(sku) ?? sku, body.boxCount),
+    reply_to: first.data.id,
+    created_at: replyAt,
+  });
+  if (reply.error) throw new Error(`store reply: ${reply.error.message}`);
   const moved = await transitionInquiry(db, inquiryId, { type: "CLEAR" }, ctx, ACTOR);
 
   const row = await db.from("inquiries").select("access_version").eq("id", inquiryId).single();

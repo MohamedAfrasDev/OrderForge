@@ -115,4 +115,28 @@ test.describe("the agent API (local Supabase, no model, no PayPal call)", () => 
     expect((await request.post(`${A}/stores/no-such-shop/requests`, { data: BODY, headers: headers() })).status()).toBe(404);
     expect((await request.get(`${A}/stores/no-such-shop`, { headers: headers() })).status()).toBe(404);
   });
+
+  test("a burst from one address is answered with 429 and Retry-After, and the request that was refused creates nothing", async ({ request }) => {
+    const address = { "x-forwarded-for": `100.70.${Math.floor(Math.random() * 250) + 1}.${Math.floor(Math.random() * 250) + 1}` };
+    const url = `${A}/stores/demo-event-kits/requests`;
+    // Ten bodies that are refused (and store nothing) use up the ten creates an address may make in a minute...
+    for (let i = 0; i < 10; i++) expect((await request.post(url, { data: {}, headers: address })).status(), `call ${i + 1}`).toBe(400);
+    // ...so the eleventh, a perfectly good request, is turned away before anything is read. Its budget is one no other test uses.
+    const CANARY = 7_654_322; // $76,543.22 per box
+    const refused = await request.post(url, { data: { ...BODY, maxPricePerBoxMinor: CANARY }, headers: address });
+    expect(refused.status()).toBe(429);
+    expect(Number(refused.headers()["retry-after"])).toBeGreaterThanOrEqual(1);
+    expect(await refused.json()).toEqual({ error: { code: "RATE_LIMITED" } });
+    const stored = await db.from("messages").select("id", { count: "exact", head: true }).ilike("body", "%76,543.22%");
+    expect(stored.count).toBe(0);
+  });
+
+  test("reads have their own limit: after sixty a minute from one address the next is a 429 (and the earlier ones were ordinary 404s)", async ({ request }) => {
+    const address = { "x-forwarded-for": `100.71.${Math.floor(Math.random() * 250) + 1}.${Math.floor(Math.random() * 250) + 1}` };
+    const url = `${A}/requests/00000000-0000-4000-8000-000000000000`;
+    let last = 0;
+    for (let i = 0; i < 61; i++) last = (await request.get(url, { headers: address })).status();
+    expect(last).toBe(429);
+    expect((await request.get(`${A}/stores`, { headers: address })).status()).toBe(200); // browsing is counted separately
+  });
 });

@@ -7,6 +7,7 @@ import { createAgentToken } from "@/lib/access/agent-token";
 import { authorizeCustomerLink } from "@/lib/access/inquiry-reads";
 import { createFakeModel } from "@/lib/ai";
 import { chooseConfiguration } from "@/services/intake/choose";
+import { unansweredMessageId } from "@/services/intake/read";
 import { runIntakeTurn } from "@/services/intake/turn";
 import { createAgentRequest, readAgentRequest } from "@/services/agent-requests";
 import { boxTemplate2, products2, stock2 } from "../../supabase/seed/fixtures";
@@ -75,6 +76,16 @@ describe("createAgentRequest: 20 boxes", () => {
     expect(messages[0]!.body).toBe("Request sent through the agent interface: 20 boxes, no food, logo needed, budget up to $40.00 per box.");
     expect(messages[1]!.body).toContain("$35.00 per box");
     expect(messages[1]!.body).toContain("$700.00");
+  });
+
+  it("the reply is linked to the message it answers, so the order room does not treat the request as unanswered", async () => {
+    const m = await catalogMerchant(db);
+    const r = await created(m.slug);
+    const access = await authorizeCustomerLink(db, r.humanToken, { secret: SECRET, now });
+    if (!access.ok) throw new Error("link");
+    expect(await unansweredMessageId(db, access.inquiry.id)).toBeNull();
+    const messages = await messagesOf(db, r.requestId);
+    expect(messages[1]!.reply_to).toBe(messages[0]!.id);
   });
 
   it("the human link opens the request, and the human can choose the box in the normal flow", async () => {

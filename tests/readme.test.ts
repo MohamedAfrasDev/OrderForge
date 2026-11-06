@@ -3,6 +3,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { claimsIn } from "@/lib/claims";
+import { DEMO_STORE_SLUGS } from "@/lib/demo-store";
+import { parseAgentBody } from "@/services/agent-requests/schema";
 
 const readme = readFileSync("README.md", "utf8").replace(/\r\n/g, "\n");
 const envExample = readFileSync(".env.example", "utf8").replace(/\r\n/g, "\n");
@@ -67,5 +69,36 @@ describe("no secret in the README or the example environment", () => {
   it.each(SHAPES)("%s", (_name, re) => {
     expect(readme).not.toMatch(re);
     expect(envExample).not.toMatch(re);
+  });
+});
+
+describe("README: For agents", () => {
+  const section = readme.slice(readme.indexOf("## For agents"), readme.indexOf("## Accounts and hosted setup"));
+
+  it("exists, says an agent cannot pay or choose a price, and names the OpenAPI file and the human link", () => {
+    expect(readme).toContain("## For agents");
+    expect(section).toMatch(/cannot choose a price, accept one or pay/);
+    expect(section).toContain("/api/agent/v1/openapi.json");
+    expect(section).toContain("humanUrl");
+  });
+
+  it("its example request is one the API accepts, for a shop that exists in the seed", () => {
+    const body = /-d '(\{[^']+\})'/.exec(section)?.[1];
+    expect(body).toBeDefined();
+    expect(parseAgentBody(JSON.parse(body!)).ok).toBe(true);
+    const slug = /\/stores\/([a-z0-9-]+)\/requests/.exec(section)?.[1];
+    expect(DEMO_STORE_SLUGS as readonly string[]).toContain(slug);
+  });
+
+  it("sends the token in the Authorization header and never in the address", () => {
+    expect(section).toMatch(/authorization: Bearer/);
+    expect(section).not.toMatch(/\?token=|access_token/);
+  });
+
+  it("states the limits the code enforces", async () => {
+    const { AGENT_LIMITS } = await import("@/lib/agent-api/limits");
+    const { DEFAULT_DAILY_CAP_PER_STORE } = await import("@/services/agent-requests");
+    expect(section).toContain(`${AGENT_LIMITS.createPerAddress} requests a minute`);
+    expect(section).toContain(`${DEFAULT_DAILY_CAP_PER_STORE} a day`);
   });
 });
