@@ -2,7 +2,8 @@ import "server-only";
 import { getServerEnv } from "@/lib/env";
 import { createLocalDemoModel, localDemoAllowed } from "./local-demo";
 import type { ModelPort } from "./model";
-import { DEFAULT_FALLBACK_MODEL, DEFAULT_PRIMARY_MODEL, createOpenRouterModel } from "./openrouter";
+import { openRouterConfigFromEnv } from "./config";
+import { createOpenRouterModel } from "./openrouter";
 
 let model: ModelPort | undefined;
 
@@ -14,11 +15,7 @@ export function getIntakeModel(): ModelPort {
     if (!localDemoAllowed(env.NEXT_PUBLIC_SUPABASE_URL, Boolean(process.env.VERCEL))) throw new Error("INTAKE_MODEL=local-demo is only allowed with a local database and outside Vercel");
     model = createLocalDemoModel();
   } else {
-    model = createOpenRouterModel({
-      apiKey: env.OPENROUTER_API_KEY,
-      model: env.OPENROUTER_MODEL ?? DEFAULT_PRIMARY_MODEL,
-      fallbackModel: env.OPENROUTER_FALLBACK_MODEL ?? DEFAULT_FALLBACK_MODEL,
-    });
+    model = createOpenRouterModel(openRouterConfigFromEnv(env));
   }
   return model;
 }
