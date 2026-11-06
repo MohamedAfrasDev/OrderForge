@@ -8,11 +8,14 @@ import { createRateLimiter } from "@/lib/rate-limit";
 // Two jobs, both coarse (see lib/access/* for the real authorization checks):
 //  1. /merchant: refresh the Supabase session and send visitors without one to the login page.
 //  2. /o and /store: rate limit by client address, and keep customer links out of caches and Referer headers.
+//  3. /demo: rate limit the posts that start a prepared request (each one reaches the paid model).
 
 // Module state lives per server instance: a brake on link guessing and spam, not a precise quota.
 const limiters = {
   order: createRateLimiter({ limit: 60, windowMs: 60_000 }),
   store: createRateLimiter({ limit: 30, windowMs: 60_000 }),
+  // Each /demo button press runs a paid model call, so only those posts are counted, and the limit is tighter. Viewing the page is free.
+  demo: createRateLimiter({ limit: 10, windowMs: 60_000 }),
 };
 
 /** Behind Vercel the platform sets x-forwarded-for, so a caller cannot choose their own address. */
@@ -55,6 +58,10 @@ export async function proxy(request: NextRequest) {
     return rateLimited(request, "store") ?? NextResponse.next();
   }
 
+  if (path === "/demo" || path.startsWith("/demo/")) {
+    return request.method === "POST" ? (rateLimited(request, "demo") ?? NextResponse.next()) : NextResponse.next();
+  }
+
   return merchantGate(request);
 }
 
@@ -90,5 +97,5 @@ async function merchantGate(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/merchant", "/merchant/:path*", "/o/:path*", "/store/:path*"],
+  matcher: ["/merchant", "/merchant/:path*", "/o/:path*", "/store/:path*", "/demo", "/demo/:path*"],
 };

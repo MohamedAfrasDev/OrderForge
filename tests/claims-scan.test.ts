@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import { forbiddenIn } from "@/domain/journey";
 import { claimsIn } from "@/lib/claims";
 import { allText, HOW_IT_WORKS } from "@/app/how-it-works/content";
+import { demoText } from "@/app/demo/content";
+import { developersText } from "@/lib/developers/content";
 
 describe("claimsIn", () => {
   it.each([
@@ -68,6 +70,23 @@ describe("the how-it-works page text", () => {
   it("explains the PayPal step the way the order room does", () => {
     expect(text).toMatch(/sets? (the )?money aside/i);
     expect(text).toMatch(/only if the shop accepts/i);
+  });
+});
+
+describe("the /demo and /developers page text", () => {
+  it.each([["/demo", demoText()], ["/developers", developersText()]])("%s makes no unmeasured claim and says sandbox and synthetic", (_page, text) => {
+    expect(text.length).toBeGreaterThan(500);
+    expect(claimsIn(text)).toEqual([]);
+    expect(text).toMatch(/sandbox/i);
+    expect(text).toMatch(/synthetic/i);
+  });
+
+  it("/demo uses the customer vocabulary, holds no password, and says where approval begins", () => {
+    const text = demoText();
+    expect(forbiddenIn(text)).toEqual([]);
+    expect(text).not.toMatch(/password:|passwd|secret|token/i);
+    expect(text).toMatch(/human approval begins here/i);
+    expect(text).toMatch(/nothing is charged yet/i);
   });
 });
 
