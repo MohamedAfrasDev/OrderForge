@@ -1,4 +1,6 @@
 import { Conversation } from "@/components/conversation";
+import { CalculatedNote } from "@/components/provenance-note";
+import { PROVENANCE_LABELS, provenanceOfField } from "@/domain/journey";
 import { cents, format } from "@/lib/money";
 import type { CustomerSpecField, CustomerSpecView } from "@/services/intake/read";
 import { chooseAction, editFieldAction, handOffAction, quickReplyAction, retryTurnAction, sendMessageAction } from "./intake-actions";
@@ -44,7 +46,8 @@ function note(f: CustomerSpecField): string {
   if (display(f) === null) return "";
   if (f.status === "conflicted") return "Which one is right?";
   if (f.status === "needs_confirmation") return "Is this right?";
-  return f.source === "edit" ? "You set this" : "From your message";
+  const where = provenanceOfField(f);
+  return where ? PROVENANCE_LABELS[where].label : "";
 }
 
 /** The value to start the editor with, in the form its box takes (dollars for money, yes or no for a choice). */
@@ -146,27 +149,37 @@ export function IntakePanels({ token, spec, status, unanswered, messages, shopNa
               <article className="flex flex-col gap-2 rounded-lg border border-border p-4">
                 <h2 className="text-lg font-medium">A box for you</h2>
                 {items(proposal.selections)}
-                <p className="text-sm font-medium">
+                <p className="text-2xl font-semibold tabular-nums">
                   {format(cents(proposal.priced.perBoxMinor))} per box · {format(cents(proposal.priced.totalMinor))} for {proposal.priced.boxCount} boxes
                 </p>
+                <CalculatedNote />
                 {canChoose ? <ChooseButton action={chooseAction.bind(null, token)} optionKey="proposal" /> : null}
               </article>
             ) : (
               <>
                 <h2 className="text-lg font-medium">Boxes that work</h2>
-                <p className="text-sm text-muted-foreground">
-                  We can&apos;t make the first box we picked
-                  {proposal.blockers.length > 0 ? ` (${[...new Set(proposal.blockers.map((b) => BLOCKER_WORDS[b] ?? "it is not available as asked"))].join("; ")})` : ""}.
-                </p>
+                <div role="note" className="flex flex-col gap-1 rounded-lg border-2 border-foreground p-3">
+                  <p className="text-sm font-semibold">A stock limit changes your box</p>
+                  <p className="text-sm">
+                    We can&apos;t make the first box we picked
+                    {proposal.blockers.length > 0 ? ` (${[...new Set(proposal.blockers.map((b) => BLOCKER_WORDS[b] ?? "it is not available as asked"))].join("; ")})` : ""}.
+                  </p>
+                </div>
                 {proposal.alternatives.length === 0 ? <p className="text-sm">No other box fits. You can change something in your order, or ask the shop to take over.</p> : null}
                 {proposal.alternatives.map((a) => (
                   <article key={a.key} className="flex flex-col gap-2 rounded-lg border border-border p-4">
                     <p className="text-sm font-medium">
                       Replace {name(a.fromSku)} with {name(a.toSku)}
                     </p>
-                    <p className="text-sm">
+                    <p className="text-sm text-muted-foreground">
+                      One change: {name(a.fromSku)}
+                      {spec?.productPrices[a.fromSku] === undefined ? "" : ` (${format(cents(spec.productPrices[a.fromSku]!))})`} becomes {name(a.toSku)}
+                      {spec?.productPrices[a.toSku] === undefined ? "" : ` (${format(cents(spec.productPrices[a.toSku]!))})`}. The price below already includes it.
+                    </p>
+                    <p className="text-2xl font-semibold tabular-nums">
                       {format(cents(a.perBoxMinor))} per box · {format(cents(a.totalMinor))} in total
                     </p>
+                    <CalculatedNote />
                     {items({ ...proposal.selections, [a.slotId]: a.toSku }, a.slotId)}
                     {a.explanation ? <p className="text-sm text-muted-foreground">{a.explanation}</p> : null}
                     {canChoose ? <ChooseButton action={chooseAction.bind(null, token)} optionKey={a.key} /> : null}

@@ -1,5 +1,6 @@
 import type { AcceptState } from "@/app/o/[token]/actions";
 import { AcceptQuoteForm } from "@/components/accept-quote-form";
+import { CalculatedNote } from "@/components/provenance-note";
 import { cents, format } from "@/lib/money";
 import type { CustomerQuoteView } from "@/services/quote/read";
 import type { CustomerHoldView } from "@/services/reservation/read";
@@ -32,6 +33,14 @@ export function QuoteCard({ quote, hold, accept }: Props) {
         {quote.version > 1 ? <p className="text-sm">This is an updated price. It replaces the earlier one.</p> : null}
         <p className="text-xs text-muted-foreground">Prices in US dollars. Sandbox demo with synthetic data.</p>
       </header>
+
+      <div data-price-summary className="flex flex-col gap-1 rounded-md border-2 border-foreground p-4">
+        <p className="text-3xl font-semibold tabular-nums">{usd(quote.totalMinor)}</p>
+        <p className="text-sm">
+          for {quote.boxCount} boxes, {usd(quote.perBoxMinor)} each. This exact amount is what you are asked to accept.
+        </p>
+        <CalculatedNote />
+      </div>
 
       <table className="w-full text-sm">
         <caption className="sr-only">What is in each box</caption>

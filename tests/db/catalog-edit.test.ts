@@ -45,7 +45,7 @@ describe("editProduct", () => {
     const rows = await auditsOf(id, "catalog.product_edited");
     expect(rows).toHaveLength(1);
     expect(rows[0]!.data).toEqual({ fields: ["name", "category", "priceMinor", "onHand"] });
-    expect(JSON.stringify(rows[0])).not.toMatch(/350|450|Gel pen/);
+    expect(JSON.stringify(rows[0])).not.toMatch(/\b(350|450)\b|Gel pen/);
   });
 
   it("an edit that changes nothing writes nothing and audits nothing", async () => {
@@ -167,7 +167,7 @@ describe("addProduct", () => {
 
     const rows = await auditsOf(id, "catalog.product_added");
     expect(rows).toHaveLength(1);
-    expect(JSON.stringify(rows[0])).not.toMatch(/900|Enamel/);
+    expect(JSON.stringify(rows[0])).not.toMatch(/\b900\b|Enamel/);
   });
 
   it("can place a product in several parts", async () => {

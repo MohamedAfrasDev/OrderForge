@@ -26,12 +26,25 @@ export function PaymentStatus({ view, notice, totalMinor, pay }: Props) {
           {noticeMessage(notice)}
         </p>
       ) : null}
-      {message ? <p className="text-sm">{message}</p> : null}
-      {view.canPay ? (
-        <div className="flex flex-col gap-3 rounded-md bg-muted p-3">
+      {view.status === "PAID" || view.status === "DECLINED" ? (
+        <div data-conclusion={view.status === "PAID" ? "paid" : "declined"} className="flex flex-col gap-1 rounded-md border-2 border-foreground p-3">
+          <p className="text-base font-semibold">{view.status === "PAID" ? "Your order is confirmed" : "The shop couldn't take this order"}</p>
+          {message ? <p className="text-sm">{message}</p> : null}
           <p className="text-sm">
-            <span className="font-medium">You won&apos;t be charged yet.</span> PayPal sets aside {format(cents(totalMinor))}. The shop reviews your order and, only if they accept, you&apos;re charged. If they say no, the hold disappears.
+            {view.status === "PAID" ? `You were charged ${format(cents(totalMinor))}, once.` : "PayPal has released the hold, so nothing was taken from you."}
           </p>
+        </div>
+      ) : message ? (
+        <p className="text-sm">{message}</p>
+      ) : null}
+      {view.canPay ? (
+        <div className="flex flex-col gap-3 rounded-md border-2 border-foreground p-3">
+          <h3 className="text-sm font-semibold">What PayPal will do</h3>
+          <ul className="flex flex-col gap-1.5 text-sm">
+            <li className="flex gap-2"><span aria-hidden="true" className="font-semibold">1</span><span><span className="font-medium">You won&apos;t be charged yet.</span> PayPal sets aside {format(cents(totalMinor))}.</span></li>
+            <li className="flex gap-2"><span aria-hidden="true" className="font-semibold">2</span><span>The shop reviews your order and, only if they accept, you&apos;re charged.</span></li>
+            <li className="flex gap-2"><span aria-hidden="true" className="font-semibold">3</span><span>If they say no, the hold disappears.</span></li>
+          </ul>
           <form action={pay}>
             <button type="submit" className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground">
               {again ? "Continue on PayPal" : "Approve on PayPal"}
@@ -39,7 +52,7 @@ export function PaymentStatus({ view, notice, totalMinor, pay }: Props) {
           </form>
         </div>
       ) : null}
-      <p className="text-xs text-muted-foreground">Sandbox demo: PayPal test accounts only, no real money.</p>
+      <p role="note" className="rounded-md bg-muted p-2 text-xs">Sandbox demo: PayPal test accounts only, no real money moves.</p>
     </section>
   );
 }

@@ -10,6 +10,9 @@ import { DEMO_STORE_SLUG } from "../lib/demo-store";
 import { approveAtFake, attemptOf, signIn, type Seller } from "./payments-support";
 
 /** Called after each stage with its name and the page, and the page's main action if it has one. The phone run uses it to check the layout. */
+/** A step that waits for the server (a payment being settled, a job being created, a status being saved) gets longer than the default 5 s: a slow CI runner made these steps time out once while the same commit passed in a second run. */
+const STAGE_WAIT_MS = 15_000;
+
 export type StageCheck = (stage: string, page: Page, main?: Locator) => Promise<void>;
 
 export type Shop = Seller & { slug: string; name: string };
@@ -87,7 +90,7 @@ export async function stripOf(page: Page): Promise<string[]> {
 }
 
 export async function expectStage(page: Page, headline: string, current: string | null) {
-  await expect(page.getByTestId("order-header").getByRole("heading", { level: 2, name: headline, exact: true })).toBeVisible();
+  await expect(page.getByTestId("order-header").getByRole("heading", { level: 2, name: headline, exact: true })).toBeVisible({ timeout: STAGE_WAIT_MS });
   const strip = await stripOf(page);
   expect(strip).toHaveLength(6);
   if (current === null) {
@@ -231,9 +234,9 @@ export async function wholeJourney(args: { page: Page; browser: Browser; db: Sup
   const job = shopPage.getByRole("article", { name: new RegExp(`Job for request ${id8}`) });
   await check("shop: a job to prepare", shopPage, job.getByRole("button", { name: "Start preparing" }));
   await job.getByRole("button", { name: "Start preparing" }).click();
-  await expect(job).toContainText("Status: Preparing");
+  await expect(job).toContainText("Status: Preparing", { timeout: STAGE_WAIT_MS });
   await job.getByRole("button", { name: "Mark ready for pickup" }).click();
-  await expect(job).toContainText("Status: Ready for pickup");
+  await expect(job).toContainText("Status: Ready for pickup", { timeout: STAGE_WAIT_MS });
   await page.goto(orderUrl);
   await expectStage(page, "Your order is ready for pickup", "Pick up");
   await expectQueued(db, inquiryId, ["order_accepted", "order_awaiting_ok", "price_ready", "ready_for_pickup", "request_started"]);

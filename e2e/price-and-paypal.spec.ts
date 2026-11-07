@@ -77,6 +77,9 @@ test.describe("the price, the PayPal box and keep this page (local Supabase, fak
     await expect(payment).toContainText("PayPal sets aside $1,080.00.");
     await expect(payment).toContainText("The shop reviews your order and, only if they accept, you're charged.");
     await expect(payment).toContainText("If they say no, the hold disappears.");
+    await expect(payment.getByRole("heading", { name: "What PayPal will do" })).toBeVisible();
+    await expect(payment.getByRole("listitem")).toHaveCount(3);
+    await expect(payment.getByRole("note")).toContainText("Sandbox demo: PayPal test accounts only, no real money moves.");
     await expect(payment.getByRole("button", { name: "Approve on PayPal" })).toBeVisible();
     await expect(payment.getByRole("button")).toHaveCount(1); // one main action
   });

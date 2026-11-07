@@ -115,6 +115,10 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     await expect(proposals).toContainText("Desk organizer (swapped in)");
     await expect(proposals).toContainText("$14.00");
     await expect(proposals).toContainText("$36.00 per box · $1,080.00 in total");
+    // The stock limit is stated in a note of its own, and the swap and the new price read as one change that code calculated.
+    await expect(proposals.getByRole("note")).toContainText("A stock limit changes your box");
+    await expect(proposals).toContainText("One change: Steel water bottle ($13.00) becomes Desk organizer ($14.00). The price below already includes it.");
+    await expect(proposals.locator('[data-provenance="calculated"]')).toContainText("Calculated by us");
     await expect(spec(page)).toContainText("30");
     await expect(page.getByRole("region", { name: "Open question" })).toHaveCount(0);
 
@@ -123,6 +127,8 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     const quote = page.getByRole("region", { name: "Your price" });
     await expect(quote).toContainText("$1,080.00");
     await expect(quote).toContainText("$36.00");
+    await expect(quote.locator("[data-price-summary]")).toContainText("$1,080.00");
+    await expect(quote.locator("[data-price-summary]")).toContainText("Calculated by us");
     await quote.getByRole("button", { name: "Accept this price" }).click();
     await expect(quote.getByRole("status")).toContainText("You accepted this exact price");
   });
@@ -133,6 +139,7 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     const proposals = page.getByRole("region", { name: "Proposals" });
     await expect(proposals).toContainText("A box for you");
     await expect(proposals).toContainText("$35.00 per box · $700.00 for 20 boxes");
+    await expect(proposals.locator('[data-provenance="calculated"]')).toContainText("Worked out from the shop's prices and stock, not by the assistant.");
     // The box lists what is in it, item by item with its price.
     for (const line of ["A5 notebook", "$12.00", "Black gel pen", "$3.00", "Steel water bottle", "$13.00", "Branded welcome card", "$2.00", "Gift box packaging", "$5.00"]) {
       await expect(proposals).toContainText(line);
@@ -144,7 +151,7 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     await spec(page).getByLabel("Number of boxes").fill("22"); // 24 steel bottles are in stock, so 22 still fits
     await spec(page).getByRole("button", { name: "Save", exact: true }).click();
     await expect(proposals).toContainText("$770.00 for 22 boxes");
-    await expect(spec(page)).toContainText("You set this");
+    await expect(spec(page)).toContainText("You confirmed");
     await expect(page.getByText("You changed your order")).toBeVisible();
   });
 
@@ -239,7 +246,7 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     const proposals = page.getByRole("region", { name: "Proposals" });
     await expect(proposals).toContainText("$35.00 per box · $700.00 for 20 boxes");
     await expect(spec(page).getByRole("button", { name: /Number of boxes/ })).toContainText("20");
-    await expect(spec(page).getByRole("button", { name: /Number of boxes/ })).toContainText("You set this");
+    await expect(spec(page).getByRole("button", { name: /Number of boxes/ })).toContainText("You confirmed");
     await expect(page.getByRole("region", { name: "Open question" })).toHaveCount(0);
     await expect(page.getByText("You changed your order")).toBeVisible(); // a quiet note, not something they typed
   });
@@ -274,6 +281,6 @@ test.describe("intake: the customer's screens (local Supabase, stand-in model)",
     await spec(page).getByLabel("Budget per box").fill("45.50");
     await spec(page).getByRole("button", { name: "Save", exact: true }).click();
     await expect(spec(page).getByRole("button", { name: /Budget per box/ })).toContainText("$45.50");
-    await expect(spec(page).getByRole("button", { name: /Budget per box/ })).toContainText("You set this");
+    await expect(spec(page).getByRole("button", { name: /Budget per box/ })).toContainText("You confirmed");
   });
 });

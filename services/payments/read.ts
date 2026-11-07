@@ -167,3 +167,48 @@ export async function listDecisionsForMerchant(db: SupabaseClient, merchantId: s
   const order = { exception: 0, waiting: 1, checking: 2 } as const;
   return rows.sort((a, b) => order[a.section] - order[b.section]);
 }
+
+export type DecidedRow = {
+  purchaseId: string;
+  inquiryId: string;
+  totalMinor: number;
+  /** What the merchant chose. */
+  decision: "accepted" | "declined";
+  decidedAt: string;
+  /** What PayPal confirms happened: the money was taken, or the hold was released. */
+  outcome: "charged" | "released";
+};
+
+type DecidedQueryRow = {
+  id: string;
+  inquiry_id: string;
+  quote_versions: Embedded<{ total_minor: number }>;
+  merchant_decisions: Embedded<{ decision: string; decided_at: string | null }>;
+  payment_attempts: Array<{ state: string; created_at: string }> | null;
+};
+
+/**
+ * The merchant's latest decisions that are finished: accepted and the money taken (the payment is CAPTURED), or declined and the hold
+ * released (VOIDED). A decision still being carried out or checked is not listed here (it is under "Being checked"), so a line here
+ * is only ever shown as done when PayPal's result confirms it. Read-only; pass the merchant's own session client so row level security applies.
+ */
+export async function listRecentlyDecided(db: SupabaseClient, merchantId: string, limit = 5): Promise<DecidedRow[]> {
+  const found = await db
+    .from("purchases")
+    .select("id, inquiry_id, quote_versions(total_minor), merchant_decisions(decision, decided_at), payment_attempts(state, created_at)")
+    .eq("merchant_id", merchantId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (found.error) throw new Error(`list decided: ${found.error.message}`);
+
+  const rows: DecidedRow[] = [];
+  for (const p of (found.data ?? []) as unknown as DecidedQueryRow[]) {
+    const decision = one(p.merchant_decisions);
+    const quote = one(p.quote_versions);
+    const latest = [...(p.payment_attempts ?? [])].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))[0];
+    if (!decision?.decided_at || !quote || !latest) continue;
+    if (decision.decision === "accepted" && latest.state === "CAPTURED") rows.push({ purchaseId: p.id, inquiryId: p.inquiry_id, totalMinor: Number(quote.total_minor), decision: "accepted", decidedAt: new Date(decision.decided_at).toISOString(), outcome: "charged" });
+    else if (decision.decision === "declined" && latest.state === "VOIDED") rows.push({ purchaseId: p.id, inquiryId: p.inquiry_id, totalMinor: Number(quote.total_minor), decision: "declined", decidedAt: new Date(decision.decided_at).toISOString(), outcome: "released" });
+  }
+  return rows.sort((a, b) => Date.parse(b.decidedAt) - Date.parse(a.decidedAt)).slice(0, limit);
+}
