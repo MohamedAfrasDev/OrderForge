@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { requireMerchant } from "@/lib/access/require-merchant";
 import { cents, format } from "@/lib/money";
 import { createSessionClient } from "@/lib/supabase/server";
-import { HONOR_PERIOD_DAYS, listDecisionsForMerchant, type DecisionRow } from "@/services/payments/read";
+import { HONOR_PERIOD_DAYS, listDecisionsForMerchant, listRecentlyDecided, type DecisionRow } from "@/services/payments/read";
 import { DecisionForms } from "./decision-forms";
 import { DecisionsGrid, type DecisionGridRow } from "./decisions-grid";
 
@@ -41,6 +41,7 @@ function Card({ row, children }: { row: DecisionRow; children?: React.ReactNode 
           Request {row.inquiryId.slice(0, 8)} · quote version {row.quoteVersion}
         </h3>
         <p className="text-sm">Total {usd(row.totalMinor)}</p>
+        <p className="text-sm text-muted-foreground">The exact price the customer accepted. PayPal is holding {usd(row.totalMinor)}; the customer has not been charged.</p>
         {row.authorizedAt ? <p className="text-xs text-muted-foreground">Authorized {formatTime(row.authorizedAt)}</p> : null}
         {row.authorizationExpiresAt ? <p className="text-xs text-muted-foreground">PayPal authorization runs until {formatTime(row.authorizationExpiresAt)}</p> : null}
       </header>
@@ -58,7 +59,9 @@ function Card({ row, children }: { row: DecisionRow; children?: React.ReactNode 
 // Reads run under the merchant's own session (row level security); the actions are in ./actions.
 async function Decisions() {
   const { merchant } = await requireMerchant();
-  const rows = await listDecisionsForMerchant(await createSessionClient(), merchant.id, new Date().toISOString());
+  const session = await createSessionClient();
+  const rows = await listDecisionsForMerchant(session, merchant.id, new Date().toISOString());
+  const decided = await listRecentlyDecided(session, merchant.id);
   const exceptions = rows.filter((r) => r.section === "exception");
   const waiting = rows.filter((r) => r.section === "waiting");
   const checking = rows.filter((r) => r.section === "checking");
@@ -117,7 +120,7 @@ async function Decisions() {
                   </ul>
                 </div>
               ) : null}
-              <DecisionForms purchaseId={r.purchaseId} conditions={r.conditions.filter((c) => c.needsConfirmation).map((c) => ({ code: c.code, text: c.text }))} />
+              <DecisionForms purchaseId={r.purchaseId} totalMinor={r.totalMinor} conditions={r.conditions.filter((c) => c.needsConfirmation).map((c) => ({ code: c.code, text: c.text }))} />
             </Card>
           ))}
         />
@@ -137,6 +140,30 @@ async function Decisions() {
             </Card>
           ))}
         />
+      </section>
+
+      <section aria-labelledby="decided-heading" className="flex flex-col gap-3">
+        <h2 id="decided-heading" className="text-lg font-semibold">
+          Recently decided
+        </h2>
+        {decided.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No decisions yet.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {decided.map((d) => (
+              <li key={d.purchaseId} className="flex flex-col gap-1 rounded-lg border border-border p-3 text-sm">
+                <span className="font-medium">
+                  Request {d.inquiryId.slice(0, 8)} · {usd(d.totalMinor)} · {formatTime(d.decidedAt)}
+                </span>
+                {d.outcome === "charged" ? (
+                  <span>Accepted. {usd(d.totalMinor)} was charged, once. The order moves on to preparation.</span>
+                ) : (
+                  <span>Declined. The hold was released, the customer was not charged and the stock is free.</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </>
   );

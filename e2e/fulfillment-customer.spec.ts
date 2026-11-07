@@ -29,6 +29,8 @@ test.describe("the customer's view of a paid order (local Supabase + fake PayPal
     const paid = await paidPurchase(db, seller);
     await page.goto(`/o/${paid.link}`);
     await expect(page.getByRole("region", { name: "Payment" })).toContainText("Paid");
+    await expect(page.getByRole("region", { name: "Payment" }).locator('[data-conclusion="paid"]')).toContainText("Your order is confirmed");
+    await expect(page.getByRole("region", { name: "Payment" }).locator('[data-conclusion="paid"]')).toContainText("You were charged $");
     await expect(orderRegion(page)).toHaveCount(0); // paid, and the job has not been made yet
   });
 

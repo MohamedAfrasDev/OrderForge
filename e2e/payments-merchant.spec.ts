@@ -37,6 +37,12 @@ test.describe("deciding on authorized orders (local Supabase + fake PayPal, mock
 
     const card = await openCard(page, p.inquiryId);
     await expect(card).toContainText("Total $1,080.00");
+    await expect(card).toContainText("PayPal is holding $1,080.00; the customer has not been charged.");
+    // One accept and one decline, each saying what it does.
+    await expect(card).toContainText("PayPal charges the $1,080.00 it is holding, once, and the order moves on to preparation.");
+    await expect(card).toContainText("The $1,080.00 hold is released, the customer is not charged and the stock is freed.");
+    await expect(card.getByRole("button", { name: "Accept and take payment" })).toHaveCount(1);
+    await expect(card.getByRole("button", { name: /Decline/ })).toHaveCount(1);
     await expect(card).toContainText("Production slot to be confirmed.");
 
     // Without confirming the condition, nothing is decided.
@@ -56,6 +62,10 @@ test.describe("deciding on authorized orders (local Supabase + fake PayPal, mock
 
     await page.reload();
     await expect(cardFor(page, p.inquiryId)).toHaveCount(0);
+    // Both sides end on a clear result: the shop sees it under "Recently decided", and the customer's page says the order is confirmed.
+    const decided = page.getByRole("region", { name: "Recently decided" });
+    await expect(decided).toContainText(`Request ${p.inquiryId.slice(0, 8)}`);
+    await expect(decided).toContainText("Accepted. $1,080.00 was charged, once. The order moves on to preparation.");
   });
 
   test("the merchant declines with a reason: the authorization is cancelled and the customer is told", async ({ page, browser }) => {
@@ -75,6 +85,10 @@ test.describe("deciding on authorized orders (local Supabase + fake PayPal, mock
     const customer = await (await browser.newContext()).newPage();
     await customer.goto(`/o/${p.link}`);
     await expect(customer.getByRole("region", { name: "Payment" })).toContainText("you weren't charged");
+    await expect(customer.getByRole("region", { name: "Payment" }).locator('[data-conclusion="declined"]')).toContainText("PayPal has released the hold, so nothing was taken from you.");
+
+    await page.goto("/merchant/decisions");
+    await expect(page.getByRole("region", { name: "Recently decided" })).toContainText("Declined. The hold was released, the customer was not charged and the stock is free.");
     await expect(customer.getByRole("region", { name: "Payment" }).getByRole("button")).toHaveCount(0);
   });
 

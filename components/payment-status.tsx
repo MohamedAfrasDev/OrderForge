@@ -26,7 +26,17 @@ export function PaymentStatus({ view, notice, totalMinor, pay }: Props) {
           {noticeMessage(notice)}
         </p>
       ) : null}
-      {message ? <p className="text-sm">{message}</p> : null}
+      {view.status === "PAID" || view.status === "DECLINED" ? (
+        <div data-conclusion={view.status === "PAID" ? "paid" : "declined"} className="flex flex-col gap-1 rounded-md border-2 border-foreground p-3">
+          <p className="text-base font-semibold">{view.status === "PAID" ? "Your order is confirmed" : "The shop couldn't take this order"}</p>
+          {message ? <p className="text-sm">{message}</p> : null}
+          <p className="text-sm">
+            {view.status === "PAID" ? `You were charged ${format(cents(totalMinor))}, once.` : "PayPal has released the hold, so nothing was taken from you."}
+          </p>
+        </div>
+      ) : message ? (
+        <p className="text-sm">{message}</p>
+      ) : null}
       {view.canPay ? (
         <div className="flex flex-col gap-3 rounded-md border-2 border-foreground p-3">
           <h3 className="text-sm font-semibold">What PayPal will do</h3>
