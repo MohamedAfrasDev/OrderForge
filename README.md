@@ -6,7 +6,7 @@ The idea: the model reads the request and suggests a box, but it never does the 
 
 > **Sandbox only. Synthetic data.** Everything runs against the **PayPal sandbox** with made-up shops, products and buyers. Nothing real is charged, and every page shows a "Sandbox · simulated data" banner.
 
-**Hosted demo:** https://order-forge.afras.dev · **Why it is safe:** https://order-forge.afras.dev/how-it-works · **Proof:** [doc/evidence/proof-points.md](doc/evidence/proof-points.md) (regenerate with `npm run proof`) · License: [MIT](LICENSE) · Built for the PayPal AI Hackathon 2026.
+**Hosted demo:** https://order-forge.afras.dev · **Guided path:** https://order-forge.afras.dev/demo · **For agents:** https://order-forge.afras.dev/developers · **Why it is safe:** https://order-forge.afras.dev/how-it-works · **Proof:** [doc/evidence/proof-points.md](doc/evidence/proof-points.md) (regenerate with `npm run proof`) · License: [MIT](LICENSE) · Built for the PayPal AI Hackathon 2026.
 
 The customer flow needs no login. The shop side signs in at `/merchant/login`; the sandbox login for the judges is in the Devpost submission notes.
 

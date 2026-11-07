@@ -143,6 +143,45 @@ describe("the submission pack", () => {
     for (const must of [/\$35\.00/, /\$700\.00/, /24/, /\$1,080\.00/, /sets? (the )?money aside/i, /accept/i, /decline/i, /five simultaneous/i, /proof-points/, /sandbox/i, /synthetic/i]) expect(t, String(must)).toMatch(must);
   });
 
+  it("devpost-text.md opens with what makes it different, before the background, and is honest about the sellers and the second shop", () => {
+    const t = read("devpost-text.md");
+    expect(t.indexOf("## What makes it different")).toBeGreaterThan(0);
+    expect(t.indexOf("## What makes it different")).toBeLessThan(t.indexOf("## Inspiration"));
+    expect(t).toContain("AI proposes. Code prices. PayPal holds. The shop decides.");
+    expect(t).toMatch(/cannot choose a price, accept one or pay/);
+    expect(t).toMatch(/not yet validated the problem with shop owners/i);
+    expect(t).toContain("/demo");
+    expect(t).toContain("/developers");
+    // The second shop's complete journey is not claimed until it is recorded: the text says what was run and keeps a marker to confirm.
+    expect(t).toContain("up to the price review");
+    expect(t).toContain("[CONFIRM before submitting");
+  });
+
+  it("devpost-text.md names the one configured model and not the retired free primary as configured", () => {
+    const t = read("devpost-text.md");
+    expect(t).toMatch(/`openai\/gpt-oss-120b` \(paid\) is the only model on the hosted site/);
+    expect(t).not.toMatch(/`google\/gemma-4-31b-it:free` first/);
+  });
+
+  it("video-script.md is eight beats of 12, 33, 20, 30, 20, 25, 18 and 7 seconds, and lands the agent rule", () => {
+    const t = read("video-script.md");
+    const beats = [...t.matchAll(/^## (\d):(\d\d)[-–](\d):(\d\d) /gm)].map((m) => Number(m[3]) * 60 + Number(m[4]) - (Number(m[1]) * 60 + Number(m[2])));
+    expect(beats).toEqual([12, 33, 20, 30, 20, 25, 18, 7]);
+    expect(t).toContain("The agent can request and read; it cannot accept or pay.");
+    expect(t).toContain("AI proposes. Code prices. PayPal holds. The shop decides.");
+  });
+
+  it("screenshots.md lists the home page, the price and stock frame, the PayPal frame, the shop decision, the result and /developers", () => {
+    const t = read("screenshots.md");
+    for (const frame of [/\*\*Home\.\*\*/, /\*\*Price and stock warning\.\*\*/, /what PayPal will do/i, /\*\*The shop's decision\.\*\*/, /\*\*The result\.\*\*/, /`\/developers`/]) expect(t).toMatch(frame);
+  });
+
+  it("the README's first screen links the guided path and the agent page", () => {
+    const first = readFileSync("README.md", "utf8").split(/\r?\n/).slice(0, 16).join("\n");
+    expect(first).toContain("/demo");
+    expect(first).toContain("/developers");
+  });
+
   it("final-checklist.md: every line is ticked with evidence or marked OPEN with a reason, and it says to recheck the rules", () => {
     const lines = read("final-checklist.md").split("\n").filter((l) => /^- \[[ x]\] /.test(l));
     expect(lines.length).toBeGreaterThanOrEqual(10);
