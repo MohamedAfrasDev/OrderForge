@@ -42,3 +42,28 @@ Yes (corrected during T2; the first reading of this section looked only for the 
 - The contents of the live home page beyond the store link, and any page behind a login.
 - Whether the live merchant sign-in works with the credentials in your notes.
 - Any value of any variable.
+
+## Re-check after the merge (task T15)
+
+Date: 7 Nov 2026 · Label: **hosted** (public requests; the agent example creates throwaway requests in the demo shops) · Code: merge commit `4ca3e21` (pull request 15), deployed to production at 10:54 IST (the deployment was created two seconds after the merge). CI on the merge commit: typecheck, lint, test and build, database tests and the browser job all passed.
+
+| Check | Result |
+|---|---|
+| `GET /`, `/demo`, `/developers`, `/how-it-works`, `/api/agent/v1/openapi.json`, `/api/health` | All 200 |
+| Home page | Shows the new four-step flow ("How an order moves"); `/developers` shows $35.00 and the coded stock answer |
+| `GET /api/agent/v1/stores` | Lists `demo-gift-boxes` and `demo-event-kits` (the baseline above listed one) |
+| Model | `OPENROUTER_MODEL=openai/gpt-oss-120b` set on production on 6 Nov 2026 (see the soak files) |
+
+### The README's "For agents" example, run against production
+
+| Step | Result |
+|---|---|
+| `GET /api/agent/v1/stores/demo-event-kits` | 200; the five fields `boxCount`, `noFood`, `logoRequired`, `maxPricePerBoxMinor`, `requestedPickupDate`; payment approved by a human |
+| `POST .../demo-event-kits/requests` with 20 kits, no food, logo, $40 budget | 201; valid box, **3350 cents a kit, 67000 cents in total** (USD), a link for a person and a read-only token returned; no blockers |
+| `GET /api/agent/v1/requests/{id}` with that token | 200; the same total, nothing missing |
+| The same read with a wrong token | 404 |
+| The same request with an extra `totalMinor` field | 400 `INVALID_INPUT`, the field named as an unknown key; nothing stored |
+| `POST` with 50 kits | 201; blocked, `INSUFFICIENT_STOCK` (50 needed, 40 available of the insulated bottle); one swap offered at **2950 cents a kit, 147500 in total** |
+
+These equal what the pricing engine gives for the seed data (`tests/demo/scripts.test.ts`). Two throwaway requests were created in the kit shop's inbox. No token or link is recorded here.
+
