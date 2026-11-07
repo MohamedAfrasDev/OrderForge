@@ -105,7 +105,7 @@ Copy `.env.example` to `.env`. **`.env` is gitignored and must never be committe
 An AI agent can ask a demo shop for a priced box and read it back. It cannot choose a price, accept one or pay: a person opens the returned `humanUrl`, chooses the box, accepts the exact price and approves the payment on PayPal's own page. Sandbox only, synthetic data. The description of every route is at `/api/agent/v1/openapi.json`.
 
 ```bash
-BASE=http://localhost:3000   # the hosted site serves the same routes at https://order-forge.afras.dev once the version that contains them is deployed
+BASE=http://localhost:3000   # or the hosted site, which serves the same routes: BASE=https://order-forge.afras.dev
 curl -s "$BASE/api/agent/v1/stores"
 curl -s "$BASE/api/agent/v1/stores/demo-event-kits"
 curl -s -X POST "$BASE/api/agent/v1/stores/demo-event-kits/requests" -H 'content-type: application/json' -d '{"boxCount":20,"noFood":true,"logoRequired":true,"maxPricePerBoxMinor":4000}'
