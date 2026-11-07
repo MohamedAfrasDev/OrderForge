@@ -41,14 +41,14 @@ The customer accepts that exact price. A box says what PayPal will do: it sets t
 
 ## Tools used
 
-| Tool | How it is used |
-|---|---|
-| **PayPal developer platform (sandbox)** | Orders v2 authorize; Payments v2 capture and void; webhook verification; the sandbox buyer approves on PayPal's own page |
-| **OpenRouter** (AI models) | Reads the request into a strict schema; rewords one question; chooses one product per part of the box from a fixed list; ranks and explains the alternatives that code produced |
-| Models configured | `openai/gpt-oss-120b` (paid) is the only model on the hosted site; no free model and no second model. If it fails, the customer is handed to the shop. (Set on Vercel production 6 Nov 2026.) |
-| **Claude Code** | The AI coding assistant used to write the specs, tests and code under the spec-first workflow in this repository |
-| Agent API | No model: a strict five-field request, a box chosen and priced by code, a read-only token; a person approves the payment |
-| Supabase, Vercel, Resend, AG Grid | Data and auth, hosting, email, data grids |
+| Tool                                    | How it is used                                                                                                                                                                                |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **PayPal developer platform (sandbox)** | Orders v2 authorize; Payments v2 capture and void; webhook verification; the sandbox buyer approves on PayPal's own page                                                                      |
+| **OpenRouter** (AI models)              | Reads the request into a strict schema; rewords one question; chooses one product per part of the box from a fixed list; ranks and explains the alternatives that code produced               |
+| Models configured                       | `openai/gpt-oss-120b` (paid) is the only model on the hosted site; no free model and no second model. If it fails, the customer is handed to the shop. (Set on Vercel production 6 Nov 2026.) |
+| **Claude Code**                         | The AI coding assistant used to write the specs, tests and code under the spec-first workflow in this repository                                                                              |
+| Agent API                               | No model: a strict five-field request, a box chosen and priced by code, a read-only token; a person approves the payment                                                                      |
+| Supabase, Vercel, Resend, AG Grid       | Data and auth, hosting, email, data grids                                                                                                                                                     |
 
 **What the models cannot do.** They have no field or tool for a price, a quantity of goods, a discount or an order state. Their output is parsed with strict schemas and then validated by code; an answer that names a product outside the allowed list is rejected. Customer text is treated as data inside a fenced block, never as instructions. A local rule-based stand-in (not a model) runs the browser tests so no test calls a real model.
 
@@ -80,8 +80,8 @@ The customer accepts that exact price. A box says what PayPal will do: it sets t
 ## Try it
 
 - **Hosted demo:** https://order-forge.afras.dev (a sandbox demo; synthetic data; nothing real is charged). Start at `/demo`.
-- **Customer:** no login. Press "Try it as a customer". When PayPal asks you to log in, use the **US Personal sandbox buyer** account: [ADD: sandbox buyer email and password for the judges].
-- **Shop:** `/merchant/login` with [ADD: demo shop login for the judges].
+- **Customer:** no login. Press "Try it as a customer". When PayPal asks you to log in, use the **US Personal sandbox buyer** account: [Email: sb-azthw53634731@personal.example.com | Password: Mx)6T/%I].
+- **Shop:** `/merchant/login`. Each shop only sees its own orders, so sign in as the owner of the shop the customer ordered from. "Try it as a customer" starts at **Demo Gift Boxes**: [Email: merchant@demo.test | Password: (the DEMO_MERCHANT_PASSWORD you set; paste it here)]. **Demo Event Kits** (the second shop) is [Email: merchant2@demo.test | Password: demomerch2@W.jnnH_2].
 - **Agents:** `/developers` and `/api/agent/v1/openapi.json`.
 - **Run it yourself:** the README lists the environment variable names, migrations, seed, worker setup and demo reset.
 - **Code:** https://github.com/MohamedAfrasDev/OrderForge (MIT license).
