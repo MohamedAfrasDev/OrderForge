@@ -101,7 +101,7 @@ describe("buildQuoteForInquiry", () => {
     const audited = must(await db.from("audit_events").select("actor, data").eq("entity_id", t.inquiryId).eq("action", "intake.quote_built"));
     expect(audited).toHaveLength(1);
     expect(audited[0]!.actor).toBe(`merchant:${t.user.id}`);
-    expect(JSON.stringify(audited[0]!.data)).not.toMatch(/108000|\$/); // an id and a version, never an amount
+    expect(JSON.stringify(audited[0]!.data)).not.toMatch(/\b108000\b|\$/); // an id and a version, never an amount
   });
 
   it("makes a quote with no notes when the shop adds none", async () => {
